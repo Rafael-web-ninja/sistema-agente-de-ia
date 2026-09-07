@@ -1,0 +1,2409 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZapChat - Central de Atendimento com IA no WhatsApp</title>
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="./src/css/variables.css">
+  <link rel="stylesheet" href="./src/css/layout.css">
+  <link rel="stylesheet" href="./src/css/components.css">
+  <link rel="stylesheet" href="./src/css/dashboard.css">
+  <link rel="stylesheet" href="./src/css/agentes.css">
+  <link rel="stylesheet" href="./src/css/leads.css">
+  <link rel="stylesheet" href="./src/css/canais.css">
+  <link rel="stylesheet" href="./src/css/conversas.css">
+  <link rel="stylesheet" href="./src/css/settings.css">
+  <link rel="stylesheet" href="./src/css/suporte.css">
+  <link rel="stylesheet" href="./src/css/editar-agente.css">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <!-- Mobile Sidebar Backdrop Overlay -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+  <div class="app-shell">
+    <!-- Left Sidebar -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div>
+        <div class="sidebar-header">
+          <a href="#dashboard" class="brand-logo" data-target="dashboard">
+            <div class="brand-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                <circle cx="9" cy="10" r="1"></circle>
+                <circle cx="15" cy="10" r="1"></circle>
+              </svg>
+            </div>
+            <span class="brand-name">ZapChat</span>
+          </a>
+          <button class="sidebar-close-btn" id="sidebar-close-btn" title="Fechar menu" aria-label="Fechar menu">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        <ul class="sidebar-nav">
+          <li class="nav-item active">
+            <a href="#dashboard" class="nav-link" data-target="dashboard">
+              <span class="nav-icon"><i data-lucide="layout-grid"></i></span>
+              <span>Visão Geral</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#agentes" class="nav-link" data-target="agentes">
+              <span class="nav-icon"><i data-lucide="bot"></i></span>
+              <span>Agentes</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#conversas" class="nav-link" data-target="conversas">
+              <span class="nav-icon"><i data-lucide="message-square"></i></span>
+              <span>Conversas</span>
+              <span class="nav-badge">7</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#canais" class="nav-link" data-target="canais">
+              <span class="nav-icon"><i data-lucide="share-2"></i></span>
+              <span>Canais</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#leads" class="nav-link" data-target="leads">
+              <span class="nav-icon"><i data-lucide="users"></i></span>
+              <span>Leads</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#configuracoes" class="nav-link" data-target="configuracoes">
+              <span class="nav-icon"><i data-lucide="settings"></i></span>
+              <span>Configurações</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#suporte" class="nav-link" data-target="suporte" onclick="window.switchView ? window.switchView('suporte') : (window.location.hash = 'suporte')">
+              <span class="nav-icon"><i data-lucide="headphones"></i></span>
+              <span>Suporte</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Upgrade Promo Card in Sidebar -->
+      <div class="sidebar-promo-card-simplified">
+        <div class="promo-crown-icon">👑</div>
+        <h4 class="promo-title">Faça mais com o ZapChat</h4>
+        <p class="promo-desc">Desbloqueie recursos avançados e escale seu atendimento.</p>
+        <button type="button" class="btn btn-primary btn-sm promo-plan-btn" id="btn-promo-ver-planos" data-settings-tab-target="faturamento" onclick="window.openSettingsTab ? window.openSettingsTab('faturamento') : (window.switchView && window.switchView('configuracoes'))">
+          Ver planos <i data-lucide="arrow-right" style="width: 13px; height: 13px;"></i>
+        </button>
+      </div>
+
+      <!-- User Profile at bottom -->
+      <div class="sidebar-footer">
+        <button type="button" class="user-profile-btn" id="sidebar-user-profile-btn" data-settings-tab-target="perfil" onclick="window.openSettingsTab ? window.openSettingsTab('perfil') : (window.switchView && window.switchView('configuracoes'))" title="Minha Conta / Perfil">
+          <div class="avatar-badge" style="background-color: #00A868; color: white;">RM</div>
+          <div class="user-info">
+            <span class="user-name">Rafael Mota</span>
+            <span class="user-role">Minha conta</span>
+          </div>
+          <span class="chevron-icon"><i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i></span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+      <!-- Topbar Header -->
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button class="mobile-menu-btn" id="mobile-menu-toggle" title="Abrir menu" aria-label="Abrir menu">
+            <span class="hamburger-box">
+              <span class="hamburger-line line-top"></span>
+              <span class="hamburger-line line-mid"></span>
+              <span class="hamburger-line line-bot"></span>
+            </span>
+          </button>
+          <div class="mobile-brand-logo">
+            <div class="brand-icon mobile-brand-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                <circle cx="9" cy="10" r="1"></circle>
+                <circle cx="15" cy="10" r="1"></circle>
+              </svg>
+            </div>
+            <span class="brand-name mobile-brand-title">ZapChat</span>
+          </div>
+        </div>
+
+        <div class="topbar-controls">
+          <button class="icon-btn" id="theme-toggle-btn" title="Alternar Modo Claro / Escuro">
+            <span id="theme-toggle-icon"><i data-lucide="moon"></i></span>
+          </button>
+          <button type="button" class="icon-btn" id="topbar-help-btn" data-target="suporte" onclick="window.switchView ? window.switchView('suporte') : (window.location.hash = 'suporte')" title="Ajuda e Suporte">
+            <i data-lucide="help-circle"></i>
+          </button>
+          <!-- Notifications Dropdown -->
+          <div class="notifications-dropdown-wrapper">
+            <button type="button" class="icon-btn has-indicator" id="topbar-notifications-btn" title="Notificações">
+              <i data-lucide="bell"></i>
+            </button>
+            <div class="notifications-dropdown-menu" id="notifications-dropdown-menu">
+              <div class="notif-dropdown-header">
+                <div class="notif-header-left">
+                  <span class="notif-header-title">Notificações</span>
+                  <span class="notif-badge-count" id="notif-unread-count">2</span>
+                </div>
+                <div class="notif-header-actions">
+                  <button type="button" class="notif-action-icon-btn" id="notif-mark-all-read" title="Marcar todas como lidas">
+                    <i data-lucide="check-check" style="width:15px;height:15px;"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="notif-dropdown-list" id="notif-dropdown-list">
+                <div class="notif-item unread">
+                  <div class="notif-icon-box warning">
+                    <i data-lucide="alert-triangle" style="width:16px;height:16px;"></i>
+                  </div>
+                  <div class="notif-content">
+                    <div class="notif-item-title">Whatsapp foi desconectado</div>
+                    <div class="notif-item-desc">Quarta-Feira 11:56 • O canal Loja Download foi desconectado</div>
+                  </div>
+                  <span class="notif-unread-dot"></span>
+                </div>
+                <div class="notif-item unread">
+                  <div class="notif-icon-box warning">
+                    <i data-lucide="alert-triangle" style="width:16px;height:16px;"></i>
+                  </div>
+                  <div class="notif-content">
+                    <div class="notif-item-title">Whatsapp foi desconectado</div>
+                    <div class="notif-item-desc">28/08/2026 16:23 • O canal Loja Download foi desconectado</div>
+                  </div>
+                  <span class="notif-unread-dot"></span>
+                </div>
+                <div class="notif-item">
+                  <div class="notif-icon-box success">
+                    <i data-lucide="user-plus" style="width:16px;height:16px;"></i>
+                  </div>
+                  <div class="notif-content">
+                    <div class="notif-item-title">Novo lead qualificado</div>
+                    <div class="notif-item-desc">Hoje 10:30 • Pedro qualificou 1 novo lead no WhatsApp</div>
+                  </div>
+                </div>
+                <div class="notif-item">
+                  <div class="notif-icon-box info">
+                    <i data-lucide="zap" style="width:16px;height:16px;"></i>
+                  </div>
+                  <div class="notif-content">
+                    <div class="notif-item-title">Limite de uso do plano</div>
+                    <div class="notif-item-desc">Ontem 18:00 • Você utilizou 49% das mensagens inclusas</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="avatar-badge" id="topbar-user-profile-btn" data-settings-tab-target="perfil" onclick="window.openSettingsTab ? window.openSettingsTab('perfil') : (window.switchView && window.switchView('configuracoes'))" style="width: 34px; height: 34px; font-size: 12px; cursor: pointer; background-color: #00A868; color: white;" title="Minha Conta / Perfil">
+            RM
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Views Wrapper -->
+      <div class="content-wrapper">
+
+        <!-- ==============================================
+             1. VISÃO GERAL (DASHBOARD SIMPLIFICADO)
+             ============================================== -->
+        <section class="view-panel active" id="view-dashboard">
+          <!-- Simplified Header -->
+          <div class="dash-header-wrap">
+            <div class="dash-header-left">
+              <span class="dash-breadcrumb-tag">PAINEL DO CLIENTE</span>
+              <div class="dash-title-row">
+                <h1>Dashboard</h1>
+                <div class="dash-status-badge">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#25D366"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2z"/></svg>
+                  <span>WhatsApp conectado — IA ativa</span>
+                  <span class="dash-status-dot"></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="header-actions">
+              <button class="btn btn-secondary" style="font-size: 13px;">
+                <i data-lucide="calendar" style="width: 14px; height: 14px;"></i>
+                <span>Últimos 7 dias</span>
+                <i data-lucide="chevron-down" style="width: 13px; height: 13px;"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- 4 KPI Cards -->
+          <div class="dash-kpis-grid">
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-icon-wrap">
+                <i data-lucide="message-square" style="width: 22px; height: 22px;"></i>
+              </div>
+              <div class="dash-kpi-content">
+                <span class="dash-kpi-label">Conversas atendidas</span>
+                <span class="dash-kpi-value">128</span>
+                <div class="dash-kpi-trend trend-up">
+                  <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+                  <span>18% vs. período anterior</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-icon-wrap">
+                <i data-lucide="bot" style="width: 22px; height: 22px;"></i>
+              </div>
+              <div class="dash-kpi-content">
+                <span class="dash-kpi-label">Resolvidas pela IA</span>
+                <span class="dash-kpi-value">87,6%</span>
+                <div class="dash-kpi-trend trend-up">
+                  <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+                  <span>12% vs. período anterior</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-icon-wrap">
+                <i data-lucide="user-plus" style="width: 22px; height: 22px;"></i>
+              </div>
+              <div class="dash-kpi-content">
+                <span class="dash-kpi-label">Novos contatos</span>
+                <span class="dash-kpi-value">32</span>
+                <div class="dash-kpi-trend trend-up">
+                  <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+                  <span>24% vs. período anterior</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-icon-wrap">
+                <i data-lucide="headphones" style="width: 22px; height: 22px;"></i>
+              </div>
+              <div class="dash-kpi-content">
+                <span class="dash-kpi-label">Transferidas para humano</span>
+                <span class="dash-kpi-value">14</span>
+                <div class="dash-kpi-trend trend-down">
+                  <i data-lucide="trending-down" style="width: 13px; height: 13px;"></i>
+                  <span>7% vs. período anterior</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Middle Section: Chart and Plan Usage -->
+          <div class="dash-middle-grid">
+            <!-- Left: Chart -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <h3 class="dash-card-title">Conversas nos últimos 7 dias</h3>
+              </div>
+              <div class="dash-chart-area-wrap" id="chart-conversas-area"></div>
+            </div>
+
+            <!-- Right: Plan Usage -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <h3 class="dash-card-title">Uso do plano</h3>
+              </div>
+              <div class="dash-plan-usage-body">
+                <div id="plan-usage-donut"></div>
+                <div class="dash-plan-linear-wrap">
+                  <div class="dash-plan-linear-text">
+                    <strong>4.900 / 10.000</strong> conversas utilizadas
+                  </div>
+                  <div class="dash-plan-linear-track">
+                    <div class="dash-plan-linear-fill" style="width: 49%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Section: Seus agentes + Conversas recentes -->
+          <div class="dash-bottom-grid">
+            <!-- Seus agentes -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <h3 class="dash-card-title">
+                  <i data-lucide="users" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+                  Seus agentes
+                </h3>
+                <a href="#agentes" class="dash-card-header-link" data-target="agentes">Ver todos</a>
+              </div>
+              <div class="dash-list-stack" id="dash-seus-agentes"></div>
+            </div>
+
+            <!-- Conversas recentes -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <h3 class="dash-card-title">Conversas recentes</h3>
+                <a href="#conversas" class="dash-card-header-link" data-target="conversas">Ver todas</a>
+              </div>
+              <div class="dash-list-stack" id="dash-conversas-recentes"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==============================================
+             2. AGENTES (SIMPLIFICADA)
+             ============================================== -->
+        <section class="view-panel" id="view-agentes">
+          <div class="page-header">
+            <div class="page-title-group">
+              <h1 class="page-title">Agentes</h1>
+              <p class="page-subtitle">Crie e gerencie seus agentes de IA para atender no WhatsApp e outros canais.</p>
+            </div>
+            <div class="header-actions">
+              <button class="btn btn-primary" data-modal-target="modal-new-agent">
+                <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                Novo agente
+              </button>
+            </div>
+          </div>
+
+          <!-- 3 Simplified KPI Cards -->
+          <div class="agents-kpi-row">
+            <div class="kpi-card agents-stat-card" style="cursor: pointer;">
+              <div class="agents-stat-inner">
+                <div class="kpi-icon-wrapper green">
+                  <i data-lucide="users" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div class="kpi-info">
+                  <span class="kpi-title-text">Agentes ativos</span>
+                  <div class="kpi-value">4</div>
+                  <span class="kpi-subtitle-text">de 5 criados</span>
+                </div>
+              </div>
+              <i data-lucide="chevron-right" style="color: var(--text-muted); width: 18px; height: 18px; margin-left: auto;"></i>
+            </div>
+
+            <div class="kpi-card agents-stat-card">
+              <div class="agents-stat-inner">
+                <div class="kpi-icon-wrapper green">
+                  <i data-lucide="message-square" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div class="kpi-info">
+                  <span class="kpi-title-text">Conversas hoje</span>
+                  <div class="kpi-value">256</div>
+                  <div class="kpi-trend trend-up">
+                    <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+                    <span>18% vs. ontem</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpi-card agents-stat-card">
+              <div class="agents-stat-inner">
+                <div class="kpi-icon-wrapper green">
+                  <i data-lucide="target" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div class="kpi-info">
+                  <span class="kpi-title-text">Taxa de resolução</span>
+                  <div class="kpi-value">87,6%</div>
+                  <div class="kpi-trend trend-up">
+                    <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+                    <span>6,3% vs. ontem</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Layout: Table on Left + Quick Setup on Right -->
+          <div class="agents-simplified-grid">
+            <!-- Left: Table Card with inline search -->
+            <div class="table-card agents-table-card">
+              <div class="table-header-bar">
+                <h3 class="table-header-title">Meus agentes <span style="font-size: 14px; font-weight: 500; color: var(--text-muted);">(4)</span></h3>
+                <div class="agents-search-box">
+                  <i data-lucide="search" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
+                  <input type="text" id="agents-search-input" placeholder="Buscar agente...">
+                </div>
+              </div>
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Agente</th>
+                      <th>Status</th>
+                      <th>Conversas hoje</th>
+                      <th>Canal</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="agents-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Right Column: Setup Card + Help Card -->
+            <div class="agents-sidebar-column">
+              <!-- Crie seu agente de IA em poucos minutos -->
+              <div class="agent-quick-create-card">
+                <div class="quick-create-header">
+                  <div class="quick-create-icon-wrap">
+                    <i data-lucide="sparkles" style="width: 20px; height: 20px; color: var(--primary);"></i>
+                  </div>
+                  <h3 class="quick-create-title">Crie seu agente de IA em poucos minutos</h3>
+                  <p class="quick-create-desc">Configure um atendente inteligente para o seu negócio e comece a atender automaticamente.</p>
+                </div>
+
+                <div class="numbered-steps-list">
+                  <div class="numbered-step-item" data-modal-target="modal-new-agent">
+                    <div class="step-circle-badge">1</div>
+                    <div class="step-text-wrap">
+                      <span class="step-title">Defina o nome e objetivo</span>
+                      <span class="step-desc">Diga qual é o papel do agente.</span>
+                    </div>
+                  </div>
+
+                  <div class="numbered-step-item" data-modal-target="modal-new-agent">
+                    <div class="step-circle-badge">2</div>
+                    <div class="step-text-wrap">
+                      <span class="step-title">Adicione conhecimento</span>
+                      <span class="step-desc">Envie textos, links ou PDFs.</span>
+                    </div>
+                  </div>
+
+                  <div class="numbered-step-item" data-modal-target="modal-new-agent">
+                    <div class="step-circle-badge">3</div>
+                    <div class="step-text-wrap">
+                      <span class="step-title">Conecte o canal</span>
+                      <span class="step-desc">Conecte seu WhatsApp.</span>
+                    </div>
+                  </div>
+
+                  <div class="numbered-step-item" data-modal-target="modal-new-agent">
+                    <div class="step-circle-badge">4</div>
+                    <div class="step-text-wrap">
+                      <span class="step-title">Teste e ative</span>
+                      <span class="step-desc">Faça um teste e coloque no ar.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button class="btn btn-primary quick-create-btn" data-modal-target="modal-new-agent">
+                  <i data-lucide="plus" style="width: 15px; height: 15px;"></i>
+                  Criar novo agente
+                </button>
+              </div>
+
+              <!-- Precisa de ajuda? Guia -->
+              <div class="agent-help-guide-card" data-target="suporte" onclick="switchView('suporte')">
+                <div class="help-card-inner">
+                  <div class="help-icon-circle">
+                    <i data-lucide="book-open" style="width: 16px; height: 16px; color: var(--text-secondary);"></i>
+                  </div>
+                  <div class="help-text-wrap">
+                    <span class="help-title">Precisa de ajuda?</span>
+                    <span class="help-desc">Veja o passo a passo no nosso guia</span>
+                  </div>
+                  <i data-lucide="chevron-right" style="color: var(--text-muted); width: 16px; height: 16px; margin-left: auto;"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==============================================
+             3. LEADS (SIMPLIFICADA)
+             ============================================== -->
+        <section class="view-panel" id="view-leads">
+          <div class="page-header" style="margin-bottom: 20px;">
+            <div class="page-title-group">
+              <h1 class="page-title">Leads</h1>
+              <p class="page-subtitle">Acompanhe e organize seus contatos</p>
+            </div>
+            <div class="header-actions">
+              <button type="button" class="btn btn-secondary" id="btn-export-leads-csv" title="Exportar leads selecionados para CSV">
+                <i data-lucide="download" style="width: 15px; height: 15px;"></i>
+                <span>Exportar CSV</span>
+                <span class="badge badge-active" id="leads-selected-count-badge" style="display: none; margin-left: 4px; font-size: 10px; padding: 2px 6px;">0</span>
+              </button>
+              <button class="btn btn-primary" data-modal-target="modal-new-lead">
+                <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                Novo lead
+              </button>
+            </div>
+          </div>
+
+          <!-- 3 Simplified KPI Cards -->
+          <div class="leads-kpi-row">
+            <div class="kpi-card leads-stat-card">
+              <div class="kpi-icon-wrapper green">
+                <i data-lucide="users" style="width: 20px; height: 20px;"></i>
+              </div>
+              <div class="kpi-info">
+                <span class="kpi-title-text">Leads totais</span>
+                <div class="kpi-value">1.248</div>
+                <div class="kpi-trend trend-up">
+                  <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+                  <span>18% vs. ontem</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpi-card leads-stat-card">
+              <div class="kpi-icon-wrapper green">
+                <i data-lucide="user-plus" style="width: 20px; height: 20px;"></i>
+              </div>
+              <div class="kpi-info">
+                <span class="kpi-title-text">Novos hoje</span>
+                <div class="kpi-value">86</div>
+                <div class="kpi-trend trend-up">
+                  <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+                  <span>22% vs. ontem</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpi-card leads-stat-card">
+              <div class="kpi-icon-wrapper green">
+                <i data-lucide="award" style="width: 20px; height: 20px;"></i>
+              </div>
+              <div class="kpi-info">
+                <span class="kpi-title-text">Qualificados</span>
+                <div class="kpi-value">412</div>
+                <div class="kpi-trend trend-up">
+                  <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+                  <span>16% vs. ontem</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modern Leads Filter Bar -->
+          <div class="leads-filter-bar-simplified">
+            <div class="leads-search-wrap">
+              <i data-lucide="search" class="leads-search-icon"></i>
+              <input type="text" id="lead-search-input" placeholder="Buscar por nome, telefone ou e-mail...">
+            </div>
+
+            <div class="leads-filters-group">
+              <div class="filter-dropdown-item">
+                <span class="filter-mini-label">Origem:</span>
+                <select class="filter-mini-select" id="lead-filter-origin">
+                  <option value="">Todas</option>
+                  <option value="WhatsApp">WhatsApp</option>
+                  <option value="Instagram">Instagram</option>
+                  <option value="Site">Site</option>
+                  <option value="Facebook">Facebook</option>
+                </select>
+                <i data-lucide="chevron-down" class="filter-chevron-icon"></i>
+              </div>
+
+              <div class="filter-dropdown-item">
+                <span class="filter-mini-label">Status:</span>
+                <select class="filter-mini-select" id="lead-filter-status">
+                  <option value="">Todos</option>
+                  <option value="Novo">Novo</option>
+                  <option value="Em atendimento">Em atendimento</option>
+                  <option value="Qualificado">Qualificado</option>
+                  <option value="Fechado">Fechado</option>
+                </select>
+                <i data-lucide="chevron-down" class="filter-chevron-icon"></i>
+              </div>
+
+              <div class="filter-dropdown-item">
+                <span class="filter-mini-label">Agente:</span>
+                <select class="filter-mini-select" id="lead-filter-agent">
+                  <option value="">Todos</option>
+                  <option value="Juliana Santos">Juliana Santos</option>
+                  <option value="Felipe Costa">Felipe Costa</option>
+                  <option value="Carla Menezes">Carla Menezes</option>
+                  <option value="Rodrigo Almeida">Rodrigo Almeida</option>
+                </select>
+                <i data-lucide="chevron-down" class="filter-chevron-icon"></i>
+              </div>
+
+              <button type="button" class="btn btn-secondary btn-clear-filters" id="btn-clear-lead-filters" title="Limpar todos os filtros">
+                <i data-lucide="rotate-ccw" style="width: 13px; height: 13px;"></i>
+                <span>Limpar filtros</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Main Layout: Table on Left + Selected Lead Panel on Right -->
+          <div class="leads-simplified-layout">
+            <div class="table-card leads-table-card">
+              <div class="table-wrapper">
+                <table class="data-table leads-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 36px;"><input type="checkbox" id="leads-select-all" title="Selecionar todos os leads"></th>
+                      <th>Nome</th>
+                      <th>Origem</th>
+                      <th>Status</th>
+                      <th>Agente</th>
+                      <th>Último contato</th>
+                      <th style="text-align: right;">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="leads-table-body"></tbody>
+                </table>
+              </div>
+
+              <!-- Pagination Footer -->
+              <div class="leads-pagination-footer">
+                <span class="pagination-info" id="leads-pagination-info">Mostrando 1 a 6 de 1.248 leads</span>
+                <div class="pagination-controls">
+                  <button class="pagination-btn" title="Anterior">‹</button>
+                  <button class="pagination-btn active">1</button>
+                  <button class="pagination-btn">2</button>
+                  <button class="pagination-btn">3</button>
+                  <span style="padding: 0 4px;">...</span>
+                  <button class="pagination-btn">208</button>
+                  <button class="pagination-btn" title="Próximo">›</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Detail Panel -->
+            <div class="lead-detail-panel-simplified" id="lead-detail-panel"></div>
+          </div>
+        </section>
+
+        <!-- ==============================================
+             4. CANAIS (SIMPLIFICADA)
+             ============================================== -->
+        <section class="view-panel" id="view-canais">
+          <div class="page-header" style="margin-bottom: 20px;">
+            <div class="page-title-group">
+              <h1 class="page-title">Canais</h1>
+              <p class="page-subtitle">Conecte seus canais de atendimento</p>
+            </div>
+          </div>
+
+          <!-- Channels Search & Actions Bar -->
+          <div class="channels-action-bar">
+            <div class="search-input-wrap channels-search-wrap">
+              <i data-lucide="search" style="width: 15px; height: 15px; color: var(--text-muted);"></i>
+              <input type="text" id="channels-search-input" placeholder="Buscar por nome, identificador ou agente...">
+            </div>
+
+            <div class="channels-action-right">
+              <div class="filter-dropdown-wrap">
+                <button class="btn btn-secondary" id="btn-channels-filter" style="font-size: 13px;">
+                  <i data-lucide="filter" style="width: 14px; height: 14px;"></i>
+                  <span>Todos os canais</span>
+                  <i data-lucide="chevron-down" style="width: 13px; height: 13px;"></i>
+                </button>
+              </div>
+
+              <button class="btn btn-primary" data-modal-target="modal-new-channel">
+                <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                Novo canal
+              </button>
+            </div>
+          </div>
+
+          <!-- Simplified Channels Table Card -->
+          <div class="table-card channels-table-card">
+            <div class="table-wrapper">
+              <table class="data-table channels-table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Agente</th>
+                    <th>Identificador</th>
+                    <th>Departamento</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="channels-table-body"></tbody>
+              </table>
+            </div>
+
+            <!-- Table Pagination Footer -->
+            <div class="channels-pagination-footer">
+              <span class="pagination-info" id="channels-pagination-info">1–4 de 4 canais</span>
+
+              <div class="pagination-controls">
+                <button class="pagination-btn" disabled title="Primeira página">«</button>
+                <button class="pagination-btn" disabled title="Página anterior">‹</button>
+                <button class="pagination-btn active">1</button>
+                <button class="pagination-btn" disabled title="Próxima página">›</button>
+                <button class="pagination-btn" disabled title="Última página">»</button>
+              </div>
+
+              <div class="pagination-page-size">
+                <span>Itens por página</span>
+                <select class="page-size-select">
+                  <option selected>10</option>
+                  <option>20</option>
+                  <option>50</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==============================================
+             2.1 EDITAR AGENTE (TELA DE EDIÇÃO DO AGENTE)
+             ============================================== -->
+        <section class="view-panel" id="view-editar-agente">
+          <div class="edit-agent-container">
+            <!-- Header Row -->
+            <div class="edit-agent-header-row">
+              <div class="edit-agent-title-box">
+                <button type="button" class="btn-back-nav btn-back-to-agents" title="Voltar para Agentes">
+                  <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+                  <span>Voltar para Agentes</span>
+                </button>
+                <div class="edit-agent-icon-badge">
+                  <i data-lucide="bot" style="width: 22px; height: 22px;"></i>
+                </div>
+                <div>
+                  <h1 class="edit-agent-title-text">Dados do agente</h1>
+                  <p class="edit-agent-subtitle-text">Visualize informações, faça treinamentos, ative integrações ou conecte os canais de atendimento</p>
+                </div>
+              </div>
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <button type="button" class="btn btn-secondary btn-sm btn-back-to-agents">Cancelar</button>
+                <button type="button" class="btn btn-primary btn-sm btn-save-agent">
+                  <i data-lucide="save" style="width:14px;height:14px;"></i> Salvar alterações
+                </button>
+              </div>
+            </div>
+
+            <!-- Two Column Layout: Sidebar + Main Tabbed Content -->
+            <div class="edit-agent-grid">
+              
+              <!-- LEFT SIDEBAR -->
+              <aside class="edit-agent-sidebar-card">
+                <div class="agent-sidebar-profile">
+                  <div class="agent-avatar-container">
+                    <div class="agent-avatar-circle" id="edit-agent-avatar-circle">P</div>
+                    <span class="agent-avatar-status-dot" title="Online"></span>
+                    <button type="button" class="agent-avatar-edit-badge" title="Alterar foto">
+                      <i data-lucide="camera" style="width:13px;height:13px;"></i>
+                    </button>
+                  </div>
+                  <h3 class="agent-sidebar-name" id="edit-agent-name-display">Pedro</h3>
+                  <span class="agent-sidebar-role" id="edit-agent-role-display">Vendedor em Loja Download</span>
+                  <span class="badge badge-dot badge-active" id="edit-agent-status-badge" style="font-size: 11.5px; padding: 4px 10px;">IA ativa</span>
+                </div>
+
+                <!-- Internal Sub-navigation -->
+                <!-- Internal Sub-navigation -->
+                <ul class="agent-internal-nav">
+                  <li>
+                    <button type="button" class="agent-internal-nav-btn active" data-agent-tab="perfil">
+                      <i data-lucide="user"></i>
+                      <span>Perfil</span>
+                    </button>
+                  </li>
+                  <li>
+                    <button type="button" class="agent-internal-nav-btn" data-agent-tab="conhecimento">
+                      <i data-lucide="book-open"></i>
+                      <span>Conhecimento</span>
+                    </button>
+                  </li>
+                  <li>
+                    <button type="button" class="agent-internal-nav-btn" data-agent-tab="canais">
+                      <i data-lucide="share-2"></i>
+                      <span>Canais</span>
+                    </button>
+                  </li>
+                  <li>
+                    <button type="button" class="agent-internal-nav-btn" data-agent-tab="configuracoes">
+                      <i data-lucide="settings"></i>
+                      <span>Configurações</span>
+                    </button>
+                  </li>
+                </ul>
+
+                <!-- Test AI Button -->
+                <button type="button" class="btn-sidebar-test-ai" id="btn-agent-test-ai" data-modal-target="modal-test-ai" onclick="window.openTestAiModal ? window.openTestAiModal() : null">
+                  <i data-lucide="flask-conical" style="width:15px;height:15px;"></i>
+                  <span>Teste sua IA</span>
+                </button>
+              </aside>
+
+              <!-- RIGHT CONTENT AREA -->
+              <div class="edit-agent-content-area">
+                
+                <!-- PANE 1: PERFIL -->
+                <div class="agent-tab-pane active" id="agent-tab-pane-perfil">
+                  <!-- Informações pessoais & Comunicação -->
+                  <div class="agent-config-card">
+                    <div class="agent-config-card-header">
+                      <div>
+                        <h3 class="agent-config-card-title">Perfil do agente</h3>
+                        <p class="agent-config-card-subtitle">Defina o nome, objetivo/função e o estilo de linguagem do agente.</p>
+                      </div>
+                    </div>
+
+                    <div class="settings-form-row" style="margin-bottom: 16px;">
+                      <!-- Nome do agente -->
+                      <div class="form-group">
+                        <label class="form-label" for="input-agent-name">Nome do agente</label>
+                        <input type="text" id="input-agent-name" class="form-input" value="Pedro" placeholder="Ex: Pedro, Atendente Virtual">
+                      </div>
+
+                      <!-- Objetivo / Função do agente -->
+                      <div class="form-group">
+                        <label class="form-label" for="input-agent-role">Objetivo / Função do agente</label>
+                        <input type="text" id="input-agent-role" class="form-input" value="Vendedor em Loja Download" placeholder="Ex: Vendedor Comercial, Atendente de Suporte">
+                      </div>
+                    </div>
+
+                    <!-- Comunicação (Tom de voz) -->
+                    <div class="form-group communication-tone-wrap" style="margin-bottom: 20px;">
+                      <span class="communication-tone-label">Comunicação</span>
+                      <div class="communication-tone-buttons">
+                        <button type="button" class="tone-btn" data-tone="formal">FORMAL</button>
+                        <button type="button" class="tone-btn active" data-tone="normal">NORMAL</button>
+                        <button type="button" class="tone-btn" data-tone="descontraida">DESCONTRAÍDA</button>
+                      </div>
+                    </div>
+
+                    <!-- Comportamento -->
+                    <div class="behavior-section-header">
+                      <div>
+                        <label class="form-label" style="margin-bottom: 2px;">Comportamento</label>
+                        <p style="font-size: 12.5px; color: var(--text-muted); margin: 0;">Descreva um pouco sobre como o agente deve se comportar durante a conversa.</p>
+                      </div>
+                      <a href="javascript:void(0)" class="behavior-history-link" onclick="alert('Histórico de versões: Última alteração feita hoje às 11:42')">
+                        <i data-lucide="history" style="width:13px;height:13px;"></i>
+                        <span>Histórico</span>
+                      </a>
+                    </div>
+
+                    <div class="behavior-textarea-container">
+                      <textarea id="agent-behavior-textarea" class="behavior-textarea" rows="8" placeholder="Ex. Seja extrovertido, na primeira interação procure saber o nome do usuário...">Você é o Pedro, atendente comercial especialista e atencioso da Loja Download. Seu objetivo é recepcionar os clientes com agilidade, tirar dúvidas sobre produtos do catálogo e encaminhar links de pagamento de forma clara e segura. Responda em português brasileiro de forma educada, precisa e amigável.</textarea>
+                      <div class="behavior-counter-bar">
+                        <span id="behavior-char-count">0/3000</span>
+                      </div>
+                    </div>
+
+                    <div class="agent-save-bar">
+                      <button type="button" class="btn btn-primary btn-save-agent">
+                        <i data-lucide="save" style="width: 14px; height: 14px;"></i>
+                        Salvar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- PANE 2: CONHECIMENTO (BASE DE CONHECIMENTO UNIFICADA) -->
+                <div class="agent-tab-pane" id="agent-tab-pane-conhecimento">
+                  <div class="agent-config-card">
+                    <div class="agent-config-card-header">
+                      <div>
+                        <h3 class="agent-config-card-title">Conhecimento do agente</h3>
+                        <p class="agent-config-card-subtitle">Adicione materiais e informações para treinar as respostas e a inteligência do atendente.</p>
+                      </div>
+                    </div>
+
+                    <!-- 4 Opções de tipo de conhecimento -->
+                    <div class="knowledge-options-grid">
+                      <button type="button" class="knowledge-type-btn" data-knowledge-type="texto">
+                        <div class="knowledge-type-icon"><i data-lucide="file-text" style="width:18px;height:18px;"></i></div>
+                        <span class="knowledge-type-label">Texto</span>
+                      </button>
+                      <button type="button" class="knowledge-type-btn" data-knowledge-type="site">
+                        <div class="knowledge-type-icon"><i data-lucide="globe" style="width:18px;height:18px;"></i></div>
+                        <span class="knowledge-type-label">Site / URL</span>
+                      </button>
+                      <button type="button" class="knowledge-type-btn active" data-knowledge-type="arquivos">
+                        <div class="knowledge-type-icon"><i data-lucide="upload-cloud" style="width:18px;height:18px;"></i></div>
+                        <span class="knowledge-type-label">Arquivos</span>
+                      </button>
+                      <button type="button" class="knowledge-type-btn" data-knowledge-type="faq">
+                        <div class="knowledge-type-icon"><i data-lucide="help-circle" style="width:18px;height:18px;"></i></div>
+                        <span class="knowledge-type-label">Perguntas e Respostas</span>
+                      </button>
+                    </div>
+
+                    <!-- Painéis de entrada conforme o tipo selecionado -->
+                    <div class="knowledge-input-panel">
+                      
+                      <!-- 1. TEXTO -->
+                      <div class="knowledge-input-form-pane" id="pane-knowledge-texto">
+                        <div class="form-group" style="margin-bottom: 12px;">
+                          <label class="form-label">Título da anotação / instrução</label>
+                          <input type="text" id="input-k-text-title" class="form-input" placeholder="Ex: Regras de Frete e Entregas">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 14px;">
+                          <label class="form-label">Conteúdo do texto</label>
+                          <textarea id="input-k-text-content" class="form-textarea" rows="4" placeholder="Cole aqui informações, políticas internas ou dados que a IA deve memorizar..."></textarea>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-sm" id="btn-add-k-text">
+                          <i data-lucide="plus" style="width:14px;height:14px;"></i> Adicionar conhecimento
+                        </button>
+                      </div>
+
+                      <!-- 2. SITE / URL -->
+                      <div class="knowledge-input-form-pane" id="pane-knowledge-site">
+                        <div class="form-group" style="margin-bottom: 10px;">
+                          <label class="form-label">URL da página ou site</label>
+                          <div style="display: flex; gap: 10px;">
+                            <input type="url" id="input-k-site-url" class="form-input" placeholder="https://lojadownload.com.br/duvidas-frequentes">
+                            <button type="button" class="btn btn-primary btn-sm" id="btn-add-k-site" style="white-space: nowrap;">
+                              <i data-lucide="plus" style="width:14px;height:14px;"></i> Indexar site
+                            </button>
+                          </div>
+                        </div>
+                        <span style="font-size: 12px; color: var(--text-muted);">A IA lerá o conteúdo textual da página e usará como base para responder dúvidas no WhatsApp.</span>
+                      </div>
+
+                      <!-- 3. ARQUIVOS (Ativo padrão) -->
+                      <div class="knowledge-input-form-pane active" id="pane-knowledge-arquivos">
+                        <div class="training-upload-dropzone" id="training-dropzone" style="margin-bottom: 0;">
+                          <div class="training-dropzone-icon">
+                            <i data-lucide="upload-cloud" style="width:24px;height:24px;"></i>
+                          </div>
+                          <div class="training-dropzone-title">Clique para fazer upload ou arraste arquivos aqui</div>
+                          <div class="training-dropzone-sub">Suporta PDF, TXT, DOCX ou CSV de até 25MB</div>
+                        </div>
+                      </div>
+
+                      <!-- 4. PERGUNTAS E RESPOSTAS (P&R) -->
+                      <div class="knowledge-input-form-pane" id="pane-knowledge-faq">
+                        <div class="form-group" style="margin-bottom: 12px;">
+                          <label class="form-label">Pergunta frequente do cliente</label>
+                          <input type="text" id="input-k-faq-q" class="form-input" placeholder="Ex: Qual o prazo de garantia dos produtos?">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 14px;">
+                          <label class="form-label">Resposta exata da IA</label>
+                          <textarea id="input-k-faq-a" class="form-textarea" rows="3" placeholder="Ex: Todos os produtos possuem garantia total de 90 dias com troca imediata."></textarea>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-sm" id="btn-add-k-faq">
+                          <i data-lucide="plus" style="width:14px;height:14px;"></i> Adicionar P&R
+                        </button>
+                      </div>
+
+                    </div>
+
+                    <!-- LISTA DE CONHECIMENTOS ADICIONADOS -->
+                    <div class="knowledge-list-header">
+                      <h4 class="knowledge-list-title">
+                        <span>Conhecimentos adicionados</span>
+                        <span class="badge" id="knowledge-count-badge" style="background: var(--bg-card-alt); font-size: 11px;">4</span>
+                      </h4>
+                    </div>
+
+                    <div class="knowledge-items-container" id="knowledge-items-list">
+                      <!-- Item 1: Arquivo PDF -->
+                      <div class="knowledge-item-card" data-knowledge-id="k1">
+                        <div class="knowledge-item-left">
+                          <div class="knowledge-item-icon-box arquivo" title="Arquivo">
+                            <i data-lucide="file-text" style="width:18px;height:18px;"></i>
+                          </div>
+                          <div class="knowledge-item-details">
+                            <div class="knowledge-item-name">catalogo_produtos_zapchat_2026.pdf</div>
+                            <div class="knowledge-item-meta">Arquivo PDF • 1.8 MB • 14 páginas</div>
+                          </div>
+                        </div>
+                        <div class="knowledge-item-right">
+                          <span class="badge badge-dot badge-active">Ativo</span>
+                          <div class="knowledge-item-actions">
+                            <button type="button" class="btn-knowledge-action btn-edit-knowledge" title="Editar">
+                              <i data-lucide="edit-3" style="width:13px;height:13px;"></i>
+                            </button>
+                            <button type="button" class="btn-knowledge-action delete btn-delete-knowledge" title="Excluir">
+                              <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Item 2: Arquivo DOCX -->
+                      <div class="knowledge-item-card" data-knowledge-id="k2">
+                        <div class="knowledge-item-left">
+                          <div class="knowledge-item-icon-box arquivo" title="Arquivo">
+                            <i data-lucide="file-text" style="width:18px;height:18px;"></i>
+                          </div>
+                          <div class="knowledge-item-details">
+                            <div class="knowledge-item-name">politica_trocas_e_reembolso.docx</div>
+                            <div class="knowledge-item-meta">Arquivo DOCX • 320 KB</div>
+                          </div>
+                        </div>
+                        <div class="knowledge-item-right">
+                          <span class="badge badge-dot badge-active">Ativo</span>
+                          <div class="knowledge-item-actions">
+                            <button type="button" class="btn-knowledge-action btn-edit-knowledge" title="Editar">
+                              <i data-lucide="edit-3" style="width:13px;height:13px;"></i>
+                            </button>
+                            <button type="button" class="btn-knowledge-action delete btn-delete-knowledge" title="Excluir">
+                              <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Item 3: Site / URL -->
+                      <div class="knowledge-item-card" data-knowledge-id="k3">
+                        <div class="knowledge-item-left">
+                          <div class="knowledge-item-icon-box site" title="Site / URL">
+                            <i data-lucide="globe" style="width:18px;height:18px;"></i>
+                          </div>
+                          <div class="knowledge-item-details">
+                            <div class="knowledge-item-name">https://lojadownload.com.br/duvidas-frequentes</div>
+                            <div class="knowledge-item-meta">Site / URL • Sincronizado há 2 horas</div>
+                          </div>
+                        </div>
+                        <div class="knowledge-item-right">
+                          <span class="badge badge-dot badge-active">Ativo</span>
+                          <div class="knowledge-item-actions">
+                            <button type="button" class="btn-knowledge-action btn-edit-knowledge" title="Editar">
+                              <i data-lucide="edit-3" style="width:13px;height:13px;"></i>
+                            </button>
+                            <button type="button" class="btn-knowledge-action delete btn-delete-knowledge" title="Excluir">
+                              <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Item 4: Perguntas e Respostas -->
+                      <div class="knowledge-item-card" data-knowledge-id="k4">
+                        <div class="knowledge-item-left">
+                          <div class="knowledge-item-icon-box faq" title="Perguntas e Respostas">
+                            <i data-lucide="help-circle" style="width:18px;height:18px;"></i>
+                          </div>
+                          <div class="knowledge-item-details">
+                            <div class="knowledge-item-name">Qual o prazo de envio e código de rastreio?</div>
+                            <div class="knowledge-item-meta">Perguntas e Respostas • 1 par cadastrado</div>
+                          </div>
+                        </div>
+                        <div class="knowledge-item-right">
+                          <span class="badge badge-dot badge-active">Ativo</span>
+                          <div class="knowledge-item-actions">
+                            <button type="button" class="btn-knowledge-action btn-edit-knowledge" title="Editar">
+                              <i data-lucide="edit-3" style="width:13px;height:13px;"></i>
+                            </button>
+                            <button type="button" class="btn-knowledge-action delete btn-delete-knowledge" title="Excluir">
+                              <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                <!-- PANE 3: CANAIS -->
+                <div class="agent-tab-pane" id="agent-tab-pane-canais">
+                  <div class="agent-config-card">
+                    <div class="agent-config-card-header">
+                      <div>
+                        <h3 class="agent-config-card-title">Canais de Atendimento Vinculados</h3>
+                        <p class="agent-config-card-subtitle">Ative ou pause a atuação deste agente em cada um dos seus canais.</p>
+                      </div>
+                    </div>
+                    <div class="agent-channels-grid">
+                      <div class="agent-channel-card">
+                        <div class="agent-channel-card-left">
+                          <div class="agent-channel-icon-wrap" style="background:#E6F7F0; color:#25D366;">
+                            <i data-lucide="phone" style="width:20px;height:20px;"></i>
+                          </div>
+                          <div>
+                            <div class="agent-channel-title">WhatsApp Oficial API</div>
+                            <div class="agent-channel-status">+55 (11) 99765-4321 • Conectado</div>
+                          </div>
+                        </div>
+                        <label class="switch-toggle"><input type="checkbox" checked><span class="switch-slider"></span></label>
+                      </div>
+                      <div class="agent-channel-card">
+                        <div class="agent-channel-card-left">
+                          <div class="agent-channel-icon-wrap" style="background:#FDE8E8; color:#E1306C;">
+                            <i data-lucide="instagram" style="width:20px;height:20px;"></i>
+                          </div>
+                          <div>
+                            <div class="agent-channel-title">Instagram Direct</div>
+                            <div class="agent-channel-status">@lojaexemplo • Conectado</div>
+                          </div>
+                        </div>
+                        <label class="switch-toggle"><input type="checkbox" checked><span class="switch-slider"></span></label>
+                      </div>
+                      <div class="agent-channel-card">
+                        <div class="agent-channel-card-left">
+                          <div class="agent-channel-icon-wrap" style="background:#EFF6FF; color:#3B82F6;">
+                            <i data-lucide="message-square" style="width:20px;height:20px;"></i>
+                          </div>
+                          <div>
+                            <div class="agent-channel-title">Chat no Site (Widget)</div>
+                            <div class="agent-channel-status">Ativo na página inicial</div>
+                          </div>
+                        </div>
+                        <label class="switch-toggle"><input type="checkbox" checked><span class="switch-slider"></span></label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- PANE 7: PREFERÊNCIAS DE ATENDIMENTO (SIMPLIFICADA MVP) -->
+                <div class="agent-tab-pane" id="agent-tab-pane-configuracoes">
+                  <div class="agent-config-card">
+                    <div class="agent-config-card-header">
+                      <div>
+                        <h3 class="agent-config-card-title">Preferências de atendimento</h3>
+                        <p class="agent-config-card-subtitle">Defina o tempo de resposta do agente e o encaminhamento para a equipe humana.</p>
+                      </div>
+                    </div>
+
+                    <!-- Tempo de resposta -->
+                    <div class="form-group" style="margin-bottom: 24px;">
+                      <label class="form-label" for="agent-response-time-select">Tempo de resposta</label>
+                      <select id="agent-response-time-select" class="form-select" style="max-width: 480px;">
+                        <option value="natural" selected>Natural (2–4 segundos)</option>
+                        <option value="immediate">Imediatamente</option>
+                      </select>
+                      <span style="display: block; margin-top: 6px; font-size: 12px; color: var(--text-muted);">
+                        O modo natural simula digitação humana no WhatsApp, proporcionando uma experiência mais fluida.
+                      </span>
+                    </div>
+
+                    <!-- Transferir para humano -->
+                    <div class="switch-control-group" style="padding-top: 20px; border-top: 1px solid var(--border-light); margin-bottom: 12px;">
+                      <div class="switch-info">
+                        <span class="switch-title"><i data-lucide="user-check" style="width:15px;height:15px;color:var(--primary);"></i> Transferir para humano</span>
+                        <span class="switch-desc">Encaminhar o atendimento para um atendente quando o cliente solicitar ou a IA não souber responder.</span>
+                      </div>
+                      <label class="switch-toggle"><input type="checkbox" checked><span class="switch-slider"></span></label>
+                    </div>
+
+                    <div class="agent-save-bar">
+                      <button type="button" class="btn btn-primary btn-save-agent">
+                        <i data-lucide="save" style="width: 14px; height: 14px;"></i>
+                        Salvar alterações
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==============================================
+             5. CONVERSAS (SIMPLIFICADA)
+             ============================================== -->
+        <section class="view-panel" id="view-conversas">
+          <div class="page-header" style="margin-bottom: 16px;">
+            <div class="page-title-group">
+              <h1 class="page-title">Conversas</h1>
+            </div>
+          </div>
+
+          <!-- 3-Column Chat Inbox Layout (Simplified & Full-Height) -->
+          <div class="conversas-simplified-layout">
+            <!-- 1. Left: Threads list -->
+            <div class="chat-list-card">
+              <div class="chat-search-bar">
+                <div class="chat-search-input-wrap" id="chat-search-wrap">
+                  <i data-lucide="search" class="chat-search-icon"></i>
+                  <input type="text" id="chat-search-input" placeholder="Buscar conversas..." autocomplete="off" spellcheck="false">
+                  <button type="button" class="chat-search-clear-btn" id="chat-search-clear-btn" title="Limpar busca" aria-label="Limpar busca">
+                    <i data-lucide="x" style="width: 12px; height: 12px;"></i>
+                  </button>
+                </div>
+                <button class="chat-filter-btn" id="chat-filter-btn" title="Filtros" aria-label="Filtros">
+                  <i data-lucide="sliders-horizontal" style="width: 15px; height: 15px;"></i>
+                </button>
+              </div>
+
+              <div class="chat-simplified-tabs">
+                <button class="chat-tab-pill active" data-tab="all">
+                  Todas <span class="chat-tab-count">7</span>
+                </button>
+                <button class="chat-tab-pill" data-tab="unread">
+                  Não lidas <span class="chat-tab-count purple">3</span>
+                </button>
+                <button class="chat-tab-pill" data-tab="ongoing">
+                  Em atendimento <span class="chat-tab-count gray">2</span>
+                </button>
+              </div>
+
+              <div class="chat-threads-container" id="chat-threads-container"></div>
+            </div>
+
+            <!-- 2. Center: Chat Arena -->
+            <div class="chat-arena-card">
+              <div class="chat-arena-header" id="chat-arena-header"></div>
+              
+              <!-- Messages Scroll View -->
+              <div class="chat-messages-scroll" id="chat-messages-scroll"></div>
+
+              <!-- AI Banner inside arena -->
+              <div class="ai-attending-strip" id="ai-attending-strip">
+                <div class="ai-strip-left">
+                  <div class="ai-strip-bot-icon">
+                    <i data-lucide="bot" style="width: 16px; height: 16px;"></i>
+                  </div>
+                  <span class="ai-strip-text"><strong>Pedro</strong> está atendendo esta conversa</span>
+                </div>
+                <button class="btn btn-secondary btn-sm ai-strip-assume-btn" id="btn-strip-assume">
+                  <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
+                  Assumir atendimento
+                </button>
+              </div>
+
+              <!-- Input bar -->
+              <div class="chat-input-container-simplified">
+                <div class="chat-input-strip" id="chat-input-strip">
+                  <input type="text" id="chat-input-textarea" class="chat-input-field" placeholder="A IA está respondendo. Você pode assumir o atendimento para enviar mensagens.">
+                  <div class="chat-input-actions">
+                    <button class="tool-icon-btn" title="Emojis"><i data-lucide="smile" style="width: 18px; height: 18px;"></i></button>
+                    <button class="send-simplified-btn" id="btn-send-chat-msg" title="Enviar Mensagem">
+                      <i data-lucide="send" style="width: 15px; height: 15px;"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Right: Contact Profile & AI Summary -->
+            <div class="chat-profile-column" id="chat-profile-column">
+              <div class="chat-profile-drawer-header">
+                <span class="drawer-header-title">Detalhes do Contato</span>
+                <button type="button" class="btn-action-round" id="btn-close-chat-profile" title="Fechar painel" aria-label="Fechar painel">
+                  <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                </button>
+              </div>
+
+              <!-- Card 1: Contato -->
+              <div class="profile-section-card" id="chat-profile-card"></div>
+
+              <!-- Card 2: Atendimento -->
+              <div class="profile-section-card" id="chat-attendance-card"></div>
+
+              <!-- Card 3: Resumo da IA -->
+              <div class="profile-section-card" id="chat-ai-summary-card"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==============================================
+             6. CONFIGURAÇÕES
+             ============================================== -->
+        <section class="view-panel" id="view-configuracoes">
+          <div class="page-header">
+            <div class="page-title-group">
+              <span class="breadcrumb-tag">Sistema & Preferências</span>
+              <h1 class="page-title">Configurações</h1>
+              <p class="page-subtitle">Gerencie o perfil da sua empresa, faturamento e preferências de notificações.</p>
+            </div>
+          </div>
+
+          <div class="settings-container">
+            <!-- Left Navigation Menu -->
+            <aside class="settings-nav-card">
+              <ul class="settings-nav-list" id="settings-nav-tabs">
+                <li class="settings-nav-item">
+                  <button type="button" class="settings-nav-btn active" data-settings-tab="perfil">
+                    <i data-lucide="user"></i>
+                    <span>Perfil e Conta</span>
+                  </button>
+                </li>
+                <li class="settings-nav-item">
+                  <button type="button" class="settings-nav-btn" data-settings-tab="faturamento">
+                    <i data-lucide="credit-card"></i>
+                    <span>Plano e Faturamento</span>
+                  </button>
+                </li>
+                <li class="settings-nav-item">
+                  <button type="button" class="settings-nav-btn" data-settings-tab="notificacoes">
+                    <i data-lucide="bell"></i>
+                    <span>Notificações</span>
+                  </button>
+                </li>
+              </ul>
+            </aside>
+
+            <!-- Right Content Panels -->
+            <div class="settings-panes-wrapper">
+
+              <!-- ==========================================
+                   PANE 1: PERFIL E CONTA
+                   ========================================== -->
+              <div class="settings-pane active" id="settings-pane-perfil">
+                <!-- Card 1: Informações Gerais -->
+                <div class="settings-card">
+                  <div class="settings-card-header">
+                    <div class="settings-card-title-group">
+                      <h3 class="settings-card-title"><i data-lucide="building-2" style="color:var(--primary);width:18px;height:18px;"></i> Dados da Empresa</h3>
+                      <p class="settings-card-subtitle">Estas informações serão utilizadas nas faturas e no cabeçalho das mensagens automáticas.</p>
+                    </div>
+                  </div>
+
+                  <!-- Avatar / Logo da Empresa -->
+                  <div class="profile-avatar-row">
+                    <div class="profile-avatar-preview">
+                      <span>LE</span>
+                    </div>
+                    <div class="profile-avatar-actions">
+                      <div class="profile-avatar-btns">
+                        <button type="button" class="btn btn-secondary btn-sm"><i data-lucide="upload" style="width:13px;height:13px;"></i> Alterar logo</button>
+                        <button type="button" class="btn btn-ghost btn-sm" style="color:var(--status-danger);"><i data-lucide="trash-2" style="width:13px;height:13px;"></i> Remover</button>
+                      </div>
+                      <span class="profile-avatar-hint">Formatos suportados: PNG, JPG ou SVG. Tamanho máx. 2MB.</span>
+                    </div>
+                  </div>
+
+                  <!-- Inputs -->
+                  <div class="settings-form-row">
+                    <div class="form-group">
+                      <label class="form-label">Nome Fantasia / Marca</label>
+                      <input type="text" class="form-input" value="Loja Exemplo">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Razão Social</label>
+                      <input type="text" class="form-input" value="Loja Exemplo Comércio & Serviços Digitais LTDA">
+                    </div>
+                  </div>
+
+                  <div class="settings-form-row">
+                    <div class="form-group">
+                      <label class="form-label">CNPJ ou CPF</label>
+                      <input type="text" class="form-input" value="34.567.890/0001-12">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">E-mail Principal da Conta</label>
+                      <input type="email" class="form-input" value="contato@lojaexemplo.com.br">
+                    </div>
+                  </div>
+
+                  <div class="settings-form-row">
+                    <div class="form-group">
+                      <label class="form-label">WhatsApp Oficial de Contato</label>
+                      <input type="tel" class="form-input" value="+55 (11) 98765-4321">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Website / E-commerce</label>
+                      <input type="url" class="form-input" value="https://lojaexemplo.com.br">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Card 2: Horário de Atendimento e Fuso Horário -->
+                <div class="settings-card">
+                  <div class="settings-card-header">
+                    <div class="settings-card-title-group">
+                      <h3 class="settings-card-title"><i data-lucide="clock" style="color:var(--primary);width:18px;height:18px;"></i> Horário de Atendimento & Regionalização</h3>
+                      <p class="settings-card-subtitle">Configure o fuso horário e defina o que a IA deve responder quando o atendimento humano não estiver disponível.</p>
+                    </div>
+                  </div>
+
+                  <div class="settings-form-row">
+                    <div class="form-group">
+                      <label class="form-label">Fuso Horário Padrão</label>
+                      <select class="form-select">
+                        <option selected>América/São Paulo (GMT-03:00 - Horário de Brasília)</option>
+                        <option>América/Manaus (GMT-04:00)</option>
+                        <option>América/Recife (GMT-03:00)</option>
+                        <option>Europa/Lisboa (GMT+01:00)</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Idioma do Sistema</label>
+                      <select class="form-select">
+                        <option selected>Português (Brasil) - pt-BR</option>
+                        <option>English (US) - en-US</option>
+                        <option>Español - es-ES</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Horário de Expediente da Equipe Humana</label>
+                    <input type="text" class="form-input" value="Segunda a Sexta-feira das 08:00 às 18:00 | Sábados das 09:00 às 13:00">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Mensagem Fora do Horário Comercial</label>
+                    <textarea class="form-textarea" rows="2">Nosso time humano está descansando no momento! Mas eu sou a IA da Loja Exemplo e posso tirar suas dúvidas, passar cotações e agendar seu atendimento agora mesmo.</textarea>
+                  </div>
+                </div>
+
+                <!-- Card 3: Segurança e Acesso -->
+                <div class="settings-card">
+                  <div class="settings-card-header">
+                    <div class="settings-card-title-group">
+                      <h3 class="settings-card-title"><i data-lucide="shield-check" style="color:var(--primary);width:18px;height:18px;"></i> Segurança & Acesso à Conta</h3>
+                      <p class="settings-card-subtitle">Controle as credenciais de acesso e sessões conectadas.</p>
+                    </div>
+                  </div>
+
+                  <div class="settings-form-row">
+                    <div class="form-group">
+                      <label class="form-label">Nova Senha</label>
+                      <input type="password" class="form-input" placeholder="••••••••••••">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Confirmar Nova Senha</label>
+                      <input type="password" class="form-input" placeholder="••••••••••••">
+                    </div>
+                  </div>
+
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:8px;">
+                    <span style="font-size:12px; color:var(--text-muted);"><i data-lucide="laptop" style="width:13px;height:13px;vertical-align:middle;display:inline-block;"></i> Sessão ativa: macOS Chrome • São Paulo, SP</span>
+                    <button type="button" class="btn btn-secondary btn-sm">Atualizar senha</button>
+                  </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 4px;">
+                  <button type="button" class="btn btn-primary btn-save-settings">
+                    <i data-lucide="save" style="width: 15px; height: 15px;"></i>
+                    Salvar alterações de perfil
+                  </button>
+                </div>
+              </div>
+
+              <!-- ==========================================
+                   PANE 2: PLANO E FATURAMENTO
+                   ========================================== -->
+              <div class="settings-pane" id="settings-pane-faturamento">
+                <!-- Banner do Plano Ativo -->
+                <div class="billing-plan-banner">
+                  <div class="billing-plan-info">
+                    <div class="billing-plan-badge">
+                      <i data-lucide="crown" style="width:14px;height:14px;"></i> Plano Atual Ativo
+                    </div>
+                    <h2 class="billing-plan-title">Plano Pro Business</h2>
+                    <p class="billing-plan-price"><strong>R$ 297,00</strong> / mês • Renovação automática em <strong>18 de Setembro de 2026</strong></p>
+                  </div>
+                  <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-primary" id="btn-upgrade-plan"><i data-lucide="zap" style="width:14px;height:14px;"></i> Fazer Upgrade de Plano</button>
+                    <button type="button" class="btn btn-secondary" id="btn-manage-sub">Gerenciar Assinatura</button>
+                  </div>
+                </div>
+
+                <!-- Uso do Plano -->
+                <div class="settings-card">
+                  <div class="settings-card-header">
+                    <div class="settings-card-title-group">
+                      <h3 class="settings-card-title"><i data-lucide="bar-chart-3" style="color:var(--primary);width:18px;height:18px;"></i> Uso do Plano</h3>
+                      <p class="settings-card-subtitle">Período de faturamento: 18/08/2026 até 18/09/2026.</p>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" data-modal-target="modal-buy-messages" id="btn-comprar-mensagens-extras">
+                      <i data-lucide="plus-circle" style="width:14px;height:14px;"></i> Comprar mensagens extras
+                    </button>
+                  </div>
+
+                  <div class="usage-meter-group">
+                    <!-- Mensagens -->
+                    <div class="usage-meter-item">
+                      <div class="usage-meter-header">
+                        <span class="usage-meter-label"><i data-lucide="message-square" style="width:14px;height:14px;vertical-align:middle;display:inline-block;color:var(--primary);margin-right:4px;"></i> Mensagens</span>
+                        <span class="usage-meter-numbers"><strong>4.920</strong> / 10.000 mensagens (49.2%)</span>
+                      </div>
+                      <div class="usage-progress-track">
+                        <div class="usage-progress-bar" style="width: 49.2%;"></div>
+                      </div>
+                    </div>
+
+                    <!-- Agentes ativos -->
+                    <div class="usage-meter-item">
+                      <div class="usage-meter-header">
+                        <span class="usage-meter-label"><i data-lucide="bot" style="width:14px;height:14px;vertical-align:middle;display:inline-block;color:var(--primary);margin-right:4px;"></i> Agentes ativos</span>
+                        <span class="usage-meter-numbers"><strong>3</strong> de 5 inclusos</span>
+                      </div>
+                      <div class="usage-progress-track">
+                        <div class="usage-progress-bar" style="width: 60%; background: #3B82F6;"></div>
+                      </div>
+                    </div>
+
+                    <!-- Números conectados -->
+                    <div class="usage-meter-item">
+                      <div class="usage-meter-header">
+                        <span class="usage-meter-label"><i data-lucide="share-2" style="width:14px;height:14px;vertical-align:middle;display:inline-block;color:var(--primary);margin-right:4px;"></i> Números conectados</span>
+                        <span class="usage-meter-numbers"><strong>2</strong> de 3 inclusos</span>
+                      </div>
+                      <div class="usage-progress-track">
+                        <div class="usage-progress-bar" style="width: 66.6%; background: #8B5CF6;"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Forma de Pagamento -->
+                <div class="settings-card">
+                  <div class="settings-card-header">
+                    <div class="settings-card-title-group">
+                      <h3 class="settings-card-title"><i data-lucide="credit-card" style="color:var(--primary);width:18px;height:18px;"></i> Forma de Pagamento</h3>
+                      <p class="settings-card-subtitle">Método padrão para cobrança recorrente da assinatura.</p>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-change-card"><i data-lucide="plus" style="width:13px;height:13px;"></i> Alterar Cartão</button>
+                  </div>
+
+                  <div class="payment-card-preview">
+                    <div class="payment-card-left">
+                      <div class="payment-card-icon">MC</div>
+                      <div class="payment-card-details">
+                        <span class="payment-card-title">Mastercard final •••• 4821</span>
+                        <span class="payment-card-subtitle">Expira em 08/2029 • Titular: Rafael Mota</span>
+                      </div>
+                    </div>
+                    <span class="badge badge-active">Cartão Padrão</span>
+                  </div>
+                </div>
+
+                <!-- Histórico de Cobranças -->
+                <div class="settings-card" style="padding: 0; overflow: hidden;">
+                  <div style="padding: 16px 20px; border-bottom: 1px solid var(--border);">
+                    <h3 class="settings-card-title" style="margin:0;"><i data-lucide="receipt" style="color:var(--primary);width:16px;height:16px;"></i> Histórico de Cobranças</h3>
+                  </div>
+                  <div class="table-wrapper">
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Data</th>
+                          <th>Referência / Descrição</th>
+                          <th>Valor</th>
+                          <th>Status</th>
+                          <th style="text-align: right;">Comprovante</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>18/08/2026</td>
+                          <td>Assinatura ZapChat Plano Pro Mensal</td>
+                          <td><strong>R$ 297,00</strong></td>
+                          <td><span class="badge badge-active">Pago</span></td>
+                          <td style="text-align: right;"><button type="button" class="btn btn-ghost btn-sm"><i data-lucide="download" style="width:13px;height:13px;"></i> PDF / NF-e</button></td>
+                        </tr>
+                        <tr>
+                          <td>18/07/2026</td>
+                          <td>Assinatura ZapChat Plano Pro Mensal</td>
+                          <td><strong>R$ 297,00</strong></td>
+                          <td><span class="badge badge-active">Pago</span></td>
+                          <td style="text-align: right;"><button type="button" class="btn btn-ghost btn-sm"><i data-lucide="download" style="width:13px;height:13px;"></i> PDF / NF-e</button></td>
+                        </tr>
+                        <tr>
+                          <td>04/07/2026</td>
+                          <td>Recarga de Mensagens Extras (+5.000 msgs)</td>
+                          <td><strong>R$ 89,00</strong></td>
+                          <td><span class="badge badge-active">Pago</span></td>
+                          <td style="text-align: right;"><button type="button" class="btn btn-ghost btn-sm"><i data-lucide="download" style="width:13px;height:13px;"></i> PDF / NF-e</button></td>
+                        </tr>
+                        <tr>
+                          <td>18/06/2026</td>
+                          <td>Assinatura ZapChat Plano Pro Mensal</td>
+                          <td><strong>R$ 297,00</strong></td>
+                          <td><span class="badge badge-active">Pago</span></td>
+                          <td style="text-align: right;"><button type="button" class="btn btn-ghost btn-sm"><i data-lucide="download" style="width:13px;height:13px;"></i> PDF / NF-e</button></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ==========================================
+                   PANE 3: NOTIFICAÇÕES (MVP SIMPLIFICADO)
+                   ========================================== -->
+              <div class="settings-pane" id="settings-pane-notificacoes">
+                <div class="settings-card">
+                  <div class="settings-card-header">
+                    <div class="settings-card-title-group">
+                      <h3 class="settings-card-title">
+                        <i data-lucide="bell" style="color:var(--primary);width:18px;height:18px;"></i>
+                        Preferências de Notificações
+                      </h3>
+                      <p class="settings-card-subtitle">Escolha como e quando você deseja ser avisado sobre novas interações e status do sistema.</p>
+                    </div>
+                  </div>
+
+                  <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- 1. Som de nova mensagem -->
+                    <div class="switch-control-group">
+                      <div class="switch-info">
+                        <span class="switch-title">
+                          <i data-lucide="volume-2" style="width:15px;height:15px;color:var(--primary);"></i>
+                          Som de nova mensagem
+                        </span>
+                        <span class="switch-desc">Tocar áudio curto quando um cliente enviar uma mensagem nova.</span>
+                      </div>
+                      <label class="switch-toggle">
+                        <input type="checkbox" checked>
+                        <span class="switch-slider"></span>
+                      </label>
+                    </div>
+
+                    <!-- 2. Notificação no navegador -->
+                    <div class="switch-control-group">
+                      <div class="switch-info">
+                        <span class="switch-title">
+                          <i data-lucide="monitor" style="width:15px;height:15px;color:var(--primary);"></i>
+                          Notificação no navegador
+                        </span>
+                        <span class="switch-desc">Exibir notificação na tela mesmo quando a aba do ZapChat estiver minimizada.</span>
+                      </div>
+                      <label class="switch-toggle">
+                        <input type="checkbox" checked>
+                        <span class="switch-slider"></span>
+                      </label>
+                    </div>
+
+                    <!-- 3. Avisar quando pedirem atendimento humano -->
+                    <div class="switch-control-group">
+                      <div class="switch-info">
+                        <span class="switch-title">
+                          <i data-lucide="user-check" style="width:15px;height:15px;color:var(--primary);"></i>
+                          Avisar quando pedirem atendimento humano
+                        </span>
+                        <span class="switch-desc">Notificar imediatamente a equipe quando o cliente solicitar transbordo humano.</span>
+                      </div>
+                      <label class="switch-toggle">
+                        <input type="checkbox" checked>
+                        <span class="switch-slider"></span>
+                      </label>
+                    </div>
+
+                    <!-- 4. Avisar se o WhatsApp desconectar -->
+                    <div class="switch-control-group">
+                      <div class="switch-info">
+                        <span class="switch-title">
+                          <i data-lucide="wifi-off" style="width:15px;height:15px;color:var(--status-warning);"></i>
+                          Avisar se o WhatsApp desconectar
+                        </span>
+                        <span class="switch-desc">Alerta de emergência caso seu canal perca a sincronização ou conexão com o celular.</span>
+                      </div>
+                      <label class="switch-toggle">
+                        <input type="checkbox" checked>
+                        <span class="switch-slider"></span>
+                      </label>
+                    </div>
+
+                    <!-- 5. Avisar ao atingir 80% do limite do plano -->
+                    <div class="switch-control-group">
+                      <div class="switch-info">
+                        <span class="switch-title">
+                          <i data-lucide="alert-circle" style="width:15px;height:15px;color:var(--primary);"></i>
+                          Avisar ao atingir 80% do limite do plano
+                        </span>
+                        <span class="switch-desc">Aviso preventivo para garantir que seu atendimento continue ativo sem interrupções.</span>
+                      </div>
+                      <label class="switch-toggle">
+                        <input type="checkbox" checked>
+                        <span class="switch-slider"></span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 4px;">
+                  <button type="button" class="btn btn-primary btn-save-settings">
+                    <i data-lucide="save" style="width: 15px; height: 15px;"></i>
+                    Salvar preferências de notificações
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- ==============================================
+             7. SUPORTE & AJUDA (CENTRAL DE CHAMADOS)
+             ============================================== -->
+        <section class="view-panel" id="view-suporte">
+          <div class="suporte-view-wrapper">
+            <div class="suporte-header-section">
+              <span class="suporte-eyebrow">PAINEL DO CLIENTE</span>
+              <h1 class="suporte-main-title">Suporte</h1>
+
+              <div class="suporte-header-row">
+                <div class="suporte-header-info">
+                  <h2 class="suporte-subtitle-main">Como podemos ajudar?</h2>
+                  <p class="suporte-subtitle-desc">Abra chamados e acompanhe todas as solicitações da sua empresa.</p>
+                </div>
+                <button type="button" class="btn-novo-ticket" data-modal-target="modal-new-ticket" id="btn-open-new-ticket" onclick="window.openModal ? window.openModal('modal-new-ticket') : document.getElementById('modal-new-ticket')?.classList.add('open')">
+                  Novo ticket
+                </button>
+              </div>
+            </div>
+
+            <!-- 4 Metric Cards -->
+            <div class="suporte-stats-grid">
+              <div class="suporte-stat-card">
+                <div class="suporte-stat-header">
+                  <span class="suporte-stat-label">Em aberto</span>
+                  <div class="suporte-stat-icon-wrap">
+                    <i data-lucide="folder"></i>
+                  </div>
+                </div>
+                <div class="suporte-stat-value" id="stat-tickets-open">0</div>
+              </div>
+
+              <div class="suporte-stat-card">
+                <div class="suporte-stat-header">
+                  <span class="suporte-stat-label">Técnicos</span>
+                  <div class="suporte-stat-icon-wrap">
+                    <i data-lucide="pen-tool"></i>
+                  </div>
+                </div>
+                <div class="suporte-stat-value" id="stat-tickets-tech">0</div>
+              </div>
+
+              <div class="suporte-stat-card">
+                <div class="suporte-stat-header">
+                  <span class="suporte-stat-label">Comerciais</span>
+                  <div class="suporte-stat-icon-wrap">
+                    <i data-lucide="briefcase"></i>
+                  </div>
+                </div>
+                <div class="suporte-stat-value" id="stat-tickets-comm">0</div>
+              </div>
+
+              <div class="suporte-stat-card">
+                <div class="suporte-stat-header">
+                  <span class="suporte-stat-label">Total</span>
+                  <div class="suporte-stat-icon-wrap">
+                    <i data-lucide="ticket"></i>
+                  </div>
+                </div>
+                <div class="suporte-stat-value" id="stat-tickets-total">0</div>
+              </div>
+            </div>
+
+            <!-- Main Container: Empty state or tickets table -->
+            <div class="suporte-main-card">
+              <!-- Empty State (matching Screenshot 1) -->
+              <div class="suporte-empty-state" id="suporte-empty-state">
+                <div class="suporte-empty-icon">
+                  <i data-lucide="headphones"></i>
+                </div>
+                <h3 class="suporte-empty-title">Nenhum ticket aberto</h3>
+                <p class="suporte-empty-desc">Quando precisar, nossa equipe estará a um clique de distância.</p>
+              </div>
+
+              <!-- Tickets Table (visible when tickets exist) -->
+              <div class="suporte-tickets-table-wrap" id="suporte-tickets-table-wrap" style="display: none;">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Protocolo</th>
+                      <th>Tipo</th>
+                      <th>Título / Resumo</th>
+                      <th>Abertura</th>
+                      <th>Status</th>
+                      <th style="text-align: right;">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody id="suporte-tickets-tbody">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Modals -->
+  <!-- 1. Modal Novo Agente -->
+  <div class="modal-backdrop" id="modal-new-agent">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Criar Novo Agente</h3>
+        <button class="modal-close">✕</button>
+      </div>
+      <form id="form-new-agent">
+        <div class="form-group">
+          <label class="form-label">Nome do Agente</label>
+          <input type="text" id="agent-input-name" class="form-input" placeholder="Ex: Lucas Suporte" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Objetivo / Especialidade</label>
+          <input type="text" id="agent-input-role" class="form-input" placeholder="Ex: Qualificação e agendamento de vendas" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Canal de Atendimento</label>
+          <select id="agent-input-channel" class="form-select">
+            <option value="WhatsApp">WhatsApp</option>
+            <option value="Instagram">Instagram</option>
+            <option value="Widget">Widget do site</option>
+            <option value="Telegram">Telegram</option>
+          </select>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Criar agente</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Modal Novo Lead -->
+  <div class="modal-backdrop" id="modal-new-lead">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Adicionar Novo Lead</h3>
+        <button class="modal-close">✕</button>
+      </div>
+      <form id="form-new-lead">
+        <div class="form-group">
+          <label class="form-label">Nome Completo</label>
+          <input type="text" id="lead-input-name" class="form-input" placeholder="Ex: Fernanda Lima" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Telefone / WhatsApp</label>
+          <input type="text" id="lead-input-phone" class="form-input" placeholder="Ex: +55 11 98888-7777" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Canal de Origem</label>
+          <select id="lead-input-channel" class="form-select">
+            <option value="WhatsApp">WhatsApp</option>
+            <option value="Instagram">Instagram</option>
+            <option value="Site">Site</option>
+            <option value="Facebook">Facebook</option>
+          </select>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar lead</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. Modal Nova Conversa -->
+  <div class="modal-backdrop" id="modal-new-conversa">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Iniciar Nova Conversa</h3>
+        <button class="modal-close">✕</button>
+      </div>
+      <form onsubmit="event.preventDefault(); alert('Conversa iniciada!'); closeAllModals();">
+        <div class="form-group">
+          <label class="form-label">Selecionar Contato</label>
+          <select class="form-select">
+            <option>Juliana Santos (+55 11 98765-4321)</option>
+            <option>Rodrigo Almeida (+55 21 99887-1122)</option>
+            <option>Carla Menezes (+55 31 98877-6655)</option>
+            <option>Rafael Carvalho (+55 11 98765-4321)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Canal de Disparo</label>
+          <select class="form-select">
+            <option>WhatsApp Business Oficial</option>
+            <option>Instagram Direct</option>
+            <option>Widget do site</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mensagem Inicial</label>
+          <textarea class="form-textarea" rows="3" placeholder="Olá! Como posso te ajudar hoje?"></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Iniciar conversa</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. Modal Novo Canal (Interactive Wizard) -->
+  <div class="modal-backdrop" id="modal-new-channel">
+    <div class="modal-dialog channel-wizard-dialog">
+      <!-- Wizard Header -->
+      <div class="modal-header wizard-modal-header">
+        <div>
+          <h3 class="modal-title" id="wizard-main-title">Conectar Novo Canal</h3>
+          <p class="wizard-subtitle" id="wizard-main-subtitle">Escolha o tipo de canal que deseja integrar ao ZapChat</p>
+        </div>
+        <button class="modal-close" id="btn-close-channel-wizard">✕</button>
+      </div>
+
+      <!-- Stepper Progress Bar -->
+      <div class="wizard-stepper" id="wizard-stepper">
+        <div class="step-item active" data-step="1">
+          <div class="step-circle">1</div>
+          <span class="step-label">Canal</span>
+        </div>
+        <div class="step-line" id="line-step-1-2"></div>
+        <div class="step-item" data-step="2">
+          <div class="step-circle">2</div>
+          <span class="step-label">Configuração</span>
+        </div>
+        <div class="step-line" id="line-step-2-3"></div>
+        <div class="step-item" data-step="3">
+          <div class="step-circle">3</div>
+          <span class="step-label">Conexão</span>
+        </div>
+      </div>
+
+      <!-- Step 1: Escolha do Tipo de Canal -->
+      <div class="wizard-step-panel active" id="wizard-step-1">
+        <div class="channel-type-grid">
+          <!-- Card 1: WhatsApp QR Code (Default) -->
+          <div class="channel-type-card selected" data-channel-type="whatsapp">
+            <div class="channel-card-badge recommend">Recomendado</div>
+            <div class="channel-card-icon whatsapp">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            </div>
+            <div class="channel-card-body">
+              <h4 class="channel-card-title">WhatsApp Web (QR Code)</h4>
+              <p class="channel-card-desc">Conexão instantânea escaneando o QR Code pelo seu celular (WhatsApp pessoal ou Business).</p>
+            </div>
+            <div class="channel-card-check">
+              <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+            </div>
+          </div>
+
+          <!-- Card 2: WhatsApp Cloud API -->
+          <div class="channel-type-card" data-channel-type="meta_api">
+            <div class="channel-card-badge">Meta Oficial</div>
+            <div class="channel-card-icon meta">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+            </div>
+            <div class="channel-card-body">
+              <h4 class="channel-card-title">WhatsApp Cloud API</h4>
+              <p class="channel-card-desc">API corporativa oficial da Meta para altos volumes de disparo e número verificado.</p>
+            </div>
+            <div class="channel-card-check">
+              <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+            </div>
+          </div>
+
+          <!-- Card 3: Widget Site -->
+          <div class="channel-type-card" data-channel-type="widget">
+            <div class="channel-card-badge">Web & Site</div>
+            <div class="channel-card-icon widget">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div class="channel-card-body">
+              <h4 class="channel-card-title">Widget para Site</h4>
+              <p class="channel-card-desc">Botão de chat flutuante com inteligência artificial para instalar em qualquer site ou landing page.</p>
+            </div>
+            <div class="channel-card-check">
+              <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+            </div>
+          </div>
+
+          <!-- Card 4: Instagram Direct -->
+          <div class="channel-type-card" data-channel-type="instagram">
+            <div class="channel-card-badge">Redes Sociais</div>
+            <div class="channel-card-icon instagram">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+            </div>
+            <div class="channel-card-body">
+              <h4 class="channel-card-title">Instagram Direct</h4>
+              <p class="channel-card-desc">Atendimento automático em mensagens diretas (DMs) e respostas a stories no Instagram.</p>
+            </div>
+            <div class="channel-card-check">
+              <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="wizard-footer-actions">
+          <button type="button" class="btn btn-secondary modal-close">
+            <i data-lucide="x" style="width: 14px; height: 14px;"></i> Cancelar
+          </button>
+          <button type="button" class="btn btn-primary" id="wizard-btn-next-1">
+            Continuar para Configuração <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Configuração e Agente IA -->
+      <div class="wizard-step-panel" id="wizard-step-2">
+        <form id="wizard-step-2-form">
+          <div class="wizard-form-grid">
+            <div class="form-group full-col">
+              <label class="form-label">Nome do Canal *</label>
+              <input type="text" id="wizard-input-name" class="form-input" placeholder="Ex: WhatsApp Vendas Principal" required value="WhatsApp Comercial">
+              <span class="form-help-text">Nome interno para identificação da equipe e relatórios.</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Departamento *</label>
+              <select id="wizard-input-dept" class="form-select">
+                <option value="Comercial" selected>Comercial</option>
+                <option value="Vendas">Vendas</option>
+                <option value="Suporte Técnico">Suporte Técnico</option>
+                <option value="Financeiro">Financeiro</option>
+                <option value="Geral">Atendimento Geral</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Número de Telefone / Identificador</label>
+              <input type="text" id="wizard-input-ident" class="form-input" placeholder="+55 11 99999-8888" value="+55 11 98842-1920">
+              <span class="form-help-text">Número que será conectado via QR Code.</span>
+            </div>
+
+            <div class="form-group full-col">
+              <label class="form-label">Agente de IA Responsável *</label>
+              <select id="wizard-input-agent" class="form-select">
+                <option value="Pedro" selected>Pedro (Especialista em Vendas & Atendimento Comercial)</option>
+                <option value="SDR IA">SDR IA (Qualificação de Leads & Agendamento)</option>
+                <option value="Atendimento">Atendimento (Triagem Geral de Clientes)</option>
+                <option value="Suporte IA">Suporte IA (Dúvidas Técnicas, FAQ & Pós-Venda)</option>
+              </select>
+              <span class="form-help-text">A inteligência artificial que assumirá as respostas automáticas deste canal.</span>
+            </div>
+          </div>
+
+          <div class="wizard-footer-actions">
+            <button type="button" class="btn btn-secondary" id="wizard-btn-back-2">
+              <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i> Voltar
+            </button>
+            <button type="submit" class="btn btn-primary" id="wizard-btn-next-2">
+              Gerar QR Code de Conexão <i data-lucide="qr-code" style="width: 14px; height: 14px;"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Step 3: Conexão QR Code & Sucesso -->
+      <div class="wizard-step-panel" id="wizard-step-3">
+        <!-- View 3A: QR Code Scan Screen -->
+        <div class="qr-connection-layout" id="qr-scan-view">
+          <div class="qr-code-box-wrap">
+            <div class="qr-scanner-card">
+              <div class="qr-scanner-laser"></div>
+              <!-- Real SVG QR Code -->
+              <svg class="qr-code-svg" viewBox="0 0 200 200" width="180" height="180">
+                <rect width="200" height="200" fill="#FFFFFF" rx="12"/>
+                <!-- Top-Left Finder Pattern -->
+                <rect x="16" y="16" width="48" height="48" fill="#111827" rx="6"/>
+                <rect x="24" y="24" width="32" height="32" fill="#FFFFFF" rx="4"/>
+                <rect x="32" y="32" width="16" height="16" fill="#111827" rx="2"/>
+                <!-- Top-Right Finder Pattern -->
+                <rect x="136" y="16" width="48" height="48" fill="#111827" rx="6"/>
+                <rect x="144" y="24" width="32" height="32" fill="#FFFFFF" rx="4"/>
+                <rect x="152" y="32" width="16" height="16" fill="#111827" rx="2"/>
+                <!-- Bottom-Left Finder Pattern -->
+                <rect x="16" y="136" width="48" height="48" fill="#111827" rx="6"/>
+                <rect x="24" y="144" width="32" height="32" fill="#FFFFFF" rx="4"/>
+                <rect x="32" y="152" width="16" height="16" fill="#111827" rx="2"/>
+                <!-- Center Logo/Icon Badge -->
+                <circle cx="100" cy="100" r="18" fill="#00A868"/>
+                <path d="M95 94a4 4 0 0 1 6 0l1 2a4 4 0 0 1-4 5l-2 1v-2a4 4 0 0 1-1-6z" fill="#FFFFFF"/>
+                <!-- Micro QR Dots -->
+                <rect x="74" y="20" width="8" height="8" fill="#111827"/>
+                <rect x="90" y="20" width="8" height="8" fill="#111827"/>
+                <rect x="106" y="20" width="8" height="8" fill="#111827"/>
+                <rect x="82" y="36" width="8" height="8" fill="#111827"/>
+                <rect x="98" y="36" width="8" height="8" fill="#111827"/>
+                <rect x="74" y="52" width="8" height="8" fill="#111827"/>
+                <rect x="114" y="52" width="8" height="8" fill="#111827"/>
+                <rect x="20" y="76" width="8" height="8" fill="#111827"/>
+                <rect x="36" y="84" width="8" height="8" fill="#111827"/>
+                <rect x="52" y="76" width="8" height="8" fill="#111827"/>
+                <rect x="68" y="92" width="8" height="8" fill="#111827"/>
+                <rect x="124" y="84" width="8" height="8" fill="#111827"/>
+                <rect x="140" y="76" width="8" height="8" fill="#111827"/>
+                <rect x="156" y="92" width="8" height="8" fill="#111827"/>
+                <rect x="172" y="84" width="8" height="8" fill="#111827"/>
+                <rect x="74" y="124" width="8" height="8" fill="#111827"/>
+                <rect x="90" y="140" width="8" height="8" fill="#111827"/>
+                <rect x="106" y="124" width="8" height="8" fill="#111827"/>
+                <rect x="122" y="140" width="8" height="8" fill="#111827"/>
+                <rect x="74" y="156" width="8" height="8" fill="#111827"/>
+                <rect x="114" y="172" width="8" height="8" fill="#111827"/>
+                <rect x="138" y="156" width="8" height="8" fill="#111827"/>
+                <rect x="154" y="172" width="8" height="8" fill="#111827"/>
+                <rect x="170" y="156" width="8" height="8" fill="#111827"/>
+              </svg>
+            </div>
+            
+            <div class="qr-timer-row">
+              <span class="qr-timer-pill" id="qr-timer-text">
+                <i data-lucide="clock" style="width: 13px; height: 13px;"></i>
+                Atualiza em <strong id="qr-countdown-seconds">45s</strong>
+              </span>
+              <button type="button" class="btn-refresh-qr" id="btn-reload-qr" title="Atualizar QR Code">
+                <i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i>
+                Recarregar
+              </button>
+            </div>
+          </div>
+
+          <!-- Instructions on Right -->
+          <div class="qr-instructions-card">
+            <h4 class="instructions-title">Como conectar seu WhatsApp:</h4>
+            <ol class="qr-steps-list">
+              <li>
+                <div class="qr-step-num">1</div>
+                <div>Abra o aplicativo <strong>WhatsApp</strong> no seu smartphone.</div>
+              </li>
+              <li>
+                <div class="qr-step-num">2</div>
+                <div>Toque em <strong>Configurações</strong> (iPhone) ou nos <strong>três pontinhos</strong> (Android) e selecione <strong>Aparelhos conectados</strong>.</div>
+              </li>
+              <li>
+                <div class="qr-step-num">3</div>
+                <div>Toque no botão <strong>Conectar um aparelho</strong> e aponte a câmera para o QR Code ao lado.</div>
+              </li>
+            </ol>
+
+            <div class="qr-simulation-box">
+              <div class="simulation-text">
+                <i data-lucide="sparkles" style="width: 15px; height: 15px; color: var(--primary);"></i>
+                <span>Teste a conexão em tempo real agora mesmo:</span>
+              </div>
+              <button type="button" class="btn btn-primary" id="btn-simulate-qr-scan" style="width: 100%;">
+                <i data-lucide="scan" style="width: 16px; height: 16px;"></i>
+                Simular Leitura do QR Code
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- View 3B: Success Screen (Hidden initially) -->
+        <div class="channel-success-view" id="channel-success-view" style="display: none;">
+          <div class="success-icon-badge">
+            <i data-lucide="check" style="width: 32px; height: 32px;"></i>
+          </div>
+          <h3 class="success-title">Canal Conectado com Sucesso!</h3>
+          <p class="success-desc">O seu WhatsApp foi pareado com a instância do ZapChat e a inteligência artificial já está pronta para atender seus clientes.</p>
+
+          <div class="connected-info-card">
+            <div class="connected-info-row">
+              <span class="info-label">Canal:</span>
+              <span class="info-val" id="success-channel-name">WhatsApp Comercial</span>
+            </div>
+            <div class="connected-info-row">
+              <span class="info-label">Identificador:</span>
+              <span class="info-val font-mono" id="success-channel-ident">+55 11 98842-1920</span>
+            </div>
+            <div class="connected-info-row">
+              <span class="info-label">Agente Atribuído:</span>
+              <span class="info-val" id="success-channel-agent">Pedro (IA Ativa)</span>
+            </div>
+            <div class="connected-info-row">
+              <span class="info-label">Status da Instância:</span>
+              <span class="badge" style="background: #EAF8F1; color: #00A868; font-weight: 700;">🟢 Conectado</span>
+            </div>
+          </div>
+
+          <div class="success-actions-row">
+            <button type="button" class="btn btn-primary btn-lg" id="btn-finish-channel-wizard" style="width: 100%;">
+              Concluir e Ver Canais <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Modal Comprar Mensagens Extras -->
+  <div class="modal-backdrop" id="modal-buy-messages">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Comprar Mensagens Extras</h3>
+        <button class="modal-close">✕</button>
+      </div>
+      <form id="form-buy-messages">
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
+          Selecione a quantidade de mensagens avulsas que deseja adicionar ao seu plano. Os créditos extras não expiram ao final do ciclo.
+        </p>
+        <div class="form-group">
+          <label class="form-label">Pacote de Mensagens</label>
+          <select id="select-extra-package" class="form-select">
+            <option value="2500">+ 2.500 mensagens — R$ 49,00</option>
+            <option value="5000" selected>+ 5.000 mensagens — R$ 89,00 (Recomendado)</option>
+            <option value="15000">+ 15.000 mensagens — R$ 199,00</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Forma de Pagamento</label>
+          <div style="padding: 10px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
+            <span style="display: flex; align-items: center; gap: 8px; font-weight: 500;">
+              <i data-lucide="credit-card" style="width:15px;height:15px;color:var(--primary);"></i> Mastercard final •••• 4821
+            </span>
+            <span class="badge badge-active" style="font-size: 11px;">Padrão</span>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px;">
+          <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i data-lucide="check" style="width:14px;height:14px;"></i> Confirmar Compra</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. Modal Abrir Novo Ticket (Screenshot 2) -->
+  <div class="modal-backdrop" id="modal-new-ticket">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">Abrir novo ticket</h3>
+          <p style="font-size: 13px; color: var(--text-muted); margin: 3px 0 0 0;">Descreva seu problema ou dúvida com detalhes.</p>
+        </div>
+        <button class="modal-close">✕</button>
+      </div>
+      <form id="form-new-ticket">
+        <div class="form-group">
+          <label class="form-label">Tipo de ticket</label>
+          <select id="ticket-input-type" class="form-select" required>
+            <option value="Técnico" selected>Técnico</option>
+            <option value="Comercial">Comercial</option>
+            <option value="Financeiro">Financeiro</option>
+            <option value="Dúvida geral">Dúvida geral</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Título</label>
+          <input type="text" id="ticket-input-title" class="form-input" placeholder="Resumo do problema" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descrição</label>
+          <textarea id="ticket-input-desc" class="form-textarea" rows="4" placeholder="Descreva o problema em detalhes..." required></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+          <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-ticket">Enviar ticket</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 7. Modal Teste sua IA (Ambiente de Teste Interativo) -->
+  <div class="modal-backdrop" id="modal-test-ai">
+    <div class="modal-dialog modal-test-ai-dialog">
+      <div class="modal-test-grid">
+        
+        <!-- SIDEBAR DE SESSÕES DE TESTE -->
+        <aside class="modal-test-sidebar">
+          <!-- Header do Agente -->
+          <div class="modal-test-agent-header">
+            <div class="modal-test-agent-avatar" id="modal-test-avatar">P</div>
+            <div class="modal-test-agent-info">
+              <h4 id="modal-test-agent-name">Pedro</h4>
+              <p id="modal-test-agent-role">Vendedor em Loja Download</p>
+            </div>
+          </div>
+
+          <!-- Botão Novo Chat -->
+          <button type="button" class="btn-start-new-chat" id="btn-modal-test-new-chat">
+            <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+            <span>Iniciar um novo chat</span>
+          </button>
+
+          <!-- Lista de Sessões -->
+          <div class="modal-test-sessions-container">
+            <div class="modal-test-date-group-title">20/08/2026</div>
+            <div class="modal-test-sessions-list" id="modal-test-sessions-list">
+              <div class="modal-test-session-item active" data-session-id="1">
+                <div class="modal-test-session-top">
+                  <span class="modal-test-session-title">Saudação inicial</span>
+                  <span class="modal-test-session-time">14:19</span>
+                </div>
+                <div class="modal-test-session-preview">Pedro: O produto mais recomendado é...</div>
+              </div>
+              <div class="modal-test-session-item" data-session-id="2">
+                <div class="modal-test-session-top">
+                  <span class="modal-test-session-title">Saudações!</span>
+                  <span class="modal-test-session-time">16:11</span>
+                </div>
+                <div class="modal-test-session-preview">Pedro: Para informar corretamente, preciso...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rodapé da Sidebar -->
+          <div class="modal-test-sidebar-footer">
+            <button type="button" class="btn-clear-test-chats" id="btn-modal-clear-chats">
+              <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+              <span>Limpar todas conversas</span>
+            </button>
+            <button type="button" class="btn-close-test-env modal-close" title="Fechar">
+              <i data-lucide="x" style="width: 13px; height: 13px;"></i>
+              <span>Fechar ambiente de teste</span>
+            </button>
+          </div>
+        </aside>
+
+        <!-- ÁREA PRINCIPAL DE CHAT -->
+        <main class="modal-test-main-chat">
+          <div class="modal-test-chat-header">
+            <button type="button" class="modal-close" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:16px; padding:4px;" title="Fechar">✕</button>
+          </div>
+
+          <!-- Mensagens -->
+          <div class="modal-test-chat-body" id="modal-test-chat-body">
+            <!-- Mensagens da Sessão 1 pré-carregada -->
+            <div class="test-chat-msg user">
+              <div class="test-msg-bubble">
+                Olá, quais são os pacotes disponíveis na loja?
+                <span class="test-msg-time">14:18</span>
+              </div>
+            </div>
+            <div class="test-chat-msg agent">
+              <div class="test-msg-avatar">P</div>
+              <div class="test-msg-bubble">
+                Olá! Seja bem-vindo à Loja Download. Temos nosso catálogo completo de soluções digitais. O produto mais recomendado é o <strong>Pacote de Automações Pro</strong> por R$ 197. Gostaria de saber mais?
+                <span class="test-msg-time">14:19</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Input Footer -->
+          <footer class="modal-test-chat-footer">
+            <form id="form-test-chat" class="modal-test-input-wrapper">
+              <input type="text" id="input-test-chat-message" class="modal-test-input" placeholder="Digite uma mensagem e tecle ENTER" autocomplete="off">
+              <button type="submit" class="btn-send-test-msg" title="Enviar mensagem">
+                <i data-lucide="send" style="width: 14px; height: 14px;"></i>
+              </button>
+            </form>
+          </footer>
+        </main>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+    <a href="#dashboard" class="mobile-nav-item active" data-target="dashboard">
+      <div class="mobile-nav-icon-wrap">
+        <i data-lucide="layout-grid"></i>
+      </div>
+      <span class="mobile-nav-label">Início</span>
+    </a>
+    <a href="#agentes" class="mobile-nav-item" data-target="agentes">
+      <div class="mobile-nav-icon-wrap">
+        <i data-lucide="bot"></i>
+      </div>
+      <span class="mobile-nav-label">Agentes</span>
+    </a>
+    <a href="#conversas" class="mobile-nav-item" data-target="conversas">
+      <div class="mobile-nav-icon-wrap">
+        <i data-lucide="message-square"></i>
+        <span class="mobile-nav-badge">7</span>
+      </div>
+      <span class="mobile-nav-label">Conversas</span>
+    </a>
+    <a href="#leads" class="mobile-nav-item" data-target="leads">
+      <div class="mobile-nav-icon-wrap">
+        <i data-lucide="users"></i>
+      </div>
+      <span class="mobile-nav-label">Leads</span>
+    </a>
+    <a href="#canais" class="mobile-nav-item" data-target="canais">
+      <div class="mobile-nav-icon-wrap">
+        <i data-lucide="share-2"></i>
+      </div>
+      <span class="mobile-nav-label">Canais</span>
+    </a>
+  </nav>
+
+  <!-- App Script -->
+  <script type="module" src="./src/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Brand Colors */
+  --primary: #00A868;
+  --primary-rgb: 0, 168, 104;
+  --primary-hover: #008f58;
+  --primary-dark: #007346;
+  --primary-light: #E9F7F1;
+  --primary-border: #99E2C4;
+  --primary-glow: rgba(0, 168, 104, 0.15);
+
+  /* AI Accent (Purple) */
+  --ai-purple: #7C3AED;
+  --ai-purple-light: #F3EEFF;
+  --ai-purple-border: #D8B4FE;
+  --ai-gradient: linear-gradient(135deg, #7C3AED 0%, #9333EA 100%);
+
+  /* UI Tokens - Light Mode */
+  --bg-app: #F6F8FA;
+  --bg-sidebar: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-card-alt: #F9FAFB;
+  --bg-input: #FFFFFF;
+  --bg-hover: #F1F5F9;
+  --bg-active: #E9F7F1;
+
+  --text-main: #111827;
+  --text-secondary: #4B5563;
+  --text-muted: #6B7280;
+  --text-inverse: #FFFFFF;
+
+  --border: #E5E7EB;
+  --border-light: #F1F5F9;
+  --border-focus: #00A868;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 9999px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.07), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+
+  /* Status Colors */
+  --status-active: #00A868;
+  --status-active-bg: #E6F7F0;
+  --status-warning: #F59E0B;
+  --status-warning-bg: #FEF3C7;
+  --status-info: #2563EB;
+  --status-info-bg: #EFF6FF;
+  --status-purple: #7C3AED;
+  --status-purple-bg: #F3E8FF;
+  --status-gray: #6B7280;
+  --status-gray-bg: #F3F4F6;
+  --status-danger: #EF4444;
+  --status-danger-bg: #FEE2E2;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark Mode Tokens */
+[data-theme="dark"] {
+  --bg-app: #0B0F17;
+  --bg-sidebar: #111827;
+  --bg-card: #161F30;
+  --bg-card-alt: #1E293B;
+  --bg-input: #1E293B;
+  --bg-hover: #1F293D;
+  --bg-active: rgba(0, 168, 104, 0.15);
+
+  --text-main: #F9FAFB;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --text-inverse: #0B0F17;
+
+  --border: #243046;
+  --border-light: #1E293B;
+  --border-focus: #00C278;
+
+  --primary-light: rgba(0, 168, 104, 0.15);
+  --primary-border: #007346;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+
+  --status-active-bg: rgba(0, 168, 104, 0.2);
+  --status-warning-bg: rgba(245, 158, 11, 0.2);
+  --status-info-bg: rgba(37, 99, 235, 0.2);
+  --status-purple-bg: rgba(124, 58, 237, 0.2);
+  --status-gray-bg: rgba(107, 114, 128, 0.2);
+  --status-danger-bg: rgba(239, 68, 68, 0.2);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  outline: none;
+}
+
+input, select, textarea {
+  font-family: inherit;
+  outline: none;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
