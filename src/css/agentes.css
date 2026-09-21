@@ -200,13 +200,6 @@
   align-items: flex-start;
   gap: 12px;
   padding: 6px 4px;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.numbered-step-item:hover {
-  background-color: var(--bg-hover);
 }
 
 .step-circle-badge {
