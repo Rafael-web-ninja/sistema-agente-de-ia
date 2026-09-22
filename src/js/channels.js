@@ -136,9 +136,6 @@ function setupChannelWizard() {
       if (selectedChannelType === 'whatsapp') {
         if (nameInput) nameInput.value = 'WhatsApp Comercial';
         if (identInput) identInput.value = '+55 11 98842-1920';
-      } else if (selectedChannelType === 'meta_api') {
-        if (nameInput) nameInput.value = 'WhatsApp Cloud Oficial';
-        if (identInput) identInput.value = '+55 11 97700-1122';
       } else if (selectedChannelType === 'widget') {
         if (nameInput) nameInput.value = 'Widget Chat Site Principal';
         if (identInput) identInput.value = 'widget.zapchat.app/site-principal';

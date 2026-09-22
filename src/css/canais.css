@@ -328,7 +328,7 @@
    CHANNEL CONNECTION WIZARD (MODAL EXPERT FLOW)
    ============================================================ */
 .channel-wizard-dialog {
-  max-width: 660px !important;
+  max-width: 720px !important;
   width: 94% !important;
   padding: 26px 28px !important;
   border-radius: var(--radius-xl) !important;
@@ -433,7 +433,7 @@
 /* Step 1: Channel Type Cards Grid */
 .channel-type-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
   margin-bottom: 22px;
 }
@@ -888,7 +888,7 @@
 }
 
 /* Mobile Responsiveness for Wizard */
-@media (max-width: 640px) {
+@media (max-width: 680px) {
   .channel-wizard-dialog {
     padding: 18px 16px !important;
   }
