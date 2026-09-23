@@ -1170,12 +1170,155 @@
                     </div>
 
                     <!-- Transferir para humano -->
-                    <div class="switch-control-group" style="padding-top: 20px; border-top: 1px solid var(--border-light); margin-bottom: 12px;">
+                    <div class="switch-control-group" style="padding-top: 20px; border-top: 1px solid var(--border-light); margin-bottom: 24px;">
                       <div class="switch-info">
                         <span class="switch-title"><i data-lucide="user-check" style="width:15px;height:15px;color:var(--primary);"></i> Transferir para humano</span>
                         <span class="switch-desc">Encaminhar o atendimento para um atendente quando o cliente solicitar ou a IA não souber responder.</span>
                       </div>
                       <label class="switch-toggle"><input type="checkbox" checked><span class="switch-slider"></span></label>
+                    </div>
+
+                    <!-- Horário de atendimento da IA -->
+                    <div class="agent-schedule-section" style="padding-top: 24px; border-top: 1px solid var(--border-light); margin-bottom: 24px;">
+                      <!-- Header Switch Row -->
+                      <div class="switch-control-group" style="margin-bottom: 16px;">
+                        <div class="switch-info">
+                          <span class="switch-title" style="display: flex; align-items: center; gap: 8px;">
+                            <i data-lucide="clock" style="width:16px;height:16px;color:var(--primary);"></i>
+                            Horário de atendimento da IA
+                          </span>
+                          <span class="switch-desc">
+                            Se desativado, o agente atende 24h por dia. Ative para definir dias e horários em que a IA deve atuar (ex: apenas à noite ou fins de semana).
+                          </span>
+                        </div>
+                        <label class="switch-toggle">
+                          <input type="checkbox" id="toggle-agent-schedule">
+                          <span class="switch-slider"></span>
+                        </label>
+                      </div>
+
+                      <!-- Estado 1: 24/7 Ativo (quando o toggle está desmarcado) -->
+                      <div class="schedule-banner-247" id="schedule-banner-247">
+                        <div class="schedule-banner-icon">
+                          <i data-lucide="sparkles" style="width: 22px; height: 22px;"></i>
+                        </div>
+                        <div class="schedule-banner-content">
+                          <div class="schedule-banner-title">
+                            Atendimento Contínuo 24/7 Ativo
+                            <span class="badge badge-dot badge-active" style="margin-left: 8px; font-size: 11px;">Sempre Online</span>
+                          </div>
+                          <p class="schedule-banner-desc">
+                            A IA responde às mensagens dos clientes a qualquer momento do dia ou da noite, em todos os 7 dias da semana.
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Estado 2: Painel de Configuração Detalhada (quando o toggle está ativado) -->
+                      <div class="schedule-panel-custom" id="schedule-panel-custom" style="display: none;">
+                        
+                        <!-- Top Meta Bar: Timezone & Live Status -->
+                        <div class="schedule-meta-bar">
+                          <div class="schedule-timezone-info">
+                            <i data-lucide="globe" style="width:14px;height:14px;color:var(--text-muted);"></i>
+                            <span>Fuso horário: <strong>América/São Paulo (Horário de Brasília - GMT-3)</strong></span>
+                          </div>
+                          <div class="schedule-live-badge online" id="schedule-live-status-badge">
+                            <span class="schedule-status-dot"></span>
+                            <span id="schedule-live-status-text">IA em horário de atendimento</span>
+                          </div>
+                        </div>
+
+                        <!-- Presets / Atalhos Rápidos -->
+                        <div class="schedule-presets-box">
+                          <span class="schedule-presets-label">Atalhos rápidos de programação:</span>
+                          <div class="schedule-presets-grid">
+                            <button type="button" class="schedule-preset-btn active" data-preset="night_weekend">
+                              <span class="preset-icon">🌙</span>
+                              <div class="preset-info">
+                                <span class="preset-name">Plantão Noturno & Fins de Semana</span>
+                                <span class="preset-desc">Seg a Sex (18h às 08h) + Sáb e Dom (24h)</span>
+                              </div>
+                            </button>
+                            <button type="button" class="schedule-preset-btn" data-preset="weekend_only">
+                              <span class="preset-icon">🏖️</span>
+                              <div class="preset-info">
+                                <span class="preset-name">Apenas Fins de Semana</span>
+                                <span class="preset-desc">Sábado e Domingo o dia todo (24h)</span>
+                              </div>
+                            </button>
+                            <button type="button" class="schedule-preset-btn" data-preset="business_hours">
+                              <span class="preset-icon">💼</span>
+                              <div class="preset-info">
+                                <span class="preset-name">Horário Comercial</span>
+                                <span class="preset-desc">Seg a Sex (08h às 18h)</span>
+                              </div>
+                            </button>
+                            <button type="button" class="schedule-preset-btn" data-preset="custom">
+                              <span class="preset-icon">⚙️</span>
+                              <div class="preset-info">
+                                <span class="preset-name">Personalizado</span>
+                                <span class="preset-desc">Defina manualmente cada dia e horário</span>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Grade Semanal (Segunda a Domingo) -->
+                        <div class="schedule-week-table-wrap">
+                          <div class="schedule-week-header">
+                            <h4 class="schedule-week-title">
+                              <i data-lucide="calendar" style="width:15px;height:15px;color:var(--primary);"></i>
+                              Dias e Horários de Atuação
+                            </h4>
+                            <div class="schedule-week-actions">
+                              <button type="button" class="btn-schedule-action" id="btn-copy-weekdays">
+                                <i data-lucide="copy" style="width:13px;height:13px;"></i>
+                                Replicar Segunda para dias úteis (Ter-Sex)
+                              </button>
+                            </div>
+                          </div>
+
+                          <div class="schedule-days-list" id="schedule-days-container">
+                            <!-- Inserido dinamicamente via JS com fallbacks limpos -->
+                          </div>
+                        </div>
+
+                        <!-- Ação fora do horário de atendimento -->
+                        <div class="schedule-out-behavior-box">
+                          <div class="schedule-out-header">
+                            <h4 class="schedule-out-title">
+                              <i data-lucide="moon" style="width:15px;height:15px;color:var(--text-muted);"></i>
+                              Quando um cliente chamar fora do horário de atendimento:
+                            </h4>
+                          </div>
+
+                          <div class="schedule-out-options">
+                            <label class="schedule-radio-card active" id="label-action-silent">
+                              <input type="radio" name="agent_out_action" value="silent" checked>
+                              <div class="radio-card-content">
+                                <span class="radio-card-title">Não responder (Silencioso)</span>
+                                <span class="radio-card-desc">A IA não envia nenhuma mensagem. A conversa aguarda o atendente humano ou o próximo expediente.</span>
+                              </div>
+                            </label>
+
+                            <label class="schedule-radio-card" id="label-action-reply">
+                              <input type="radio" name="agent_out_action" value="auto_reply">
+                              <div class="radio-card-content">
+                                <span class="radio-card-title">Enviar mensagem de ausência</span>
+                                <span class="radio-card-desc">Envia uma resposta automática avisando que o atendimento humano ou IA retornará em breve.</span>
+                              </div>
+                            </label>
+                          </div>
+
+                          <div class="schedule-auto-reply-box" id="schedule-auto-reply-box" style="display: none; margin-top: 14px;">
+                            <label class="form-label" for="schedule-out-message-text" style="font-size: 12.5px;">Mensagem de ausência personalizada</label>
+                            <textarea id="schedule-out-message-text" class="form-textarea" rows="3" placeholder="Mensagem enviada aos clientes fora do horário...">Olá! No momento nossa equipe e assistente virtual estão fora do horário de atendimento. Sua mensagem foi recebida com sucesso e responderemos assim que retornarmos!</textarea>
+                            <span style="font-size: 11.5px; color: var(--text-muted); display: block; margin-top: 4px;">Essa mensagem será enviada uma única vez quando o cliente chamar fora do horário.</span>
+                          </div>
+
+                        </div>
+
+                      </div>
                     </div>
 
                     <div class="agent-save-bar">

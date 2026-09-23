@@ -843,6 +843,190 @@ const editAgentPageScript = `
         }, 700);
       });
     }
+
+    // Schedule management for static page
+    const schedToggle = document.getElementById('toggle-agent-schedule');
+    const schedBanner = document.getElementById('schedule-banner-247');
+    const schedPanel = document.getElementById('schedule-panel-custom');
+    const schedDaysContainer = document.getElementById('schedule-days-container');
+
+    const DEFAULT_DAYS = [
+      { id: 'seg', name: 'Segunda-feira', short: 'Seg', enabled: true, start: '18:00', end: '08:00', allDay: false },
+      { id: 'ter', name: 'Terça-feira', short: 'Ter', enabled: true, start: '18:00', end: '08:00', allDay: false },
+      { id: 'qua', name: 'Quarta-feira', short: 'Qua', enabled: true, start: '18:00', end: '08:00', allDay: false },
+      { id: 'qui', name: 'Quinta-feira', short: 'Qui', enabled: true, start: '18:00', end: '08:00', allDay: false },
+      { id: 'sex', name: 'Sexta-feira', short: 'Sex', enabled: true, start: '18:00', end: '08:00', allDay: false },
+      { id: 'sab', name: 'Sábado', short: 'Sáb', enabled: true, start: '00:00', end: '23:59', allDay: true },
+      { id: 'dom', name: 'Domingo', short: 'Dom', enabled: true, start: '00:00', end: '23:59', allDay: true }
+    ];
+
+    let staticSched = {
+      enabled: false,
+      preset: 'night_weekend',
+      days: JSON.parse(JSON.stringify(DEFAULT_DAYS))
+    };
+
+    function renderStaticDays() {
+      if (!schedDaysContainer) return;
+      schedDaysContainer.innerHTML = staticSched.days.map((day, idx) => {
+        const isOvernight = day.end < day.start && !day.allDay;
+        return \`
+          <div class="schedule-day-row \${day.enabled ? '' : 'inactive'}" data-day-id="\${day.id}">
+            <div class="schedule-day-left">
+              <label class="day-switch-toggle">
+                <input type="checkbox" class="input-day-enable" data-day-idx="\${idx}" \${day.enabled ? 'checked' : ''}>
+                <span class="day-switch-slider"></span>
+              </label>
+              <span class="schedule-day-name">\${day.name}</span>
+            </div>
+            <div class="schedule-day-right">
+              \${day.enabled ? \`
+                <div class="schedule-time-box">
+                  <input type="time" class="schedule-time-input input-time-start" data-day-idx="\${idx}" value="\${day.start}" \${day.allDay ? 'disabled' : ''}>
+                  <span>até</span>
+                  <input type="time" class="schedule-time-input input-time-end" data-day-idx="\${idx}" value="\${day.end}" \${day.allDay ? 'disabled' : ''}>
+                </div>
+                \${isOvernight ? '<span class="badge-overnight"><i data-lucide="moon" style="width:12px;height:12px;"></i> Turno noturno (+1 dia)</span>' : ''}
+                \${day.allDay ? '<span class="badge-allday"><i data-lucide="sun" style="width:12px;height:12px;"></i> 24 Horas</span>' : ''}
+                <button type="button" class="btn-day-24h \${day.allDay ? 'active' : ''}" data-day-idx="\${idx}">
+                  \${day.allDay ? 'Definir horário' : '24h'}
+                </button>
+              \` : '<span class="schedule-inactive-label">IA não atende neste dia</span>'}
+            </div>
+          </div>
+        \`;
+      }).join('');
+      if (window.lucide) window.lucide.createIcons();
+
+      schedDaysContainer.querySelectorAll('.input-day-enable').forEach(chk => {
+        chk.addEventListener('change', (e) => {
+          const idx = parseInt(e.target.dataset.dayIdx, 10);
+          staticSched.days[idx].enabled = e.target.checked;
+          renderStaticDays();
+        });
+      });
+
+      schedDaysContainer.querySelectorAll('.input-time-start').forEach(inp => {
+        inp.addEventListener('change', (e) => {
+          const idx = parseInt(e.target.dataset.dayIdx, 10);
+          staticSched.days[idx].start = e.target.value;
+          renderStaticDays();
+        });
+      });
+
+      schedDaysContainer.querySelectorAll('.input-time-end').forEach(inp => {
+        inp.addEventListener('change', (e) => {
+          const idx = parseInt(e.target.dataset.dayIdx, 10);
+          staticSched.days[idx].end = e.target.value;
+          renderStaticDays();
+        });
+      });
+
+      schedDaysContainer.querySelectorAll('.btn-day-24h').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const idx = parseInt(btn.dataset.dayIdx, 10);
+          staticSched.days[idx].allDay = !staticSched.days[idx].allDay;
+          if (staticSched.days[idx].allDay) {
+            staticSched.days[idx].start = '00:00';
+            staticSched.days[idx].end = '23:59';
+          } else {
+            staticSched.days[idx].start = '08:00';
+            staticSched.days[idx].end = '18:00';
+          }
+          renderStaticDays();
+        });
+      });
+    }
+
+    if (schedToggle) {
+      schedToggle.addEventListener('change', () => {
+        if (schedToggle.checked) {
+          if (schedBanner) schedBanner.style.display = 'none';
+          if (schedPanel) schedPanel.style.display = 'flex';
+        } else {
+          if (schedBanner) schedBanner.style.display = 'flex';
+          if (schedPanel) schedPanel.style.display = 'none';
+        }
+        if (window.lucide) window.lucide.createIcons();
+      });
+      renderStaticDays();
+    }
+
+    // Presets
+    document.querySelectorAll('.schedule-preset-btn[data-preset]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p = btn.getAttribute('data-preset');
+        document.querySelectorAll('.schedule-preset-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (p === 'night_weekend') {
+          staticSched.days.forEach(d => {
+            if (['seg','ter','qua','qui','sex'].includes(d.id)) {
+              d.enabled = true; d.start = '18:00'; d.end = '08:00'; d.allDay = false;
+            } else {
+              d.enabled = true; d.start = '00:00'; d.end = '23:59'; d.allDay = true;
+            }
+          });
+        } else if (p === 'weekend_only') {
+          staticSched.days.forEach(d => {
+            if (['seg','ter','qua','qui','sex'].includes(d.id)) {
+              d.enabled = false;
+            } else {
+              d.enabled = true; d.start = '00:00'; d.end = '23:59'; d.allDay = true;
+            }
+          });
+        } else if (p === 'business_hours') {
+          staticSched.days.forEach(d => {
+            if (['seg','ter','qua','qui','sex'].includes(d.id)) {
+              d.enabled = true; d.start = '08:00'; d.end = '18:00'; d.allDay = false;
+            } else {
+              d.enabled = false;
+            }
+          });
+        }
+        renderStaticDays();
+      });
+    });
+
+    // Replicate Monday
+    const btnCopy = document.getElementById('btn-copy-weekdays');
+    if (btnCopy) {
+      btnCopy.addEventListener('click', () => {
+        const mon = staticSched.days.find(d => d.id === 'seg');
+        if (mon) {
+          staticSched.days.forEach(d => {
+            if (['ter','qua','qui','sex'].includes(d.id)) {
+              d.enabled = mon.enabled;
+              d.start = mon.start;
+              d.end = mon.end;
+              d.allDay = mon.allDay;
+            }
+          });
+          renderStaticDays();
+        }
+      });
+    }
+
+    // Radio cards
+    const rSilent = document.querySelector('input[name="agent_out_action"][value="silent"]');
+    const rReply = document.querySelector('input[name="agent_out_action"][value="auto_reply"]');
+    const boxReply = document.getElementById('schedule-auto-reply-box');
+    const cSilent = document.getElementById('label-action-silent');
+    const cReply = document.getElementById('label-action-reply');
+
+    function updateRadioStatic() {
+      if (rReply && rReply.checked) {
+        if (boxReply) boxReply.style.display = 'block';
+        if (cReply) cReply.classList.add('active');
+        if (cSilent) cSilent.classList.remove('active');
+      } else {
+        if (boxReply) boxReply.style.display = 'none';
+        if (cSilent) cSilent.classList.add('active');
+        if (cReply) cReply.classList.remove('active');
+      }
+    }
+    if (rSilent) rSilent.addEventListener('change', updateRadioStatic);
+    if (rReply) rReply.addEventListener('change', updateRadioStatic);
   </script>
 `;
 
