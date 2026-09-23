@@ -1286,6 +1286,135 @@ const conversasScript = `
         });
       });
     });
+
+    // Transfer Modal Logic
+    const transferDests = [
+      { id: 'juliana_santos', name: 'Juliana Santos', type: 'human', typeLabel: 'Humano', role: 'Comercial & Vendas (WhatsApp / E-commerce)', dept: 'Comercial', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80', status: 'online', statusLabel: 'Disponível', workload: '2 atendimentos ativos' },
+      { id: 'felipe_costa', name: 'Felipe Costa', type: 'human', typeLabel: 'Humano', role: 'Suporte Comercial & Pós-Venda (Instagram)', dept: 'Vendas', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', status: 'online', statusLabel: 'Disponível', workload: '3 atendimentos ativos' },
+      { id: 'rodrigo_almeida', name: 'Rodrigo Almeida', type: 'human', typeLabel: 'Humano', role: 'Suporte Técnico N2 & Integrações de API', dept: 'Suporte Técnico', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80', status: 'online', statusLabel: 'Disponível', workload: '4 atendimentos ativos' },
+      { id: 'carla_menezes', name: 'Carla Menezes', type: 'human', typeLabel: 'Humano', role: 'Gerente de Contas Enterprise & Key Accounts', dept: 'Enterprise', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80', status: 'away', statusLabel: 'Em pausa', workload: '1 atendimento' },
+      { id: 'rafael_mota', name: 'Rafael Mota (Você)', type: 'human', typeLabel: 'Humano', role: 'Administrador & Atendimento Geral', dept: 'Gestão', img: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=80', status: 'online', statusLabel: 'Disponível agora', workload: 'Fila pessoal' },
+      { id: 'pedro_ia', name: 'Pedro', type: 'ai', typeLabel: 'IA', role: 'Especialista em Vendas & Atendimento Comercial', dept: 'Comercial', img: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80', status: 'online', statusLabel: 'IA Ativa (24/7)', workload: 'Capacidade livre' },
+      { id: 'sdr_ia', name: 'SDR IA', type: 'ai', typeLabel: 'IA', role: 'Qualificação Rápida & Agendamento de Demonstração', dept: 'Comercial', img: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&auto=format&fit=crop&q=80', status: 'online', statusLabel: 'IA Ativa (24/7)', workload: 'Capacidade livre' },
+      { id: 'suporte_ia', name: 'Suporte IA', type: 'ai', typeLabel: 'IA', role: 'Resolução Técnica de Dúvidas & FAQ Instantâneo', dept: 'Suporte Técnico', img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80', status: 'online', statusLabel: 'IA Ativa (24/7)', workload: 'Capacidade livre' },
+      { id: 'dept_comercial', name: 'Fila Comercial & Vendas', type: 'dept', typeLabel: 'Fila', role: 'Distribuição automática para o próximo vendedor livre', dept: 'Comercial', icon: 'briefcase', status: 'online', statusLabel: 'Fila Ativa', workload: '2 operadores online' },
+      { id: 'dept_suporte', name: 'Fila de Suporte Técnico', type: 'dept', typeLabel: 'Fila', role: 'Distribuição para atendentes técnicos especializados', dept: 'Suporte Técnico', icon: 'headphones', status: 'online', statusLabel: 'Fila Ativa', workload: '2 operadores online' },
+      { id: 'dept_financeiro', name: 'Fila Financeiro & Cobrança', type: 'dept', typeLabel: 'Fila', role: '2ª via de boleto, notas fiscais e upgrade de planos', dept: 'Financeiro', icon: 'credit-card', status: 'online', statusLabel: 'Fila Ativa', workload: '1 operador online' }
+    ];
+
+    let currentDestFilter = 'all';
+    let selectedTransferId = 'juliana_santos';
+
+    function renderStaticTransferList() {
+      const container = document.getElementById('transfer-dest-list');
+      if (!container) return;
+
+      const searchInput = document.getElementById('transfer-search-input');
+      const term = (searchInput ? searchInput.value : '').toLowerCase().trim();
+
+      const filtered = transferDests.filter(d => {
+        if (currentDestFilter !== 'all' && d.type !== currentDestFilter) return false;
+        if (term) {
+          return d.name.toLowerCase().includes(term) || d.role.toLowerCase().includes(term) || (d.dept || '').toLowerCase().includes(term);
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:24px 10px;color:var(--text-muted);font-size:13px;">Nenhum atendente ou fila encontrado.</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(d => {
+        const isSelected = d.id === selectedTransferId;
+        let visual = '';
+        if (d.type === 'dept') {
+          visual = '<div class="transfer-dest-icon-box dept"><i data-lucide="' + (d.icon || 'briefcase') + '" style="width:17px;height:17px;"></i></div>';
+        } else if (d.type === 'ai') {
+          visual = '<div class="transfer-dest-icon-box ai"><i data-lucide="bot" style="width:17px;height:17px;"></i></div>';
+        } else {
+          visual = '<img src="' + d.img + '" alt="' + d.name + '" class="transfer-dest-avatar">';
+        }
+
+        const dotClass = d.status === 'away' ? 'status-dot-indicator away' : 'status-dot-indicator';
+
+        return '<div class="transfer-dest-card ' + (isSelected ? 'selected' : '') + '" data-dest-id="' + d.id + '">' +
+          '<div class="transfer-dest-radio"></div>' +
+          visual +
+          '<div class="transfer-dest-info">' +
+            '<div class="transfer-dest-header">' +
+              '<span class="transfer-dest-name">' + d.name + '</span>' +
+              '<span class="transfer-dest-tag ' + d.type + '">' + d.typeLabel + '</span>' +
+            '</div>' +
+            '<div class="transfer-dest-role">' + d.role + '</div>' +
+          '</div>' +
+          '<div class="transfer-dest-meta">' +
+            '<span class="transfer-dest-status-badge">' +
+              '<span class="' + dotClass + '"></span>' +
+              '<span>' + d.statusLabel + '</span>' +
+            '</span>' +
+            '<span class="transfer-dest-workload">' + d.workload + '</span>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      container.querySelectorAll('.transfer-dest-card').forEach(card => {
+        card.addEventListener('click', () => {
+          selectedTransferId = card.getAttribute('data-dest-id');
+          container.querySelectorAll('.transfer-dest-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+        });
+      });
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    const transferBtn = document.getElementById('btn-header-transfer');
+    const transferModal = document.getElementById('modal-transfer-chat');
+    if (transferBtn && transferModal) {
+      transferBtn.addEventListener('click', () => {
+        transferModal.classList.add('open');
+        renderStaticTransferList();
+        if (window.lucide) window.lucide.createIcons();
+      });
+    }
+
+    document.querySelectorAll('.transfer-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.transfer-tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentDestFilter = btn.getAttribute('data-transfer-tab') || 'all';
+        renderStaticTransferList();
+      });
+    });
+
+    const searchInput = document.getElementById('transfer-search-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => renderStaticTransferList());
+    }
+
+    const transferForm = document.getElementById('form-transfer-chat');
+    if (transferForm) {
+      transferForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const dest = transferDests.find(d => d.id === selectedTransferId) || transferDests[0];
+        const optNotify = document.getElementById('transfer-opt-notify-client')?.checked;
+        const scroll = document.getElementById('chat-messages-scroll');
+        const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+        if (scroll) {
+          scroll.innerHTML += '<div class="message-row system"><div class="system-event-bubble"><i data-lucide="corner-up-right" style="width:13px;height:13px;"></i><span>Atendimento transferido para ' + dest.name + ' por Rafael Mota</span></div></div>';
+          if (optNotify) {
+            scroll.innerHTML += '<div class="message-row bot"><div class="message-bubble"><div>Você foi transferido(a) para nosso especialista ' + dest.name + '. Em instantes daremos continuidade ao seu atendimento!</div><div class="message-meta"><span>' + now + '</span><span class="check-read-icon">✓✓</span></div></div><div class="bot-sparkle-avatar"><i data-lucide="sparkles" style="width:14px;height:14px;"></i></div></div>';
+          }
+          scroll.scrollTop = scroll.scrollHeight;
+        }
+
+        if (transferModal) transferModal.classList.remove('open');
+        if (window.lucide) window.lucide.createIcons();
+        alert('Atendimento transferido para ' + dest.name + ' com sucesso!');
+      });
+    }
   </script>
 `;
 

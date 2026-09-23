@@ -1,4 +1,5 @@
 import { zapChatData } from './data.js';
+import { showToast } from './settings.js';
 
 let activeThreadId = zapChatData.conversas.threads[0].id;
 let currentTabFilter = 'all';
@@ -8,6 +9,7 @@ export function initChatView() {
   renderActiveChat();
   setupChatInputs();
   setupThreadFilters();
+  setupTransferModal();
 
   document.getElementById('btn-close-chat-profile')?.addEventListener('click', () => {
     const layout = document.querySelector('.conversas-simplified-layout');
@@ -170,7 +172,7 @@ export function renderActiveChat() {
     });
 
     header.querySelector('#btn-header-transfer')?.addEventListener('click', () => {
-      alert(`Transferir atendimento de ${thread.name} para outro atendente ou setor.`);
+      openTransferModal(thread);
     });
 
     header.querySelector('#btn-header-close')?.addEventListener('click', () => {
@@ -192,6 +194,16 @@ export function renderActiveChat() {
       </div>
 
       ${thread.messages.map(msg => {
+        if (msg.sender === 'system') {
+          return `
+            <div class="message-row system">
+              <div class="system-event-bubble">
+                <i data-lucide="corner-up-right" style="width: 13px; height: 13px;"></i>
+                <span>${msg.text}</span>
+              </div>
+            </div>
+          `;
+        }
         const isBot = msg.sender === 'bot';
         return `
           <div class="message-row ${isBot ? 'bot' : 'user'}">
@@ -495,4 +507,395 @@ function setupThreadFilters() {
     });
   }
 }
+
+/* ==========================================================================
+   Transfer Modal Logic & Destinations Data
+   ========================================================================== */
+
+export const transferDestinations = [
+  // Atendentes Humanos
+  {
+    id: 'juliana_santos',
+    name: 'Juliana Santos',
+    type: 'human',
+    typeLabel: 'Humano',
+    role: 'Comercial & Vendas (WhatsApp / E-commerce)',
+    department: 'Comercial',
+    img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
+    status: 'online',
+    statusLabel: 'Disponível',
+    workload: '2 atendimentos ativos'
+  },
+  {
+    id: 'felipe_costa',
+    name: 'Felipe Costa',
+    type: 'human',
+    typeLabel: 'Humano',
+    role: 'Suporte Comercial & Pós-Venda (Instagram)',
+    department: 'Vendas',
+    img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
+    status: 'online',
+    statusLabel: 'Disponível',
+    workload: '3 atendimentos ativos'
+  },
+  {
+    id: 'rodrigo_almeida',
+    name: 'Rodrigo Almeida',
+    type: 'human',
+    typeLabel: 'Humano',
+    role: 'Suporte Técnico N2 & Integrações de API',
+    department: 'Suporte Técnico',
+    img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
+    status: 'online',
+    statusLabel: 'Disponível',
+    workload: '4 atendimentos ativos'
+  },
+  {
+    id: 'carla_menezes',
+    name: 'Carla Menezes',
+    type: 'human',
+    typeLabel: 'Humano',
+    role: 'Gerente de Contas Enterprise & Key Accounts',
+    department: 'Enterprise',
+    img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+    status: 'away',
+    statusLabel: 'Em pausa',
+    workload: '1 atendimento'
+  },
+  {
+    id: 'rafael_mota',
+    name: 'Rafael Mota (Você)',
+    type: 'human',
+    typeLabel: 'Humano',
+    role: 'Administrador & Atendimento Geral',
+    department: 'Gestão',
+    img: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=80',
+    status: 'online',
+    statusLabel: 'Disponível agora',
+    workload: 'Fila pessoal'
+  },
+
+  // Agentes de IA
+  {
+    id: 'pedro_ia',
+    name: 'Pedro',
+    type: 'ai',
+    typeLabel: 'IA',
+    role: 'Especialista em Vendas & Atendimento Comercial',
+    department: 'Comercial',
+    img: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80',
+    status: 'online',
+    statusLabel: 'IA Ativa (24/7)',
+    workload: 'Capacidade livre'
+  },
+  {
+    id: 'sdr_ia',
+    name: 'SDR IA',
+    type: 'ai',
+    typeLabel: 'IA',
+    role: 'Qualificação Rápida & Agendamento de Demonstração',
+    department: 'Comercial',
+    img: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&auto=format&fit=crop&q=80',
+    status: 'online',
+    statusLabel: 'IA Ativa (24/7)',
+    workload: 'Capacidade livre'
+  },
+  {
+    id: 'suporte_ia',
+    name: 'Suporte IA',
+    type: 'ai',
+    typeLabel: 'IA',
+    role: 'Resolução Técnica de Dúvidas & FAQ Instantâneo',
+    department: 'Suporte Técnico',
+    img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80',
+    status: 'online',
+    statusLabel: 'IA Ativa (24/7)',
+    workload: 'Capacidade livre'
+  },
+
+  // Filas / Departamentos
+  {
+    id: 'dept_comercial',
+    name: 'Fila Comercial & Vendas',
+    type: 'dept',
+    typeLabel: 'Fila',
+    role: 'Distribuição automática para o próximo vendedor livre',
+    department: 'Comercial',
+    icon: 'briefcase',
+    status: 'online',
+    statusLabel: 'Fila Ativa',
+    workload: '2 operadores online · Espera < 2 min'
+  },
+  {
+    id: 'dept_suporte',
+    name: 'Fila de Suporte Técnico',
+    type: 'dept',
+    typeLabel: 'Fila',
+    role: 'Distribuição para atendentes técnicos especializados',
+    department: 'Suporte Técnico',
+    icon: 'headphones',
+    status: 'online',
+    statusLabel: 'Fila Ativa',
+    workload: '2 operadores online · Espera < 1 min'
+  },
+  {
+    id: 'dept_financeiro',
+    name: 'Fila Financeiro & Cobrança',
+    type: 'dept',
+    typeLabel: 'Fila',
+    role: '2ª via de boleto, notas fiscais e upgrade de planos',
+    department: 'Financeiro',
+    icon: 'credit-card',
+    status: 'online',
+    statusLabel: 'Fila Ativa',
+    workload: '1 operador online'
+  }
+];
+
+let currentTransferThread = null;
+let currentTransferFilter = 'all';
+let selectedTransferDestId = null;
+
+export function openTransferModal(thread) {
+  if (!thread) return;
+  currentTransferThread = thread;
+
+  const modal = document.getElementById('modal-transfer-chat');
+  if (!modal) return;
+
+  // 1. Populate Contact Banner
+  const avatarEl = document.getElementById('transfer-contact-avatar');
+  const nameEl = document.getElementById('transfer-contact-name');
+  const phoneEl = document.getElementById('transfer-contact-phone');
+  const channelEl = document.getElementById('transfer-contact-channel');
+  const channelLabelEl = document.getElementById('transfer-contact-channel-label');
+  const currentAgentEl = document.getElementById('transfer-current-agent-name');
+
+  if (avatarEl) avatarEl.src = thread.img;
+  if (nameEl) nameEl.textContent = thread.name;
+  if (phoneEl) phoneEl.textContent = thread.phone || '+55 11 98765-4321';
+  if (currentAgentEl) currentAgentEl.textContent = `${thread.assignedAgent || 'Pedro'} (${thread.attendingStatus || 'IA atendendo'})`;
+
+  if (channelEl) {
+    channelEl.className = `transfer-channel-pill ${(thread.channel || 'whatsapp').toLowerCase()}`;
+  }
+  if (channelLabelEl) {
+    channelLabelEl.textContent = thread.channel || 'WhatsApp';
+  }
+
+  // 2. Reset Filter, Search and Inputs
+  currentTransferFilter = 'all';
+  const searchInput = document.getElementById('transfer-search-input');
+  if (searchInput) searchInput.value = '';
+
+  const noteInput = document.getElementById('transfer-internal-note');
+  if (noteInput) noteInput.value = '';
+
+  // Select first eligible target (avoid current agent if possible)
+  const defaultDest = transferDestinations.find(d => d.name !== (thread.assignedAgent || 'Pedro')) || transferDestinations[0];
+  selectedTransferDestId = defaultDest ? defaultDest.id : transferDestinations[0].id;
+
+  const hidId = document.getElementById('transfer-selected-dest-id');
+  const hidName = document.getElementById('transfer-selected-dest-name');
+  const hidType = document.getElementById('transfer-selected-dest-type');
+  if (hidId) hidId.value = defaultDest.id;
+  if (hidName) hidName.value = defaultDest.name;
+  if (hidType) hidType.value = defaultDest.type;
+
+  // Reset tab buttons
+  document.querySelectorAll('.transfer-tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-transfer-tab') === 'all');
+  });
+
+  renderTransferDestinationsList();
+
+  // 3. Open Modal
+  modal.classList.add('open');
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function renderTransferDestinationsList() {
+  const container = document.getElementById('transfer-dest-list');
+  if (!container) return;
+
+  const searchInput = document.getElementById('transfer-search-input');
+  const term = (searchInput ? searchInput.value : '').toLowerCase().trim();
+
+  let list = transferDestinations.filter(item => {
+    if (currentTransferFilter !== 'all' && item.type !== currentTransferFilter) {
+      return false;
+    }
+    if (term) {
+      const matchName = item.name.toLowerCase().includes(term);
+      const matchRole = item.role.toLowerCase().includes(term);
+      const matchDept = (item.department || '').toLowerCase().includes(term);
+      return matchName || matchRole || matchDept;
+    }
+    return true;
+  });
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 28px 12px; color: var(--text-muted); font-size: 13px;">
+        <i data-lucide="search-x" style="width: 24px; height: 24px; margin-bottom: 6px; display: inline-block;"></i>
+        <div>Nenhum atendente ou departamento encontrado para esta busca.</div>
+      </div>
+    `;
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
+
+  container.innerHTML = list.map(item => {
+    const isSelected = item.id === selectedTransferDestId;
+    const isCurrent = currentTransferThread && currentTransferThread.assignedAgent === item.name;
+
+    let visualElement = '';
+    if (item.type === 'dept') {
+      visualElement = `
+        <div class="transfer-dest-icon-box dept">
+          <i data-lucide="${item.icon || 'briefcase'}" style="width: 17px; height: 17px;"></i>
+        </div>
+      `;
+    } else if (item.type === 'ai') {
+      visualElement = `
+        <div class="transfer-dest-icon-box ai">
+          <i data-lucide="bot" style="width: 17px; height: 17px;"></i>
+        </div>
+      `;
+    } else {
+      visualElement = `
+        <img src="${item.img}" alt="${item.name}" class="transfer-dest-avatar">
+      `;
+    }
+
+    const dotClass = item.status === 'away' ? 'status-dot-indicator away' : 'status-dot-indicator';
+
+    return `
+      <div class="transfer-dest-card ${isSelected ? 'selected' : ''}" data-dest-id="${item.id}">
+        <div class="transfer-dest-radio"></div>
+        ${visualElement}
+        <div class="transfer-dest-info">
+          <div class="transfer-dest-header">
+            <span class="transfer-dest-name">${item.name}</span>
+            <span class="transfer-dest-tag ${item.type}">${item.typeLabel}</span>
+            ${isCurrent ? '<span class="badge" style="font-size: 10px; padding: 1px 5px; background: rgba(0, 168, 104, 0.1); color: var(--primary);">Atual</span>' : ''}
+          </div>
+          <div class="transfer-dest-role">${item.role}</div>
+        </div>
+        <div class="transfer-dest-meta">
+          <span class="transfer-dest-status-badge">
+            <span class="${dotClass}"></span>
+            <span>${item.statusLabel}</span>
+          </span>
+          <span class="transfer-dest-workload">${item.workload}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.transfer-dest-card').forEach(card => {
+    card.addEventListener('click', () => {
+      selectedTransferDestId = card.getAttribute('data-dest-id');
+      container.querySelectorAll('.transfer-dest-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+
+      const destObj = transferDestinations.find(d => d.id === selectedTransferDestId);
+      if (destObj) {
+        const hidId = document.getElementById('transfer-selected-dest-id');
+        const hidName = document.getElementById('transfer-selected-dest-name');
+        const hidType = document.getElementById('transfer-selected-dest-type');
+        if (hidId) hidId.value = destObj.id;
+        if (hidName) hidName.value = destObj.name;
+        if (hidType) hidType.value = destObj.type;
+      }
+    });
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function setupTransferModal() {
+  // Category tabs
+  document.querySelectorAll('.transfer-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.transfer-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTransferFilter = btn.getAttribute('data-transfer-tab') || 'all';
+      renderTransferDestinationsList();
+    });
+  });
+
+  // Search input
+  const searchInput = document.getElementById('transfer-search-input');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      renderTransferDestinationsList();
+    });
+  }
+
+  // Form Submission
+  const form = document.getElementById('form-transfer-chat');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!currentTransferThread) return;
+
+      const destObj = transferDestinations.find(d => d.id === selectedTransferDestId);
+      if (!destObj) {
+        alert('Por favor, selecione um atendente ou departamento de destino.');
+        return;
+      }
+
+      const optNotify = document.getElementById('transfer-opt-notify-client')?.checked;
+      const noteInput = document.getElementById('transfer-internal-note');
+      const noteText = noteInput ? noteInput.value.trim() : '';
+
+      const nowTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+      // 1. Add system transfer record message
+      currentTransferThread.messages.push({
+        sender: 'system',
+        text: `Atendimento transferido para ${destObj.name} por Rafael Mota`,
+        time: nowTime
+      });
+
+      // 2. If client notification is enabled, append user-facing transfer message
+      if (optNotify) {
+        currentTransferThread.messages.push({
+          sender: 'bot',
+          text: `Você foi transferido(a) para nosso especialista ${destObj.name}. Em instantes daremos continuidade ao seu atendimento!`,
+          time: nowTime
+        });
+      }
+
+      // 3. Update thread state
+      currentTransferThread.assignedAgent = destObj.name;
+      if (destObj.type === 'ai') {
+        currentTransferThread.isAiAttending = true;
+        currentTransferThread.attendingStatus = 'IA atendendo';
+      } else if (destObj.type === 'human') {
+        currentTransferThread.isAiAttending = false;
+        currentTransferThread.attendingStatus = `${destObj.name} atendendo`;
+      } else {
+        currentTransferThread.isAiAttending = false;
+        currentTransferThread.attendingStatus = `Fila ${destObj.department || 'Geral'}`;
+      }
+
+      // 4. Update snippet in thread list
+      currentTransferThread.snippet = `Transferido para ${destObj.name}`;
+      currentTransferThread.time = nowTime;
+
+      // 5. Close modal
+      const modal = document.getElementById('modal-transfer-chat');
+      if (modal) modal.classList.remove('open');
+
+      // 6. Refresh views
+      renderThreadList();
+      renderActiveChat();
+
+      showToast(`Atendimento com ${currentTransferThread.name} transferido para ${destObj.name} com sucesso!`);
+    });
+  }
+}
+
 

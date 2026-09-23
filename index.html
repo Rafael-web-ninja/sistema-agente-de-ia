@@ -2201,6 +2201,123 @@
     </div>
   </div>
 
+  <!-- 3.1 Modal Transferir Atendimento (Conversas) -->
+  <div class="modal-backdrop" id="modal-transfer-chat">
+    <div class="modal-dialog transfer-chat-dialog">
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="corner-up-right" style="width: 19px; height: 19px; color: var(--primary);"></i>
+            <span>Transferir Atendimento</span>
+          </h3>
+          <p class="modal-header-sub">Transfira esta conversa em tempo real para outro atendente, IA ou fila</p>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar modal">✕</button>
+      </div>
+
+      <!-- Current Conversation Banner -->
+      <div class="transfer-chat-banner" id="transfer-chat-banner">
+        <div class="transfer-chat-contact-box">
+          <img id="transfer-contact-avatar" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80" alt="Contato" class="transfer-contact-img">
+          <div class="transfer-contact-details">
+            <h4 id="transfer-contact-name">Juliana Santos</h4>
+            <div class="transfer-contact-tags">
+              <span class="transfer-channel-pill whatsapp" id="transfer-contact-channel">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2z"/></svg>
+                <span id="transfer-contact-channel-label">WhatsApp</span>
+              </span>
+              <span class="transfer-phone-text" id="transfer-contact-phone">+55 11 98765-4321</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="transfer-current-attendant-box">
+          <span class="transfer-current-label">Atendimento atual</span>
+          <div class="transfer-current-pill" id="transfer-current-pill">
+            <span class="sparkle-icon">✨</span>
+            <span id="transfer-current-agent-name">Pedro (IA atendendo)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transfer Form -->
+      <form id="form-transfer-chat">
+        <input type="hidden" id="transfer-selected-dest-id">
+        <input type="hidden" id="transfer-selected-dest-name">
+        <input type="hidden" id="transfer-selected-dest-type">
+
+        <!-- Category Tabs -->
+        <div class="transfer-dest-tabs">
+          <button type="button" class="transfer-tab-btn active" data-transfer-tab="all">
+            Todos
+          </button>
+          <button type="button" class="transfer-tab-btn" data-transfer-tab="human">
+            👤 Atendentes Humanos
+          </button>
+          <button type="button" class="transfer-tab-btn" data-transfer-tab="ai">
+            🤖 Agentes de IA
+          </button>
+          <button type="button" class="transfer-tab-btn" data-transfer-tab="dept">
+            🏢 Filas & Departamentos
+          </button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="transfer-search-wrap">
+          <i data-lucide="search"></i>
+          <input type="text" id="transfer-search-input" placeholder="Buscar atendente, IA ou departamento...">
+        </div>
+
+        <!-- Destination Cards List -->
+        <div class="transfer-dest-list" id="transfer-dest-list">
+          <!-- Populated dynamically by JS -->
+        </div>
+
+        <!-- Transfer Options Box -->
+        <div class="transfer-options-card">
+          <div class="transfer-options-header">
+            <i data-lucide="sliders" style="width: 14px; height: 14px; color: var(--primary);"></i>
+            <span>Opções de transferência</span>
+          </div>
+          
+          <label class="transfer-checkbox-label">
+            <input type="checkbox" id="transfer-opt-summary" checked>
+            <div>
+              <strong>Anexar resumo inteligente da IA</strong>
+              <p>Transmite o histórico resumido e pontos-chave da conversa diretamente ao novo atendente.</p>
+            </div>
+          </label>
+
+          <label class="transfer-checkbox-label">
+            <input type="checkbox" id="transfer-opt-notify-client" checked>
+            <div>
+              <strong>Notificar cliente sobre a transferência</strong>
+              <p>Envia mensagem automática informando que a conversa foi transferida.</p>
+            </div>
+          </label>
+
+          <div class="transfer-note-wrap">
+            <label class="transfer-note-label" for="transfer-internal-note">
+              <span>Nota interna / Orientação de transferência (opcional)</span>
+            </label>
+            <textarea id="transfer-internal-note" class="transfer-note-textarea" rows="2" placeholder="Ex: Cliente tem interesse no plano Pro e gostaria de negociar desconto no plano anual..."></textarea>
+          </div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="transfer-modal-footer">
+          <button type="button" class="btn btn-secondary modal-close">
+            <i data-lucide="x" style="width: 14px; height: 14px;"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-transfer-chat">
+            <i data-lucide="corner-up-right" style="width: 15px; height: 15px;"></i> Confirmar Transferência
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- 4. Modal Novo Canal (Interactive Wizard) -->
   <div class="modal-backdrop" id="modal-new-channel">
     <div class="modal-dialog channel-wizard-dialog">
@@ -2720,10 +2837,10 @@
           <!-- Rodapé da Sidebar -->
           <div class="modal-test-sidebar-footer">
             <button type="button" class="btn-clear-test-chats" id="btn-modal-clear-chats">
-              <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+              <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
               <span>Limpar todas conversas</span>
             </button>
-            <button type="button" class="btn-close-test-env modal-close" title="Fechar">
+            <button type="button" class="btn btn-close-test-env modal-close" title="Fechar ambiente de teste">
               <i data-lucide="x" style="width: 13px; height: 13px;"></i>
               <span>Fechar ambiente de teste</span>
             </button>
