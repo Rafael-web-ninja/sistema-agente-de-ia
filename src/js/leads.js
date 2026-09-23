@@ -1,10 +1,101 @@
 import { zapChatData } from './data.js';
-import { switchView } from './navigation.js';
+import { switchView, openModal, closeAllModals } from './navigation.js';
 import { showToast } from './settings.js';
+
+export const availableAgents = [
+  {
+    id: 'juliana_santos',
+    name: 'Juliana Santos',
+    type: 'human',
+    typeLabel: 'Humano',
+    role: 'Comercial & Vendas (WhatsApp / E-commerce)',
+    department: 'Comercial',
+    img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
+    status: 'online',
+    statusLabel: 'Disponível',
+    workload: '3 leads ativos'
+  },
+  {
+    id: 'pedro_ia',
+    name: 'Pedro',
+    type: 'ai',
+    typeLabel: 'IA',
+    role: 'Especialista em Vendas & Atendimento Comercial',
+    department: 'Vendas',
+    img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
+    status: 'online',
+    statusLabel: 'IA Ativa (24/7)',
+    workload: 'Capacidade ilimitada'
+  },
+  {
+    id: 'felipe_costa',
+    name: 'Felipe Costa',
+    type: 'human',
+    typeLabel: 'Humano',
+    role: 'Suporte Comercial & Pós-Venda (Instagram)',
+    department: 'Vendas',
+    img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
+    status: 'online',
+    statusLabel: 'Disponível',
+    workload: '5 leads ativos'
+  },
+  {
+    id: 'sdr_ia',
+    name: 'SDR IA',
+    type: 'ai',
+    typeLabel: 'IA',
+    role: 'Qualificação de Leads & Agendamento',
+    department: 'Comercial',
+    img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+    status: 'online',
+    statusLabel: 'IA Ativa (24/7)',
+    workload: 'Capacidade ilimitada'
+  },
+  {
+    id: 'carla_menezes',
+    name: 'Carla Menezes',
+    type: 'human',
+    typeLabel: 'Humano',
+    role: 'Gerente de Contas Enterprise & Key Accounts',
+    department: 'Enterprise',
+    img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+    status: 'online',
+    statusLabel: 'Disponível',
+    workload: '2 leads ativos'
+  },
+  {
+    id: 'suporte_ia',
+    name: 'Suporte IA',
+    type: 'ai',
+    typeLabel: 'IA',
+    role: 'Dúvidas Técnicas, FAQ & Resoluções',
+    department: 'Suporte Técnico',
+    img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80',
+    status: 'online',
+    statusLabel: 'IA Ativa (24/7)',
+    workload: 'Capacidade ilimitada'
+  },
+  {
+    id: 'rodrigo_almeida',
+    name: 'Rodrigo Almeida',
+    type: 'human',
+    typeLabel: 'Humano',
+    role: 'Negociação & Fechamento Comercial',
+    department: 'Comercial',
+    img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
+    status: 'busy',
+    statusLabel: 'Ocupado',
+    workload: '7 leads ativos'
+  }
+];
 
 let selectedLead = zapChatData.leads.list[0];
 let checkedLeadIds = new Set([zapChatData.leads.list[0]?.id].filter(Boolean));
 let currentDisplayedLeads = zapChatData.leads.list;
+let currentAssignFilter = 'all';
+let currentAssignSearch = '';
+let selectedAgentForAssign = null;
+let currentLeadForAssign = null;
 
 export function initLeadsView() {
   renderLeadsTable(zapChatData.leads.list);
@@ -12,6 +103,7 @@ export function initLeadsView() {
   setupLeadFilters();
   setupMasterCheckbox();
   setupExportCsv();
+  setupAssignAgentModal();
   if (window.lucide) window.lucide.createIcons();
 }
 
@@ -212,8 +304,9 @@ export function renderSelectedLeadPanel(lead) {
   // Assign agent button
   const assignBtn = panel.querySelector('#btn-assign-agent');
   if (assignBtn) {
-    assignBtn.addEventListener('click', () => {
-      alert(`Atribuir agente para ${lead.name}`);
+    assignBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openAssignAgentModal(lead);
     });
   }
 
@@ -435,6 +528,165 @@ function exportLeadsToCsv(leads) {
       updateSelectAllAndBadge(currentDisplayedLeads);
       if (window.lucide) window.lucide.createIcons();
     }, 2200);
+  }
+}
+
+export function openAssignAgentModal(lead) {
+  if (!lead) return;
+  currentLeadForAssign = lead;
+
+  // Find matching agent or default to first
+  const matchedAgent = availableAgents.find(a => a.name === lead.agentName);
+  selectedAgentForAssign = matchedAgent || availableAgents[0];
+
+  // Populate lead banner in modal
+  const avatarEl = document.getElementById('assign-lead-avatar');
+  const nameEl = document.getElementById('assign-lead-name');
+  const metaEl = document.getElementById('assign-lead-meta');
+  const currentImgEl = document.getElementById('assign-current-agent-img');
+  const currentNameEl = document.getElementById('assign-current-agent-name');
+  const targetLeadInput = document.getElementById('assign-target-lead-id');
+  const selectedAgentInput = document.getElementById('assign-selected-agent-id');
+  const noteInput = document.getElementById('assign-transfer-note');
+
+  if (avatarEl) avatarEl.textContent = lead.initials;
+  if (nameEl) nameEl.textContent = lead.name;
+  if (metaEl) metaEl.textContent = `${lead.phone} • ${lead.channel}`;
+  if (currentImgEl) currentImgEl.src = lead.agentImg;
+  if (currentNameEl) currentNameEl.textContent = lead.agentName;
+  if (targetLeadInput) targetLeadInput.value = lead.id;
+  if (selectedAgentInput) selectedAgentInput.value = selectedAgentForAssign.id;
+  if (noteInput) noteInput.value = '';
+
+  // Reset category filters
+  currentAssignFilter = 'all';
+  currentAssignSearch = '';
+  const searchInput = document.getElementById('assign-agent-search-input');
+  if (searchInput) searchInput.value = '';
+
+  document.querySelectorAll('.assign-tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-agent-filter') === 'all');
+  });
+
+  renderAssignAgentsList();
+  openModal('modal-assign-agent');
+}
+
+function renderAssignAgentsList() {
+  const container = document.getElementById('assign-agents-list');
+  if (!container || !currentLeadForAssign) return;
+
+  const filtered = availableAgents.filter(agent => {
+    const matchesFilter = currentAssignFilter === 'all' || agent.type === currentAssignFilter;
+    const matchesSearch = !currentAssignSearch ||
+      agent.name.toLowerCase().includes(currentAssignSearch) ||
+      agent.role.toLowerCase().includes(currentAssignSearch) ||
+      agent.department.toLowerCase().includes(currentAssignSearch);
+    return matchesFilter && matchesSearch;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px;">
+        Nenhum agente encontrado para o filtro selecionado.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(agent => {
+    const isSelected = selectedAgentForAssign && selectedAgentForAssign.id === agent.id;
+    const isCurrent = currentLeadForAssign.agentName === agent.name;
+    const typeBadgeClass = agent.type === 'ai' ? 'ai' : 'human';
+    const typeBadgeText = agent.type === 'ai' ? '🤖 IA' : '👤 Humano';
+
+    return `
+      <div class="assign-agent-card ${isSelected ? 'selected' : ''}" data-agent-id="${agent.id}">
+        <div class="assign-agent-card-left">
+          <div class="assign-radio-indicator"></div>
+          <div class="assign-agent-photo-wrap">
+            <img src="${agent.img}" alt="${agent.name}" class="assign-agent-photo">
+            <span class="assign-agent-online-dot"></span>
+          </div>
+          <div class="assign-agent-details">
+            <div class="assign-agent-name-row">
+              <span class="assign-agent-name">${agent.name}</span>
+              <span class="assign-type-badge ${typeBadgeClass}">${typeBadgeText}</span>
+              ${isCurrent ? '<span class="assign-current-tag">Atual</span>' : ''}
+            </div>
+            <span class="assign-agent-role">${agent.role}</span>
+          </div>
+        </div>
+        <div class="assign-agent-card-right">
+          <span class="assign-workload-text">${agent.workload}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Add click handlers on agent cards
+  container.querySelectorAll('.assign-agent-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const agentId = card.getAttribute('data-agent-id');
+      const agent = availableAgents.find(a => a.id === agentId);
+      if (agent) {
+        selectedAgentForAssign = agent;
+        const hiddenInput = document.getElementById('assign-selected-agent-id');
+        if (hiddenInput) hiddenInput.value = agent.id;
+        renderAssignAgentsList();
+      }
+    });
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function setupAssignAgentModal() {
+  // Category tabs
+  document.querySelectorAll('.assign-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.assign-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentAssignFilter = btn.getAttribute('data-agent-filter') || 'all';
+      renderAssignAgentsList();
+    });
+  });
+
+  // Search input
+  const searchInput = document.getElementById('assign-agent-search-input');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      currentAssignSearch = e.target.value.toLowerCase().trim();
+      renderAssignAgentsList();
+    });
+  }
+
+  // Form submit
+  const form = document.getElementById('form-assign-agent');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!currentLeadForAssign || !selectedAgentForAssign) return;
+
+      const lead = zapChatData.leads.list.find(l => l.id === currentLeadForAssign.id);
+      if (!lead) return;
+
+      lead.agentName = selectedAgentForAssign.name;
+      lead.agentImg = selectedAgentForAssign.img;
+
+      const noteText = document.getElementById('assign-transfer-note')?.value.trim();
+      if (noteText) {
+        lead.notes = lead.notes ? `${lead.notes} | [Transferência]: ${noteText}` : noteText;
+      }
+
+      // Re-render table and panel
+      selectedLead = lead;
+      renderLeadsTable(currentDisplayedLeads);
+      renderSelectedLeadPanel(lead);
+
+      closeAllModals();
+      showToast(`Agente "${selectedAgentForAssign.name}" atribuído a ${lead.name} com sucesso!`);
+    });
   }
 }
 

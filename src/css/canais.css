@@ -220,11 +220,181 @@
   justify-content: center;
   cursor: pointer;
   transition: var(--transition);
+  font-size: 16px;
+  line-height: 1;
 }
 
-.channel-more-btn:hover {
+.channel-more-btn:hover,
+.channel-more-btn.is-active {
   background-color: var(--bg-hover);
+  color: var(--primary);
+  border-color: var(--primary-border);
+  box-shadow: 0 0 0 2px var(--primary-glow);
+}
+
+/* Floating Actions Popover */
+.channel-actions-popover {
+  position: fixed;
+  z-index: 1080;
+  width: 200px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.14), 0 4px 10px -2px rgba(0, 0, 0, 0.06);
+  padding: 6px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.97);
+  transition: opacity 0.16s cubic-bezier(0.16, 1, 0.3, 1), transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="dark"] .channel-actions-popover {
+  background: #1E232D;
+  border-color: #2D3748;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.channel-actions-popover.show {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.channel-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  user-select: none;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.channel-popover-item i,
+.channel-popover-item svg {
+  width: 15px;
+  height: 15px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.channel-popover-item:hover {
+  background: var(--bg-hover);
   color: var(--text-main);
+}
+
+.channel-popover-item:hover i,
+.channel-popover-item:hover svg {
+  color: var(--primary);
+  transform: scale(1.08);
+}
+
+.channel-popover-divider {
+  height: 1px;
+  background: var(--border-light);
+  margin: 4px 0;
+}
+
+[data-theme="dark"] .channel-popover-divider {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.channel-popover-item.danger {
+  color: #EF4444;
+}
+
+.channel-popover-item.danger i,
+.channel-popover-item.danger svg {
+  color: #EF4444;
+}
+
+.channel-popover-item.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #DC2626;
+}
+
+.channel-popover-item.danger:hover i,
+.channel-popover-item.danger:hover svg {
+  color: #DC2626;
+  transform: scale(1.08);
+}
+
+/* Modals custom styling for Channels */
+.edit-channel-dialog {
+  max-width: 540px;
+}
+
+.modal-header-sub {
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.channel-modal-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.channel-modal-form-grid .full-span {
+  grid-column: span 2;
+}
+
+@media (max-width: 580px) {
+  .channel-modal-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .channel-modal-form-grid .full-span {
+    grid-column: span 1;
+  }
+}
+
+.channel-delete-dialog {
+  max-width: 440px;
+}
+
+.delete-channel-warning-box {
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  border-left: 3px solid #EF4444;
+}
+
+.btn-danger-confirm {
+  background: #EF4444 !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  border-radius: var(--radius-md);
+  height: 38px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-danger-confirm:hover {
+  background: #DC2626 !important;
+  transform: translateY(-1px);
 }
 
 /* Table Pagination Footer */

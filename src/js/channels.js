@@ -1,14 +1,56 @@
 import { zapChatData } from './data.js';
+import { showToast } from './settings.js';
+import { openModal, closeAllModals } from './navigation.js';
 
 export function initChannelsView() {
   renderSimplifiedChannelsTable(zapChatData.canais.list);
   setupChannelsSearch();
   setupNewChannelForm();
+  setupChannelActions();
+  setupEditChannelForm();
+  setupDeleteChannelHandler();
+}
+
+export function refreshChannelsTable() {
+  const searchInput = document.getElementById('channels-search-input');
+  const q = searchInput ? searchInput.value.toLowerCase().trim() : '';
+  if (q) {
+    const filtered = zapChatData.canais.list.filter(c => {
+      return (c.name || '').toLowerCase().includes(q) ||
+             (c.agentName || '').toLowerCase().includes(q) ||
+             (c.identifier || '').toLowerCase().includes(q) ||
+             (c.department || '').toLowerCase().includes(q) ||
+             (c.status || '').toLowerCase().includes(q);
+    });
+    renderSimplifiedChannelsTable(filtered);
+  } else {
+    renderSimplifiedChannelsTable(zapChatData.canais.list);
+  }
 }
 
 export function renderSimplifiedChannelsTable(channels) {
   const tableBody = document.getElementById('channels-table-body');
   if (!tableBody) return;
+
+  if (!channels || channels.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; padding: 48px 20px; color: var(--text-muted);">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <i data-lucide="inbox" style="width: 32px; height: 32px; stroke-width: 1.5; color: var(--text-muted);"></i>
+            <span style="font-weight: 600; font-size: 14px; color: var(--text-secondary);">Nenhum canal encontrado</span>
+            <span style="font-size: 12.5px;">Clique em "+ Novo canal" para conectar uma linha ou ajuste seus termos de busca.</span>
+          </div>
+        </td>
+      </tr>
+    `;
+    const countInfo = document.getElementById('channels-pagination-info');
+    if (countInfo) {
+      countInfo.textContent = `0 de 0 canais`;
+    }
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
 
   tableBody.innerHTML = channels.map(channel => {
     const glyphHtml = getChannelIconHtml(channel.channelType);
@@ -24,8 +66,8 @@ export function renderSimplifiedChannelsTable(channels) {
     } else {
       agentHtml = `
         <div class="channel-agent-cell">
-          <div class="channel-agent-badge" style="background-color: ${channel.agentBg}; color: ${channel.agentColor};">
-            ${channel.agentInitials}
+          <div class="channel-agent-badge" style="background-color: ${channel.agentBg || '#EAF8F1'}; color: ${channel.agentColor || '#00A868'};">
+            ${channel.agentInitials || channel.agentName?.substring(0, 2).toUpperCase() || 'IA'}
           </div>
           <span>${channel.agentName}</span>
         </div>
@@ -33,10 +75,11 @@ export function renderSimplifiedChannelsTable(channels) {
     }
 
     const isConnected = channel.status === 'Conectado' || channel.status === 'Ativo';
-    const statusClass = isConnected ? 'connected' : 'soon';
+    const isTesting = channel.status === 'Em breve';
+    const statusClass = isConnected ? 'connected' : (isTesting ? 'soon' : 'soon');
 
     return `
-      <tr>
+      <tr data-channel-row-id="${channel.id}">
         <td>
           <div class="channel-name-cell">
             ${glyphHtml}
@@ -59,7 +102,7 @@ export function renderSimplifiedChannelsTable(channels) {
           </span>
         </td>
         <td style="text-align: right;">
-          <button class="channel-more-btn" title="Mais opções" onclick="alert('Opções do canal: ${channel.name}')">
+          <button type="button" class="channel-more-btn" title="Mais opções" data-channel-id="${channel.id}" aria-label="Mais opções para ${channel.name}">
             ⋮
           </button>
         </td>
@@ -75,20 +118,279 @@ export function renderSimplifiedChannelsTable(channels) {
   if (window.lucide) window.lucide.createIcons();
 }
 
+export function toggleChannelActionsPopover(button, channelId) {
+  const popover = document.getElementById('channel-actions-popover');
+  if (!popover) return;
+
+  const currentActiveId = popover.getAttribute('data-active-channel-id');
+  const isAlreadyOpen = popover.classList.contains('show');
+
+  if (isAlreadyOpen && currentActiveId === channelId) {
+    closeChannelActionsPopover();
+    return;
+  }
+
+  // Set active channel ID
+  popover.setAttribute('data-active-channel-id', channelId);
+
+  // Mark active button
+  document.querySelectorAll('.channel-more-btn').forEach(b => b.classList.remove('is-active'));
+  button.classList.add('is-active');
+
+  // Show popover to calculate dimensions
+  popover.style.display = 'flex';
+  popover.style.visibility = 'hidden';
+  popover.classList.add('show');
+
+  const btnRect = button.getBoundingClientRect();
+  const popoverWidth = popover.offsetWidth || 200;
+  const popoverHeight = popover.offsetHeight || 170;
+
+  let left = btnRect.right - popoverWidth;
+  if (left < 10) left = 10;
+  if (left + popoverWidth > window.innerWidth - 10) {
+    left = window.innerWidth - popoverWidth - 10;
+  }
+
+  let top = btnRect.bottom + 6;
+  // If popover goes off-screen at bottom, open upwards
+  if (top + popoverHeight > window.innerHeight - 10) {
+    top = btnRect.top - popoverHeight - 6;
+  }
+
+  popover.style.top = `${top}px`;
+  popover.style.left = `${left}px`;
+  popover.style.visibility = 'visible';
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+export function closeChannelActionsPopover() {
+  const popover = document.getElementById('channel-actions-popover');
+  if (popover) {
+    popover.classList.remove('show');
+    popover.removeAttribute('data-active-channel-id');
+  }
+  document.querySelectorAll('.channel-more-btn').forEach(b => b.classList.remove('is-active'));
+}
+
+function setupChannelActions() {
+  const popover = document.getElementById('channel-actions-popover');
+
+  // Delegated click for .channel-more-btn
+  document.addEventListener('click', (e) => {
+    const moreBtn = e.target.closest('.channel-more-btn');
+    if (moreBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const channelId = moreBtn.getAttribute('data-channel-id');
+      toggleChannelActionsPopover(moreBtn, channelId);
+      return;
+    }
+
+    // Click outside closes popover
+    if (popover && popover.classList.contains('show') && !popover.contains(e.target)) {
+      closeChannelActionsPopover();
+    }
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && popover && popover.classList.contains('show')) {
+      closeChannelActionsPopover();
+    }
+  });
+
+  // Close on window scroll/resize
+  window.addEventListener('scroll', () => {
+    if (popover && popover.classList.contains('show')) {
+      closeChannelActionsPopover();
+    }
+  }, true);
+
+  window.addEventListener('resize', () => {
+    if (popover && popover.classList.contains('show')) {
+      closeChannelActionsPopover();
+    }
+  });
+
+  // Actions inside popover
+  if (popover) {
+    popover.addEventListener('click', (e) => {
+      const item = e.target.closest('.channel-popover-item');
+      if (!item) return;
+
+      const action = item.getAttribute('data-action');
+      const channelId = popover.getAttribute('data-active-channel-id');
+      closeChannelActionsPopover();
+
+      if (!channelId) return;
+
+      if (action === 'edit') {
+        openEditChannel(channelId);
+      } else if (action === 'delete') {
+        openDeleteChannel(channelId);
+      } else if (action === 'sync') {
+        syncChannel(channelId);
+      } else if (action === 'copy') {
+        copyChannelIdentifier(channelId);
+      }
+    });
+  }
+}
+
+export function openEditChannel(channelId) {
+  const channel = zapChatData.canais.list.find(c => c.id === channelId);
+  if (!channel) return;
+
+  const idInput = document.getElementById('edit-channel-id');
+  const nameInput = document.getElementById('edit-channel-name');
+  const typeSelect = document.getElementById('edit-channel-type');
+  const deptSelect = document.getElementById('edit-channel-dept');
+  const identInput = document.getElementById('edit-channel-ident');
+  const agentSelect = document.getElementById('edit-channel-agent');
+  const statusSelect = document.getElementById('edit-channel-status');
+
+  if (idInput) idInput.value = channel.id;
+  if (nameInput) nameInput.value = channel.name;
+  if (typeSelect) typeSelect.value = channel.channelType || 'whatsapp';
+  if (deptSelect) deptSelect.value = channel.department || 'Geral';
+  if (identInput) identInput.value = channel.identifier || '';
+  if (agentSelect) agentSelect.value = channel.agentName || 'Pedro';
+  if (statusSelect) statusSelect.value = channel.status || 'Conectado';
+
+  openModal('modal-edit-channel');
+}
+
+function setupEditChannelForm() {
+  const form = document.getElementById('form-edit-channel');
+  if (!form) return;
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const channelId = document.getElementById('edit-channel-id')?.value;
+    const channel = zapChatData.canais.list.find(c => c.id === channelId);
+    if (!channel) return;
+
+    const newName = document.getElementById('edit-channel-name')?.value.trim() || channel.name;
+    const newType = document.getElementById('edit-channel-type')?.value || channel.channelType;
+    const newDept = document.getElementById('edit-channel-dept')?.value || channel.department;
+    const newIdent = document.getElementById('edit-channel-ident')?.value.trim() || channel.identifier;
+    const newAgent = document.getElementById('edit-channel-agent')?.value || channel.agentName;
+    const newStatus = document.getElementById('edit-channel-status')?.value || channel.status;
+
+    channel.name = newName;
+    channel.channelType = newType;
+    channel.iconType = newType;
+    channel.department = newDept;
+    channel.identifier = newIdent;
+    channel.agentName = newAgent;
+
+    // Update agent appearance
+    if (newAgent === 'Pedro') {
+      channel.agentType = 'photo';
+      channel.agentImg = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80';
+      channel.agentInitials = 'PE';
+      channel.agentBg = '#EAF8F1';
+      channel.agentColor = '#00A868';
+    } else {
+      channel.agentType = 'initials';
+      channel.agentInitials = newAgent.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      if (newAgent === 'SDR IA') {
+        channel.agentBg = '#EAF8F1';
+        channel.agentColor = '#00A868';
+      } else if (newAgent === 'Atendimento') {
+        channel.agentBg = '#F3E8FF';
+        channel.agentColor = '#7C3AED';
+      } else if (newAgent === 'Suporte IA') {
+        channel.agentBg = '#EFF6FF';
+        channel.agentColor = '#2563EB';
+      } else {
+        channel.agentBg = '#F1F5F9';
+        channel.agentColor = '#475569';
+      }
+    }
+
+    channel.status = newStatus;
+    if (newStatus === 'Conectado' || newStatus === 'Ativo') {
+      channel.statusType = 'active';
+    } else if (newStatus === 'Em breve') {
+      channel.statusType = 'soon';
+    } else {
+      channel.statusType = 'inactive';
+    }
+
+    refreshChannelsTable();
+    closeAllModals();
+    showToast(`Canal "${newName}" atualizado com sucesso!`);
+  });
+}
+
+export function openDeleteChannel(channelId) {
+  const channel = zapChatData.canais.list.find(c => c.id === channelId);
+  if (!channel) return;
+
+  const idInput = document.getElementById('delete-channel-id');
+  const nameLabel = document.getElementById('delete-channel-target-name');
+
+  if (idInput) idInput.value = channel.id;
+  if (nameLabel) nameLabel.textContent = channel.name;
+
+  openModal('modal-delete-channel');
+}
+
+function setupDeleteChannelHandler() {
+  const confirmBtn = document.getElementById('btn-confirm-delete-channel');
+  if (!confirmBtn) return;
+
+  confirmBtn.addEventListener('click', () => {
+    const channelId = document.getElementById('delete-channel-id')?.value;
+    const index = zapChatData.canais.list.findIndex(c => c.id === channelId);
+    if (index === -1) return;
+
+    const channelName = zapChatData.canais.list[index].name;
+    zapChatData.canais.list.splice(index, 1);
+
+    refreshChannelsTable();
+    closeAllModals();
+    showToast(`Canal "${channelName}" excluído com sucesso!`);
+  });
+}
+
+export function syncChannel(channelId) {
+  const channel = zapChatData.canais.list.find(c => c.id === channelId);
+  if (!channel) return;
+
+  showToast(`Sincronizando canal "${channel.name}"...`);
+  setTimeout(() => {
+    channel.status = 'Conectado';
+    channel.statusType = 'active';
+    refreshChannelsTable();
+    showToast(`Canal "${channel.name}" sincronizado e ativo!`);
+  }, 600);
+}
+
+export function copyChannelIdentifier(channelId) {
+  const channel = zapChatData.canais.list.find(c => c.id === channelId);
+  if (!channel) return;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(channel.identifier).then(() => {
+      showToast(`Identificador "${channel.identifier}" copiado!`);
+    }).catch(() => {
+      showToast(`Identificador: ${channel.identifier}`);
+    });
+  } else {
+    showToast(`Identificador: ${channel.identifier}`);
+  }
+}
+
 function setupChannelsSearch() {
   const searchInput = document.getElementById('channels-search-input');
   if (!searchInput) return;
 
   searchInput.addEventListener('input', (e) => {
-    const q = e.target.value.toLowerCase().trim();
-    const filtered = zapChatData.canais.list.filter(c => {
-      return c.name.toLowerCase().includes(q) ||
-             c.agentName.toLowerCase().includes(q) ||
-             c.identifier.toLowerCase().includes(q) ||
-             c.department.toLowerCase().includes(q) ||
-             c.status.toLowerCase().includes(q);
-    });
-    renderSimplifiedChannelsTable(filtered);
+    refreshChannelsTable();
   });
 }
 
@@ -325,7 +627,7 @@ function simulateQrConnection() {
     };
 
     zapChatData.canais.list.unshift(newChannel);
-    renderSimplifiedChannelsTable(zapChatData.canais.list);
+    refreshChannelsTable();
 
     // Switch to success view
     const scanView = document.getElementById('qr-scan-view');

@@ -1858,7 +1858,8 @@
              7. SUPORTE & AJUDA (CENTRAL DE CHAMADOS)
              ============================================== -->
         <section class="view-panel" id="view-suporte">
-          <div class="suporte-view-wrapper">
+          <!-- 1. Suporte List View (Screenshot 1) -->
+          <div class="suporte-view-wrapper" id="suporte-list-container">
             <div class="suporte-header-section">
               <span class="suporte-eyebrow">PAINEL DO CLIENTE</span>
               <h1 class="suporte-main-title">Suporte</h1>
@@ -1868,7 +1869,7 @@
                   <h2 class="suporte-subtitle-main">Como podemos ajudar?</h2>
                   <p class="suporte-subtitle-desc">Abra chamados e acompanhe todas as solicitações da sua empresa.</p>
                 </div>
-                <button type="button" class="btn-novo-ticket" data-modal-target="modal-new-ticket" id="btn-open-new-ticket" onclick="window.openModal ? window.openModal('modal-new-ticket') : document.getElementById('modal-new-ticket')?.classList.add('open')">
+                <button type="button" class="btn-novo-ticket" data-modal-target="modal-new-ticket" id="btn-open-new-ticket">
                   Novo ticket
                 </button>
               </div>
@@ -1917,7 +1918,7 @@
               </div>
             </div>
 
-            <!-- Main Container: Empty state or tickets table -->
+            <!-- Main Container: Empty state or tickets cards list -->
             <div class="suporte-main-card">
               <!-- Empty State (matching Screenshot 1) -->
               <div class="suporte-empty-state" id="suporte-empty-state">
@@ -1928,22 +1929,79 @@
                 <p class="suporte-empty-desc">Quando precisar, nossa equipe estará a um clique de distância.</p>
               </div>
 
-              <!-- Tickets Table (visible when tickets exist) -->
-              <div class="suporte-tickets-table-wrap" id="suporte-tickets-table-wrap" style="display: none;">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Protocolo</th>
-                      <th>Tipo</th>
-                      <th>Título / Resumo</th>
-                      <th>Abertura</th>
-                      <th>Status</th>
-                      <th style="text-align: right;">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody id="suporte-tickets-tbody">
-                  </tbody>
-                </table>
+              <!-- Tickets Cards List (Matching Screenshot 1) -->
+              <div class="suporte-tickets-cards-list" id="suporte-tickets-cards-list" style="display: none;">
+                <!-- Populated dynamically by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Suporte Ticket Detail View (Screenshot 2) -->
+          <div class="suporte-view-wrapper ticket-detail-view" id="suporte-detail-container" style="display: none;">
+            <!-- Header with Protocol Title and Back Button -->
+            <div class="ticket-detail-header">
+              <h1 class="ticket-detail-protocol-title" id="ticket-detail-title-protocol">Ticket #6WKE9HD0</h1>
+              <button type="button" class="ticket-back-btn" id="btn-back-to-suporte">
+                <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
+                <span>Voltar para o suporte</span>
+              </button>
+            </div>
+
+            <!-- 2-Column Responsive Layout -->
+            <div class="ticket-detail-layout">
+              <!-- Left Column: Main Conversation & Reply -->
+              <div class="ticket-conversation-card">
+                <div class="ticket-conv-header">
+                  <div>
+                    <h2 class="ticket-conv-title" id="ticket-detail-conv-title">Teste</h2>
+                    <span class="ticket-conv-type" id="ticket-detail-conv-type">Técnico</span>
+                  </div>
+                  <span class="ticket-conv-status-pill aberto" id="ticket-detail-status-pill">Aberto</span>
+                </div>
+
+                <!-- Messages Thread -->
+                <div class="ticket-messages-thread" id="ticket-detail-messages-thread">
+                  <!-- Populated dynamically with bubbles -->
+                </div>
+
+                <!-- Reply Form -->
+                <form class="ticket-reply-section" id="form-ticket-reply">
+                  <label class="ticket-reply-label" for="ticket-reply-textarea">Responder</label>
+                  <textarea id="ticket-reply-textarea" class="ticket-reply-textarea" placeholder="Escreva sua mensagem..." required></textarea>
+                  <div class="ticket-reply-actions">
+                    <button type="submit" class="btn-send-reply" id="btn-send-ticket-reply">Enviar resposta</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Right Column: Sidebar Details -->
+              <div class="ticket-sidebar-details-card">
+                <h3 class="ticket-sidebar-title">Detalhes do ticket</h3>
+
+                <div class="ticket-info-box">
+                  <span class="ticket-info-label">Protocolo</span>
+                  <span class="ticket-info-value" id="sidebar-ticket-protocol">#6WKE9HD0</span>
+                </div>
+
+                <div class="ticket-info-box">
+                  <span class="ticket-info-label">Status</span>
+                  <span class="ticket-info-value" id="sidebar-ticket-status">Aberto</span>
+                </div>
+
+                <div class="ticket-info-box">
+                  <span class="ticket-info-label">Atendente</span>
+                  <span class="ticket-info-value" id="sidebar-ticket-agent">Aguardando atribuição</span>
+                </div>
+
+                <div class="ticket-info-box">
+                  <span class="ticket-info-label">Aberto em</span>
+                  <span class="ticket-info-value" id="sidebar-ticket-date">23/09/2026 17:19</span>
+                </div>
+
+                <button type="button" class="btn-resolve-ticket-action" id="btn-ticket-resolve-detail">
+                  <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i>
+                  <span>Marcar como resolvido</span>
+                </button>
               </div>
             </div>
           </div>
@@ -2015,6 +2073,92 @@
         <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px;">
           <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
           <button type="submit" class="btn btn-primary">Salvar lead</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2.1 Modal Atribuir Agente -->
+  <div class="modal-backdrop" id="modal-assign-agent">
+    <div class="modal-dialog assign-agent-dialog">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">Atribuir Agente ao Lead</h3>
+          <p class="modal-header-sub">Defina o atendente ou agente de IA responsável por este contato</p>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar modal">✕</button>
+      </div>
+
+      <!-- Lead Summary Target Banner -->
+      <div class="assign-lead-banner" id="assign-lead-summary">
+        <div class="assign-lead-info-left">
+          <div class="assign-lead-avatar" id="assign-lead-avatar">RC</div>
+          <div class="assign-lead-title-box">
+            <h4 id="assign-lead-name">Rafael Carvalho</h4>
+            <p id="assign-lead-meta">+55 11 98765-4321 • WhatsApp</p>
+          </div>
+        </div>
+        <div class="assign-lead-current-box">
+          <span>Responsável atual</span>
+          <div class="assign-current-agent-badge" id="assign-current-agent-badge">
+            <img id="assign-current-agent-img" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80" alt="Agente atual">
+            <span id="assign-current-agent-name">Juliana Santos</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form for Agent Selection -->
+      <form id="form-assign-agent">
+        <input type="hidden" id="assign-target-lead-id">
+        <input type="hidden" id="assign-selected-agent-id">
+
+        <!-- Category Tabs -->
+        <div class="assign-category-tabs">
+          <button type="button" class="assign-tab-btn active" data-agent-filter="all">
+            Todos
+          </button>
+          <button type="button" class="assign-tab-btn" data-agent-filter="ai">
+            🤖 Agentes de IA
+          </button>
+          <button type="button" class="assign-tab-btn" data-agent-filter="human">
+            👤 Atendentes Humanos
+          </button>
+        </div>
+
+        <!-- Quick Search -->
+        <div class="assign-search-box">
+          <i data-lucide="search"></i>
+          <input type="text" id="assign-agent-search-input" placeholder="Buscar por nome, função ou departamento...">
+        </div>
+
+        <!-- Agent Cards Dynamic List -->
+        <div class="assign-agents-list" id="assign-agents-list">
+          <!-- Populated dynamically by JS -->
+        </div>
+
+        <!-- Transfer Options Box -->
+        <div class="assign-options-box">
+          <label class="assign-checkbox-row">
+            <input type="checkbox" id="assign-opt-notify" checked>
+            <span>Notificar novo agente sobre a atribuição deste lead</span>
+          </label>
+          <label class="assign-checkbox-row">
+            <input type="checkbox" id="assign-opt-log" checked>
+            <span>Registrar transferência no histórico de interações</span>
+          </label>
+          <div>
+            <textarea class="assign-note-input" id="assign-transfer-note" placeholder="Nota interna para o novo atendente (opcional)..."></textarea>
+          </div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-light);">
+          <button type="button" class="btn btn-secondary modal-close">
+            <i data-lucide="x" style="width: 14px; height: 14px;"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-assign-agent">
+            <i data-lucide="user-check" style="width: 15px; height: 15px;"></i> Confirmar Atribuição
+          </button>
         </div>
       </form>
     </div>
@@ -2327,6 +2471,135 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- 4.1 Modal Editar Canal -->
+  <div class="modal-backdrop" id="modal-edit-channel">
+    <div class="modal-dialog edit-channel-dialog">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">Editar Canal</h3>
+          <p class="modal-header-sub">Atualize os detalhes do canal e a inteligência artificial responsável</p>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar modal">✕</button>
+      </div>
+      <form id="form-edit-channel">
+        <input type="hidden" id="edit-channel-id">
+
+        <div class="channel-modal-form-grid">
+          <div class="form-group full-span">
+            <label class="form-label" for="edit-channel-name">Nome do Canal *</label>
+            <input type="text" id="edit-channel-name" class="form-input" placeholder="Ex: Loja Download" required>
+            <span class="form-help-text">Nome de identificação exibido na listagem de canais e relatórios.</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-channel-type">Tipo de Canal *</label>
+            <select id="edit-channel-type" class="form-select" required>
+              <option value="whatsapp">WhatsApp Web (QR)</option>
+              <option value="widget">Widget para Site</option>
+              <option value="instagram">Instagram Direct</option>
+              <option value="meta">WhatsApp Cloud API</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-channel-dept">Departamento *</label>
+            <select id="edit-channel-dept" class="form-select" required>
+              <option value="Geral">Atendimento Geral</option>
+              <option value="Comercial">Comercial</option>
+              <option value="Vendas">Vendas</option>
+              <option value="Suporte">Suporte</option>
+              <option value="Suporte Técnico">Suporte Técnico</option>
+              <option value="Financeiro">Financeiro</option>
+            </select>
+          </div>
+
+          <div class="form-group full-span">
+            <label class="form-label" for="edit-channel-ident">Número / Identificador *</label>
+            <input type="text" id="edit-channel-ident" class="form-input" placeholder="+55 11 98765-4321 ou widget.zapchat.app/..." required>
+            <span class="form-help-text">Telefone, URL do widget ou nome de usuário vinculado.</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-channel-agent">Agente de IA Responsável *</label>
+            <select id="edit-channel-agent" class="form-select" required>
+              <option value="Pedro">Pedro (Vendas & Comercial)</option>
+              <option value="SDR IA">SDR IA (Qualificação & Agendamento)</option>
+              <option value="Atendimento">Atendimento (Triagem Geral)</option>
+              <option value="Suporte IA">Suporte IA (Dúvidas Técnicas & FAQ)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-channel-status">Status da Linha *</label>
+            <select id="edit-channel-status" class="form-select" required>
+              <option value="Conectado">Conectado</option>
+              <option value="Ativo">Ativo</option>
+              <option value="Em breve">Em breve</option>
+              <option value="Desconectado">Desconectado</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-light);">
+          <button type="button" class="btn btn-secondary modal-close">
+            <i data-lucide="x" style="width: 14px; height: 14px;"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" id="btn-save-edit-channel">
+            <i data-lucide="check" style="width: 15px; height: 15px;"></i> Salvar Alterações
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4.2 Modal Excluir Canal -->
+  <div class="modal-backdrop" id="modal-delete-channel">
+    <div class="modal-dialog channel-delete-dialog">
+      <div style="display: flex; gap: 16px; align-items: flex-start;">
+        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(239, 68, 68, 0.12); color: #EF4444; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <i data-lucide="trash-2" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div style="flex: 1;">
+          <h3 class="modal-title" style="margin-bottom: 6px;">Excluir Canal</h3>
+          <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px;">
+            Tem certeza de que deseja excluir o canal <strong id="delete-channel-target-name" style="color: var(--text-main);">Canal</strong>?
+          </p>
+          <div class="delete-channel-warning-box">
+            Esta ação desconectará o canal do ZapChat. Todas as mensagens continuarão salvas no histórico, mas novas mensagens não serão respondidas automaticamente pela IA.
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="delete-channel-id">
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+        <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+        <button type="button" class="btn btn-danger-confirm" id="btn-confirm-delete-channel">
+          <i data-lucide="trash-2" style="width: 15px; height: 15px;"></i> Sim, Excluir Canal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4.3 Channel Row Actions Popover Menu -->
+  <div class="channel-actions-popover" id="channel-actions-popover" role="menu" aria-orientation="vertical">
+    <button type="button" class="channel-popover-item" data-action="edit" role="menuitem">
+      <i data-lucide="edit-3"></i>
+      <span>Editar canal</span>
+    </button>
+    <button type="button" class="channel-popover-item" data-action="sync" role="menuitem">
+      <i data-lucide="refresh-cw"></i>
+      <span>Sincronizar</span>
+    </button>
+    <button type="button" class="channel-popover-item" data-action="copy" role="menuitem">
+      <i data-lucide="copy"></i>
+      <span>Copiar identificador</span>
+    </button>
+    <div class="channel-popover-divider"></div>
+    <button type="button" class="channel-popover-item danger" data-action="delete" role="menuitem">
+      <i data-lucide="trash-2"></i>
+      <span>Excluir canal</span>
+    </button>
   </div>
 
   <!-- 5. Modal Comprar Mensagens Extras -->

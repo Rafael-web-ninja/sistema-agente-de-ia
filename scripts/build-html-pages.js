@@ -1342,7 +1342,7 @@ const channelsRowsHtml = zapChatData.canais.list.map(channel => {
         </span>
       </td>
       <td style="text-align: right;">
-        <button class="channel-more-btn" title="Mais opções" onclick="alert('Opções do canal: ${channel.name}')">
+        <button type="button" class="channel-more-btn" title="Mais opções" data-channel-id="${channel.id}" aria-label="Mais opções para ${channel.name}">
           ⋮
         </button>
       </td>
@@ -1392,6 +1392,139 @@ const canaisScript = `
         });
         if (window.lucide) window.lucide.createIcons();
       }
+    }
+
+    // Channel Actions Popover & Modals
+    const popover = document.getElementById('channel-actions-popover');
+    function closePopover() {
+      if (popover) {
+        popover.classList.remove('show');
+        popover.removeAttribute('data-active-channel-id');
+      }
+      document.querySelectorAll('.channel-more-btn').forEach(b => b.classList.remove('is-active'));
+    }
+
+    document.addEventListener('click', (e) => {
+      const moreBtn = e.target.closest('.channel-more-btn');
+      if (moreBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const channelId = moreBtn.getAttribute('data-channel-id');
+        if (popover) {
+          const isSame = popover.classList.contains('show') && popover.getAttribute('data-active-channel-id') === channelId;
+          if (isSame) {
+            closePopover();
+            return;
+          }
+          popover.setAttribute('data-active-channel-id', channelId);
+          document.querySelectorAll('.channel-more-btn').forEach(b => b.classList.remove('is-active'));
+          moreBtn.classList.add('is-active');
+
+          popover.style.display = 'flex';
+          popover.style.visibility = 'hidden';
+          popover.classList.add('show');
+
+          const btnRect = moreBtn.getBoundingClientRect();
+          const popoverWidth = popover.offsetWidth || 200;
+          const popoverHeight = popover.offsetHeight || 170;
+
+          let left = btnRect.right - popoverWidth;
+          if (left < 10) left = 10;
+          if (left + popoverWidth > window.innerWidth - 10) left = window.innerWidth - popoverWidth - 10;
+
+          let top = btnRect.bottom + 6;
+          if (top + popoverHeight > window.innerHeight - 10) top = btnRect.top - popoverHeight - 6;
+
+          popover.style.top = top + 'px';
+          popover.style.left = left + 'px';
+          popover.style.visibility = 'visible';
+          if (window.lucide) window.lucide.createIcons();
+        }
+        return;
+      }
+
+      if (popover && popover.classList.contains('show') && !popover.contains(e.target)) {
+        closePopover();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closePopover();
+    });
+    window.addEventListener('scroll', closePopover, true);
+    window.addEventListener('resize', closePopover);
+
+    if (popover) {
+      popover.addEventListener('click', (e) => {
+        const item = e.target.closest('.channel-popover-item');
+        if (!item) return;
+        const action = item.getAttribute('data-action');
+        const channelId = popover.getAttribute('data-active-channel-id');
+        closePopover();
+        if (!channelId) return;
+
+        const row = document.querySelector(\`tr[data-channel-row-id="\${channelId}"]\`) || document.querySelector(\`button[data-channel-id="\${channelId}"]\`)?.closest('tr');
+        const channelName = row?.querySelector('.channel-name-cell span')?.textContent?.trim() || 'Canal';
+
+        if (action === 'edit') {
+          const editModal = document.getElementById('modal-edit-channel');
+          if (editModal) {
+            document.getElementById('edit-channel-id').value = channelId;
+            document.getElementById('edit-channel-name').value = channelName;
+            const identEl = row?.querySelector('.channel-ident-text');
+            if (identEl) document.getElementById('edit-channel-ident').value = identEl.textContent.trim();
+            const deptEl = row?.querySelector('.channel-dept-text');
+            if (deptEl) document.getElementById('edit-channel-dept').value = deptEl.textContent.trim();
+            editModal.classList.add('open');
+          }
+        } else if (action === 'delete') {
+          const deleteModal = document.getElementById('modal-delete-channel');
+          if (deleteModal) {
+            document.getElementById('delete-channel-id').value = channelId;
+            document.getElementById('delete-channel-target-name').textContent = channelName;
+            deleteModal.classList.add('open');
+          }
+        } else if (action === 'sync') {
+          alert('Canal "' + channelName + '" sincronizado com sucesso!');
+        } else if (action === 'copy') {
+          const identEl = row?.querySelector('.channel-ident-text');
+          if (identEl && navigator.clipboard) {
+            navigator.clipboard.writeText(identEl.textContent.trim());
+          }
+          alert('Identificador copiado para a área de transferência!');
+        }
+      });
+    }
+
+    const formEdit = document.getElementById('form-edit-channel');
+    if (formEdit) {
+      formEdit.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const channelId = document.getElementById('edit-channel-id').value;
+        const newName = document.getElementById('edit-channel-name').value;
+        const row = document.querySelector(\`button[data-channel-id="\${channelId}"]\`)?.closest('tr');
+        if (row) {
+          const nameSpan = row.querySelector('.channel-name-cell span');
+          if (nameSpan) nameSpan.textContent = newName;
+          const deptSpan = row.querySelector('.channel-dept-text');
+          if (deptSpan) deptSpan.textContent = document.getElementById('edit-channel-dept').value;
+          const identSpan = row.querySelector('.channel-ident-text');
+          if (identSpan) identSpan.textContent = document.getElementById('edit-channel-ident').value;
+        }
+        document.getElementById('modal-edit-channel')?.classList.remove('open');
+        alert('Canal "' + newName + '" atualizado com sucesso!');
+      });
+    }
+
+    const btnConfirmDelete = document.getElementById('btn-confirm-delete-channel');
+    if (btnConfirmDelete) {
+      btnConfirmDelete.addEventListener('click', () => {
+        const channelId = document.getElementById('delete-channel-id').value;
+        const row = document.querySelector(\`button[data-channel-id="\${channelId}"]\`)?.closest('tr');
+        if (row) row.remove();
+        document.getElementById('modal-delete-channel')?.classList.remove('open');
+        alert('Canal excluído com sucesso!');
+      });
     }
   </script>
 `;
@@ -1521,7 +1654,7 @@ const leadDetailHtml = `
       <i data-lucide="message-square" style="width: 15px; height: 15px;"></i>
       Abrir conversa
     </a>
-    <button class="btn btn-secondary" onclick="alert('Atribuir outro atendente para este lead')">
+    <button class="btn btn-secondary" id="btn-assign-agent">
       <i data-lucide="user-plus" style="width: 15px; height: 15px;"></i>
       Atribuir agente
     </button>
@@ -1532,6 +1665,17 @@ leadsSection = leadsSection.replace('<div class="lead-detail-panel-simplified" i
 const leadsScript = `
   <script>
     const leadsData = ${JSON.stringify(leadsList)};
+    const availableAgents = [
+      { id: 'juliana_santos', name: 'Juliana Santos', type: 'human', role: 'Comercial & Vendas', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80', workload: '3 leads ativos' },
+      { id: 'pedro_ia', name: 'Pedro', type: 'ai', role: 'Vendas & Atendimento Comercial', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', workload: 'Capacidade ilimitada' },
+      { id: 'felipe_costa', name: 'Felipe Costa', type: 'human', role: 'Suporte Comercial', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', workload: '5 leads ativos' },
+      { id: 'sdr_ia', name: 'SDR IA', type: 'ai', role: 'Qualificação & Agendamento', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80', workload: 'Capacidade ilimitada' },
+      { id: 'carla_menezes', name: 'Carla Menezes', type: 'human', role: 'Contas Enterprise', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80', workload: '2 leads ativos' },
+      { id: 'suporte_ia', name: 'Suporte IA', type: 'ai', role: 'Dúvidas Técnicas & FAQ', img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80', workload: 'Capacidade ilimitada' }
+    ];
+
+    let currentSelectedLead = leadsData[0];
+    let selectedAgent = availableAgents[0];
     const rows = document.querySelectorAll('#leads-table-body tr');
 
     rows.forEach(row => {
@@ -1539,6 +1683,7 @@ const leadsScript = `
         const id = row.getAttribute('data-lead-id');
         const l = leadsData.find(x => x.id === id);
         if (!l) return;
+        currentSelectedLead = l;
 
         rows.forEach(r => r.classList.remove('selected'));
         row.classList.add('selected');
@@ -1550,6 +1695,8 @@ const leadsScript = `
           panel.querySelector('.lead-panel-name-row span:first-child').textContent = l.name;
           panel.querySelector('.lead-panel-name-row .lead-status-pill').textContent = l.status;
           panel.querySelector('.lead-panel-name-row .lead-status-pill').className = 'lead-status-pill ' + (l.statusKey || 'novo');
+          const respSpan = panel.querySelector('.lead-panel-info-row .lead-panel-info-val');
+          if (respSpan) respSpan.textContent = l.agentName;
         }
       });
     });
@@ -1559,6 +1706,128 @@ const leadsScript = `
       closeBtn.addEventListener('click', () => {
         const panel = document.getElementById('lead-detail-panel');
         if (panel) panel.style.display = 'none';
+      });
+    }
+
+    // Assign Agent Modal
+    const modalAssign = document.getElementById('modal-assign-agent');
+    const btnAssign = document.getElementById('btn-assign-agent');
+
+    function renderAgentsList(filter = 'all', query = '') {
+      const container = document.getElementById('assign-agents-list');
+      if (!container) return;
+
+      const filtered = availableAgents.filter(a => {
+        const matchesType = filter === 'all' || a.type === filter;
+        const matchesQuery = !query || a.name.toLowerCase().includes(query) || a.role.toLowerCase().includes(query);
+        return matchesType && matchesQuery;
+      });
+
+      container.innerHTML = filtered.map(a => {
+        const isSel = selectedAgent && selectedAgent.id === a.id;
+        const isCurrent = currentSelectedLead && currentSelectedLead.agentName === a.name;
+        const badgeClass = a.type === 'ai' ? 'ai' : 'human';
+        const badgeText = a.type === 'ai' ? '🤖 IA' : '👤 Humano';
+
+        return \`
+          <div class="assign-agent-card \${isSel ? 'selected' : ''}" data-agent-id="\${a.id}">
+            <div class="assign-agent-card-left">
+              <div class="assign-radio-indicator"></div>
+              <div class="assign-agent-photo-wrap">
+                <img src="\${a.img}" alt="\${a.name}" class="assign-agent-photo">
+                <span class="assign-agent-online-dot"></span>
+              </div>
+              <div class="assign-agent-details">
+                <div class="assign-agent-name-row">
+                  <span class="assign-agent-name">\${a.name}</span>
+                  <span class="assign-type-badge \${badgeClass}">\${badgeText}</span>
+                  \${isCurrent ? '<span class="assign-current-tag">Atual</span>' : ''}
+                </div>
+                <span class="assign-agent-role">\${a.role}</span>
+              </div>
+            </div>
+            <div class="assign-agent-card-right">
+              <span class="assign-workload-text">\${a.workload}</span>
+            </div>
+          </div>
+        \`;
+      }).join('');
+
+      container.querySelectorAll('.assign-agent-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const aId = card.getAttribute('data-agent-id');
+          selectedAgent = availableAgents.find(x => x.id === aId);
+          renderAgentsList(filter, query);
+        });
+      });
+    }
+
+    if (btnAssign && modalAssign) {
+      btnAssign.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentSelectedLead) {
+          document.getElementById('assign-lead-avatar').textContent = currentSelectedLead.initials;
+          document.getElementById('assign-lead-name').textContent = currentSelectedLead.name;
+          document.getElementById('assign-lead-meta').textContent = currentSelectedLead.phone + ' • ' + currentSelectedLead.channel;
+          document.getElementById('assign-current-agent-name').textContent = currentSelectedLead.agentName;
+          document.getElementById('assign-current-agent-img').src = currentSelectedLead.agentImg;
+        }
+        selectedAgent = availableAgents.find(a => a.name === currentSelectedLead?.agentName) || availableAgents[0];
+        renderAgentsList();
+        modalAssign.classList.add('open');
+      });
+    }
+
+    document.querySelectorAll('.assign-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.assign-tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const filter = btn.getAttribute('data-agent-filter') || 'all';
+        const query = document.getElementById('assign-agent-search-input')?.value.toLowerCase().trim() || '';
+        renderAgentsList(filter, query);
+      });
+    });
+
+    const searchInput = document.getElementById('assign-agent-search-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const activeTab = document.querySelector('.assign-tab-btn.active');
+        const filter = activeTab ? activeTab.getAttribute('data-agent-filter') : 'all';
+        renderAgentsList(filter, e.target.value.toLowerCase().trim());
+      });
+    }
+
+    const formAssign = document.getElementById('form-assign-agent');
+    if (formAssign) {
+      formAssign.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (currentSelectedLead && selectedAgent) {
+          currentSelectedLead.agentName = selectedAgent.name;
+          currentSelectedLead.agentImg = selectedAgent.img;
+
+          // Update panel
+          const panel = document.getElementById('lead-detail-panel');
+          if (panel) {
+            const respSpan = panel.querySelector('.lead-panel-info-row .lead-panel-info-val');
+            if (respSpan) respSpan.textContent = selectedAgent.name;
+          }
+
+          // Update row
+          const activeRow = document.querySelector(\`#leads-table-body tr[data-lead-id="\${currentSelectedLead.id}"]\`);
+          if (activeRow) {
+            const agentCell = activeRow.cells[4];
+            if (agentCell) {
+              agentCell.innerHTML = \`
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <img src="\${selectedAgent.img}" alt="\${selectedAgent.name}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                  <span style="font-weight: 500; font-size: 13px;">\${selectedAgent.name}</span>
+                </div>
+              \`;
+            }
+          }
+          modalAssign.classList.remove('open');
+          alert('Agente "' + selectedAgent.name + '" atribuído com sucesso a ' + currentSelectedLead.name + '!');
+        }
       });
     }
   </script>
@@ -1616,68 +1885,369 @@ console.log('Generating suporte.html...');
 let suporteSection = extractSection(indexHtml, 'view-suporte');
 suporteSection = suporteSection.replace('class="view-panel"', 'class="view-panel active"');
 
-// Update stats to 2 tickets
-suporteSection = suporteSection.replace('<span class="suporte-stat-value" id="stat-tickets-open">0</span>', '<span class="suporte-stat-value" id="stat-tickets-open">2</span>');
-suporteSection = suporteSection.replace('<span class="suporte-stat-value" id="stat-tickets-tech">0</span>', '<span class="suporte-stat-value" id="stat-tickets-tech">1</span>');
-suporteSection = suporteSection.replace('<span class="suporte-stat-value" id="stat-tickets-comm">0</span>', '<span class="suporte-stat-value" id="stat-tickets-comm">1</span>');
-suporteSection = suporteSection.replace('<span class="suporte-stat-value" id="stat-tickets-total">0</span>', '<span class="suporte-stat-value" id="stat-tickets-total">2</span>');
+const suportePageScript = `
+  <script>
+    // Suporte Script
+    (function() {
+      let tickets = [];
+      let currentOpenTicketId = null;
 
-// Hide empty state, show table wrap with tickets
-suporteSection = suporteSection.replace('<div class="suporte-empty-card" id="suporte-empty-state">', '<div class="suporte-empty-card" id="suporte-empty-state" style="display: none;">');
-suporteSection = suporteSection.replace('<div class="table-card suporte-tickets-card" id="suporte-tickets-table-wrap" style="display: none;">', '<div class="table-card suporte-tickets-card" id="suporte-tickets-table-wrap" style="display: block;">');
+      function generateProtocol() {
+        const chars = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+        let code = '';
+        for (let i = 0; i < 8; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return '#' + code;
+      }
 
-// Inject tickets matching suporte.js markup
-const ticketsRowsHtml = `
-  <tr>
-    <td><span class="ticket-protocol">#TKT-1042</span></td>
-    <td>
-      <span class="badge" style="background: rgba(0, 168, 104, 0.1); color: var(--primary); font-weight: 600;">
-        Técnico
-      </span>
-    </td>
-    <td>
-      <div class="ticket-title-cell">
-        <span class="ticket-main-title">Dúvida sobre webhook de novos leads</span>
-        <span class="ticket-desc-snippet">Gostaria de saber como configurar o envio de payloads em tempo real para o n8n.</span>
-      </div>
-    </td>
-    <td style="color: var(--text-muted); font-size: 13px;">Hoje às 11:20</td>
-    <td>
-      <span class="badge badge-active">Em aberto</span>
-    </td>
-    <td style="text-align: right;">
-      <button type="button" class="btn btn-secondary btn-sm" onclick="alert('Chamado #TKT-1042 marcado como concluído!')">
-        <i data-lucide="check" style="width: 13px; height: 13px;"></i> Concluir
-      </button>
-    </td>
-  </tr>
-  <tr>
-    <td><span class="ticket-protocol">#TKT-1041</span></td>
-    <td>
-      <span class="badge" style="background: rgba(0, 168, 104, 0.1); color: var(--primary); font-weight: 600;">
-        Comercial
-      </span>
-    </td>
-    <td>
-      <div class="ticket-title-cell">
-        <span class="ticket-main-title">Upgrade para plano Anual com desconto</span>
-        <span class="ticket-desc-snippet">Interesse em migrar a assinatura para o ciclo anual para obter a condição de 2 meses grátis.</span>
-      </div>
-    </td>
-    <td style="color: var(--text-muted); font-size: 13px;">Ontem às 16:45</td>
-    <td>
-      <span class="badge badge-active">Em aberto</span>
-    </td>
-    <td style="text-align: right;">
-      <button type="button" class="btn btn-secondary btn-sm" onclick="alert('Chamado #TKT-1041 marcado como concluído!')">
-        <i data-lucide="check" style="width: 13px; height: 13px;"></i> Concluir
-      </button>
-    </td>
-  </tr>
+      function formatDateTime(d = new Date()) {
+        const pad = (n) => String(n).padStart(2, '0');
+        const day = pad(d.getDate());
+        const month = pad(d.getMonth() + 1);
+        const year = d.getFullYear();
+        const hours = pad(d.getHours());
+        const minutes = pad(d.getMinutes());
+        return day + '/' + month + '/' + year + ' ' + hours + ':' + minutes;
+      }
+
+      function getRelativeTime(timestamp) {
+        if (!timestamp) return 'há poucos segundos';
+        const diffSec = Math.floor((Date.now() - timestamp) / 1000);
+        if (diffSec < 60) return 'há ' + (diffSec <= 5 ? 'poucos' : diffSec) + ' segundos';
+        const diffMin = Math.floor(diffSec / 60);
+        if (diffMin < 60) return 'há ' + diffMin + ' minuto' + (diffMin > 1 ? 's' : '');
+        const diffHour = Math.floor(diffMin / 60);
+        if (diffHour < 24) return 'há ' + diffHour + ' hora' + (diffHour > 1 ? 's' : '');
+        const diffDay = Math.floor(diffHour / 24);
+        return 'há ' + diffDay + ' dia' + (diffDay > 1 ? 's' : '');
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function loadTickets() {
+        const saved = localStorage.getItem('zapchat_tickets');
+        if (saved) {
+          try {
+            tickets = JSON.parse(saved);
+            tickets.forEach(t => {
+              if (!t.createdAtTimestamp) t.createdAtTimestamp = Date.now() - 60000;
+              if (!t.messages || t.messages.length === 0) {
+                t.messages = [
+                  {
+                    sender: 'Rafael Mota',
+                    text: t.descricao || 'Mensagem inicial do chamado',
+                    time: t.createdAt || formatDateTime(),
+                    isUser: true
+                  }
+                ];
+              }
+              if (!t.status) t.status = 'Aberto';
+              if (t.status === 'Em aberto') t.status = 'Aberto';
+              if (!t.atendente) t.atendente = 'Aguardando atribuição';
+            });
+          } catch(e) {
+            tickets = [];
+          }
+        }
+        
+        if (!tickets || tickets.length === 0) {
+          tickets = [
+            {
+              id: '#6WKE9HD0',
+              tipo: 'Técnico',
+              titulo: 'Teste',
+              descricao: 'TesteTesteTeste',
+              status: 'Aberto',
+              atendente: 'Aguardando atribuição',
+              createdAt: '23/09/2026 17:19',
+              createdAtTimestamp: Date.now() - 33000,
+              messages: [
+                {
+                  sender: 'Rafael Mota',
+                  text: 'TesteTesteTeste',
+                  time: '23/09/2026 17:19',
+                  isUser: true
+                }
+              ]
+            }
+          ];
+          saveTickets();
+        }
+      }
+
+      function saveTickets() {
+        localStorage.setItem('zapchat_tickets', JSON.stringify(tickets));
+      }
+
+      function updateStats() {
+        const openCount = tickets.filter(t => t.status === 'Aberto' || t.status === 'Em aberto').length;
+        const techCount = tickets.filter(t => t.tipo === 'Técnico').length;
+        const commCount = tickets.filter(t => t.tipo === 'Comercial').length;
+        const totalCount = tickets.length;
+
+        const elOpen = document.getElementById('stat-tickets-open');
+        const elTech = document.getElementById('stat-tickets-tech');
+        const elComm = document.getElementById('stat-tickets-comm');
+        const elTotal = document.getElementById('stat-tickets-total');
+
+        if (elOpen) elOpen.textContent = openCount;
+        if (elTech) elTech.textContent = techCount;
+        if (elComm) elComm.textContent = commCount;
+        if (elTotal) elTotal.textContent = totalCount;
+      }
+
+      function renderTickets() {
+        updateStats();
+        const emptyState = document.getElementById('suporte-empty-state');
+        const cardsList = document.getElementById('suporte-tickets-cards-list');
+        if (!emptyState || !cardsList) return;
+
+        if (tickets.length === 0) {
+          emptyState.style.display = 'flex';
+          cardsList.style.display = 'none';
+        } else {
+          emptyState.style.display = 'none';
+          cardsList.style.display = 'flex';
+
+          cardsList.innerHTML = tickets.map(t => {
+            const isAberto = t.status === 'Aberto' || t.status === 'Em aberto';
+            const statusClass = isAberto ? 'aberto' : 'resolvido';
+            const statusText = isAberto ? 'ABERTO' : 'RESOLVIDO';
+            const msgCount = (t.messages && t.messages.length) ? t.messages.length : 1;
+            const relTime = getRelativeTime(t.createdAtTimestamp);
+
+            return \`
+              <div class="suporte-ticket-item-card" data-ticket-id="\${t.id}">
+                <div class="ticket-card-row-top">
+                  <h3 class="ticket-card-title">\${escapeHtml(t.titulo)}</h3>
+                  <span class="ticket-card-badge-status \${statusClass}">\${statusText}</span>
+                </div>
+                <div class="ticket-card-row-mid">
+                  Ticket \${t.id} · \${msgCount} mensagem(ns)
+                </div>
+                <div class="ticket-card-row-bottom">
+                  <span class="ticket-card-type">
+                    <i data-lucide="tag" style="width: 12px; height: 12px;"></i>
+                    \${escapeHtml(t.tipo)}
+                  </span>
+                  <span class="ticket-card-time">\${relTime}</span>
+                </div>
+              </div>
+            \`;
+          }).join('');
+
+          cardsList.querySelectorAll('.suporte-ticket-item-card').forEach(card => {
+            card.addEventListener('click', () => {
+              const ticketId = card.getAttribute('data-ticket-id');
+              openTicketDetail(ticketId);
+            });
+          });
+        }
+
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      function openTicketDetail(ticketId) {
+        const ticket = tickets.find(t => t.id === ticketId);
+        if (!ticket) return;
+
+        currentOpenTicketId = ticketId;
+        const listContainer = document.getElementById('suporte-list-container');
+        const detailContainer = document.getElementById('suporte-detail-container');
+
+        if (listContainer) listContainer.style.display = 'none';
+        if (detailContainer) detailContainer.style.display = 'block';
+
+        const titleProtocol = document.getElementById('ticket-detail-title-protocol');
+        if (titleProtocol) titleProtocol.textContent = 'Ticket ' + ticket.id;
+
+        const convTitle = document.getElementById('ticket-detail-conv-title');
+        const convType = document.getElementById('ticket-detail-conv-type');
+        const statusPill = document.getElementById('ticket-detail-status-pill');
+
+        if (convTitle) convTitle.textContent = ticket.titulo;
+        if (convType) convType.textContent = ticket.tipo;
+        if (statusPill) {
+          const isAberto = ticket.status === 'Aberto' || ticket.status === 'Em aberto';
+          statusPill.textContent = isAberto ? 'Aberto' : 'Resolvido';
+          statusPill.className = 'ticket-conv-status-pill ' + (isAberto ? 'aberto' : 'resolvido');
+        }
+
+        renderMessagesThread(ticket);
+
+        const sideProtocol = document.getElementById('sidebar-ticket-protocol');
+        const sideStatus = document.getElementById('sidebar-ticket-status');
+        const sideAgent = document.getElementById('sidebar-ticket-agent');
+        const sideDate = document.getElementById('sidebar-ticket-date');
+        const btnResolve = document.getElementById('btn-ticket-resolve-detail');
+
+        if (sideProtocol) sideProtocol.textContent = ticket.id;
+        if (sideStatus) sideStatus.textContent = ticket.status === 'Resolvido' ? 'Resolvido' : 'Aberto';
+        if (sideAgent) sideAgent.textContent = ticket.atendente || 'Aguardando atribuição';
+        if (sideDate) sideDate.textContent = ticket.createdAt;
+
+        if (btnResolve) {
+          const isResolvido = ticket.status === 'Resolvido';
+          btnResolve.disabled = isResolvido;
+          if (isResolvido) {
+            btnResolve.innerHTML = '<i data-lucide="check" style="width: 16px; height: 16px;"></i> <span>Ticket resolvido</span>';
+          } else {
+            btnResolve.innerHTML = '<i data-lucide="check-circle" style="width: 16px; height: 16px;"></i> <span>Marcar como resolvido</span>';
+          }
+        }
+
+        const mainArea = document.querySelector('.app-main');
+        if (mainArea) mainArea.scrollTop = 0;
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      function backToSuporteList() {
+        currentOpenTicketId = null;
+        const listContainer = document.getElementById('suporte-list-container');
+        const detailContainer = document.getElementById('suporte-detail-container');
+        if (detailContainer) detailContainer.style.display = 'none';
+        if (listContainer) listContainer.style.display = 'block';
+        renderTickets();
+      }
+
+      function renderMessagesThread(ticket) {
+        const thread = document.getElementById('ticket-detail-messages-thread');
+        if (!thread) return;
+
+        if (!ticket.messages || ticket.messages.length === 0) {
+          ticket.messages = [
+            {
+              sender: 'Rafael Mota',
+              text: ticket.descricao || '',
+              time: ticket.createdAt || formatDateTime(),
+              isUser: true
+            }
+          ];
+        }
+
+        thread.innerHTML = ticket.messages.map(msg => {
+          const isUser = msg.isUser !== false;
+          return \`
+            <div class="ticket-msg-row \${isUser ? 'user' : 'support'}">
+              <div class="ticket-msg-bubble">
+                <div class="ticket-msg-meta">\${escapeHtml(msg.sender)} · \${msg.time}</div>
+                <div class="ticket-msg-body">\${escapeHtml(msg.text)}</div>
+              </div>
+            </div>
+          \`;
+        }).join('');
+      }
+
+      // DOM Ready
+      document.addEventListener('DOMContentLoaded', () => {
+        loadTickets();
+        renderTickets();
+
+        const backBtn = document.getElementById('btn-back-to-suporte');
+        if (backBtn) {
+          backBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            backToSuporteList();
+          });
+        }
+
+        const replyForm = document.getElementById('form-ticket-reply');
+        if (replyForm) {
+          replyForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (!currentOpenTicketId) return;
+            const textarea = document.getElementById('ticket-reply-textarea');
+            const text = textarea ? textarea.value.trim() : '';
+            if (!text) return;
+
+            const ticket = tickets.find(t => t.id === currentOpenTicketId);
+            if (!ticket) return;
+            if (!ticket.messages) ticket.messages = [];
+
+            ticket.messages.push({
+              sender: 'Rafael Mota',
+              text: text,
+              time: formatDateTime(),
+              isUser: true
+            });
+            saveTickets();
+            if (textarea) textarea.value = '';
+            renderMessagesThread(ticket);
+          });
+        }
+
+        const btnResolve = document.getElementById('btn-ticket-resolve-detail');
+        if (btnResolve) {
+          btnResolve.addEventListener('click', () => {
+            if (!currentOpenTicketId) return;
+            const ticket = tickets.find(t => t.id === currentOpenTicketId);
+            if (!ticket || ticket.status === 'Resolvido') return;
+
+            ticket.status = 'Resolvido';
+            saveTickets();
+            updateStats();
+            openTicketDetail(currentOpenTicketId);
+          });
+        }
+
+        const newTicketForm = document.getElementById('form-new-ticket');
+        if (newTicketForm) {
+          newTicketForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const typeInput = document.getElementById('ticket-input-type');
+            const titleInput = document.getElementById('ticket-input-title');
+            const descInput = document.getElementById('ticket-input-desc');
+
+            const tipo = typeInput ? typeInput.value : 'Técnico';
+            const titulo = titleInput ? titleInput.value.trim() : '';
+            const descricao = descInput ? descInput.value.trim() : '';
+            if (!titulo || !descricao) return;
+
+            const protocol = generateProtocol();
+            const nowTime = formatDateTime();
+
+            const newTicket = {
+              id: protocol,
+              tipo: tipo,
+              titulo: titulo,
+              descricao: descricao,
+              status: 'Aberto',
+              atendente: 'Aguardando atribuição',
+              createdAt: nowTime,
+              createdAtTimestamp: Date.now(),
+              messages: [
+                {
+                  sender: 'Rafael Mota',
+                  text: descricao,
+                  time: nowTime,
+                  isUser: true
+                }
+              ]
+            };
+
+            tickets.unshift(newTicket);
+            saveTickets();
+
+            document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
+            newTicketForm.reset();
+            backToSuporteList();
+          });
+        }
+      });
+    })();
+  </script>
 `;
-suporteSection = suporteSection.replace('<tbody id="suporte-tickets-tbody"></tbody>', `<tbody id="suporte-tickets-tbody">${ticketsRowsHtml}</tbody>`);
 
-fs.writeFileSync(path.join(htmlDir, 'suporte.html'), renderShell(suporteSection, 'suporte', 'Central de Suporte'));
+fs.writeFileSync(path.join(htmlDir, 'suporte.html'), renderShell(suporteSection, 'suporte', 'Central de Suporte', suportePageScript));
 
 // -------------------------------------------------------------
 // 9. GENERATE INDEX.HTML IN HTML DIR
