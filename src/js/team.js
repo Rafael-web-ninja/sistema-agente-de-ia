@@ -124,8 +124,29 @@ export function initTeamSettings() {
   syncLiveChatDestinations();
 
   // Expose globally for cross-module needs
-  window.getTeamMembers = () => teamMembers;
+  window.getTeamMembers = getTeamMembers;
+  window.getDepartments = getDepartments;
   window.refreshTeamTable = renderTeamTable;
+}
+
+/**
+ * Get current team members list
+ */
+export function getTeamMembers() {
+  if (!teamMembers || teamMembers.length === 0) {
+    loadData();
+  }
+  return teamMembers;
+}
+
+/**
+ * Get current departments list
+ */
+export function getDepartments() {
+  if (!departments || departments.length === 0) {
+    loadData();
+  }
+  return departments;
 }
 
 /**

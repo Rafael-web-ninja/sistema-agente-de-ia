@@ -1170,12 +1170,169 @@
                     </div>
 
                     <!-- Transferir para humano -->
-                    <div class="switch-control-group" style="padding-top: 20px; border-top: 1px solid var(--border-light); margin-bottom: 24px;">
+                    <div class="switch-control-group" style="padding-top: 20px; border-top: 1px solid var(--border-light); margin-bottom: 12px;">
                       <div class="switch-info">
                         <span class="switch-title"><i data-lucide="user-check" style="width:15px;height:15px;color:var(--primary);"></i> Transferir para humano</span>
                         <span class="switch-desc">Encaminhar o atendimento para um atendente quando o cliente solicitar ou a IA não souber responder.</span>
                       </div>
-                      <label class="switch-toggle"><input type="checkbox" checked><span class="switch-slider"></span></label>
+                      <label class="switch-toggle"><input type="checkbox" id="toggle-agent-transfer-human" checked><span class="switch-slider"></span></label>
+                    </div>
+
+                    <!-- Painel de Configuração de Destino do Transbordo Humano -->
+                    <div class="agent-transfer-config-box" id="agent-transfer-config-box">
+                      
+                      <!-- Header do Painel -->
+                      <div class="transfer-box-header">
+                        <div class="transfer-box-header-title">
+                          <i data-lucide="corner-down-right" style="width: 17px; height: 17px; color: var(--primary);"></i>
+                          <span>Destino do Transbordo Humano</span>
+                        </div>
+                        <span class="transfer-box-badge" id="transfer-destination-summary-badge">
+                          Fila: Comercial & Vendas
+                        </span>
+                      </div>
+
+                      <p class="transfer-box-subtitle">
+                        Escolha se a conversa deve ser direcionada para um departamento/fila específica ou para pessoas específicas da sua equipe de atendimento.
+                      </p>
+
+                      <!-- Seleção do Modo de Direcionamento (Cards de Opção) -->
+                      <div class="transfer-mode-selector">
+                        <label class="transfer-mode-card active" id="card-mode-dept">
+                          <input type="radio" name="agent_transfer_mode" value="department" checked>
+                          <div class="transfer-mode-icon">
+                            <i data-lucide="folder-kanban"></i>
+                          </div>
+                          <div class="transfer-mode-info">
+                            <strong>Fila / Departamento</strong>
+                            <span>Direcionar para uma fila temática (ex: Comercial, Suporte)</span>
+                          </div>
+                        </label>
+
+                        <label class="transfer-mode-card" id="card-mode-members">
+                          <input type="radio" name="agent_transfer_mode" value="members">
+                          <div class="transfer-mode-icon">
+                            <i data-lucide="users"></i>
+                          </div>
+                          <div class="transfer-mode-info">
+                            <strong>Pessoas da Equipe</strong>
+                            <span>Selecionar um ou mais atendentes específicos</span>
+                          </div>
+                        </label>
+
+                        <label class="transfer-mode-card" id="card-mode-all">
+                          <input type="radio" name="agent_transfer_mode" value="all_team">
+                          <div class="transfer-mode-icon">
+                            <i data-lucide="shuffle"></i>
+                          </div>
+                          <div class="transfer-mode-info">
+                            <strong>Toda a Equipe (Geral)</strong>
+                            <span>Distribuir entre qualquer atendente online disponível</span>
+                          </div>
+                        </label>
+                      </div>
+
+                      <!-- 1. MODO DEPARTAMENTO: Select e preview de atendentes da fila -->
+                      <div class="transfer-subpanel" id="transfer-subpanel-department">
+                        <div class="form-group" style="margin-bottom: 14px;">
+                          <label class="form-label" for="select-transfer-dept">
+                            <i data-lucide="folder" style="width: 14px; height: 14px; color: var(--primary); display: inline-block; vertical-align: middle;"></i>
+                            Selecione o Departamento de Atendimento:
+                          </label>
+                          <select id="select-transfer-dept" class="form-select" style="max-width: 520px;">
+                            <!-- Populated dynamically from team.js departments -->
+                          </select>
+                        </div>
+
+                        <!-- Card de resumo dos atendentes do departamento selecionado -->
+                        <div class="transfer-dept-preview-card" id="transfer-dept-preview-card">
+                          <div class="transfer-dept-preview-header">
+                            <span class="preview-title" id="transfer-dept-preview-title">Atendentes nesta fila</span>
+                            <span class="preview-count" id="transfer-dept-preview-count">2 atendentes</span>
+                          </div>
+                          <div class="transfer-dept-members-chips" id="transfer-dept-members-chips">
+                            <!-- Populated dynamically -->
+                          </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 14px; margin-bottom: 0;">
+                          <label class="form-label">Regra de Distribuição na Fila:</label>
+                          <div class="transfer-rule-options">
+                            <label class="transfer-mini-radio">
+                              <input type="radio" name="dept_dist_rule" value="round_robin" checked>
+                              <span><strong>Round-Robin:</strong> Alterna entre os atendentes da fila igualmente</span>
+                            </label>
+                            <label class="transfer-mini-radio">
+                              <input type="radio" name="dept_dist_rule" value="least_busy">
+                              <span><strong>Menor carga:</strong> Direciona para o atendente com menos conversas ativas</span>
+                            </label>
+                            <label class="transfer-mini-radio">
+                              <input type="radio" name="dept_dist_rule" value="broadcast">
+                              <span><strong>Transmissão geral:</strong> Toca simultaneamente para todos os membros da fila</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- 2. MODO PESSOAS DA EQUIPE: Multi-seleção com busca -->
+                      <div class="transfer-subpanel" id="transfer-subpanel-members" style="display: none;">
+                        <div class="transfer-members-toolbar">
+                          <div class="transfer-search-input-wrap">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="transfer-member-search" placeholder="Buscar atendente por nome ou cargo...">
+                          </div>
+                          <div class="transfer-selection-actions">
+                            <button type="button" class="btn btn-ghost btn-sm" id="btn-transfer-select-all">Selecionar todos</button>
+                            <span style="color: var(--border);">|</span>
+                            <button type="button" class="btn btn-ghost btn-sm" id="btn-transfer-clear-all">Limpar</button>
+                            <span class="transfer-selected-count-badge" id="transfer-selected-count-badge">0 selecionados</span>
+                          </div>
+                        </div>
+
+                        <!-- Lista de pessoas da equipe para marcar -->
+                        <div class="transfer-members-grid" id="transfer-members-checkbox-grid">
+                          <!-- Populated dynamically with team members -->
+                        </div>
+                      </div>
+
+                      <!-- 3. MODO TODA A EQUIPE: Banner informativo -->
+                      <div class="transfer-subpanel" id="transfer-subpanel-all" style="display: none;">
+                        <div class="transfer-all-team-banner">
+                          <div class="all-team-banner-icon">
+                            <i data-lucide="users" style="width: 20px; height: 20px; color: var(--primary);"></i>
+                          </div>
+                          <div>
+                            <strong>Distribuição Aberta para Toda a Equipe</strong>
+                            <p style="font-size: 12.5px; color: var(--text-muted); margin: 2px 0 0 0;">
+                              Quando o transbordo for acionado, qualquer colaborador com acesso ao atendimento (Inbox) poderá assumir a conversa na fila geral do sistema.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Opções Adicionais de Transbordo -->
+                      <div class="transfer-extra-options">
+                        <div class="form-group" style="margin-bottom: 12px;">
+                          <label class="form-label" for="transfer-custom-message">
+                            Mensagem automática enviada ao cliente antes do transbordo:
+                          </label>
+                          <input type="text" id="transfer-custom-message" class="form-input" 
+                            value="Aguarde um instante! Estou transferindo seu atendimento para um de nossos especialistas humanos." 
+                            placeholder="Digite a mensagem que o cliente receberá...">
+                        </div>
+
+                        <div class="transfer-toggles-row">
+                          <label class="transfer-checkbox-label">
+                            <input type="checkbox" id="transfer-opt-notify" checked>
+                            <span>Notificar atendente(s) imediatamente via aviso sonoro e pop-up</span>
+                          </label>
+                          <label class="transfer-checkbox-label">
+                            <input type="checkbox" id="transfer-opt-attach-summary" checked>
+                            <span>Incluir resumo inteligente da IA com histórico e contexto da conversa</span>
+                          </label>
+                        </div>
+                      </div>
+
                     </div>
 
                     <!-- Horário de atendimento da IA -->

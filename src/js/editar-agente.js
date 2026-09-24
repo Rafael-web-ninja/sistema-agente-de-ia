@@ -1,6 +1,7 @@
 // Module: Editar Agente
 import { zapChatData } from './data.js';
 import { showToast } from './settings.js';
+import { getTeamMembers, getDepartments } from './team.js';
 
 let currentAgentId = 'pedro';
 let currentTone = 'normal';
@@ -13,6 +14,7 @@ export function initEditAgentView() {
   setupBackToAgents();
   setupTrainingActions();
   setupAgentSchedule();
+  setupAgentHumanTransfer();
 
   // Expose globally
   window.openEditAgent = openEditAgent;
@@ -57,6 +59,9 @@ export function openEditAgent(agentId = 'pedro') {
 
   // Load schedule settings for this agent
   loadAgentSchedule(currentAgentId);
+
+  // Load human transfer settings for this agent
+  loadAgentTransferSettings(currentAgentId);
 
   // Switch to the edit agent view
   if (window.switchView) {
@@ -184,6 +189,9 @@ function setupSaveAction() {
 
       // Save agent schedule preferences
       saveAgentSchedule(currentAgentId);
+
+      // Save agent human transfer preferences
+      saveAgentTransferSettings(currentAgentId);
 
       showToast('Configurações do agente salvas com sucesso!');
 
@@ -1103,4 +1111,397 @@ function saveAgentSchedule(agentId) {
   if (msgTextarea) agentSchedule.outOfHoursMessage = msgTextarea.value;
 
   localStorage.setItem(`zapchat_agent_schedule_${agentId}`, JSON.stringify(agentSchedule));
+}
+
+/* ==========================================================================
+   HUMAN TRANSFER DESTINATION MANAGEMENT (DEPARTMENTS OR TEAM MEMBERS)
+   ========================================================================== */
+
+let agentTransferSettings = {
+  enabled: true,
+  mode: 'department', // 'department' | 'members' | 'all_team'
+  department: 'Comercial & Vendas',
+  selectedMembers: ['rafael_mota', 'alaine_felix'],
+  deptDistributionRule: 'round_robin',
+  customMessage: 'Aguarde um instante! Estou transferindo seu atendimento para um de nossos especialistas humanos.',
+  notifyAttendants: true,
+  attachSummary: true
+};
+
+function setupAgentHumanTransfer() {
+  // 1. Toggle switch "Transferir para humano"
+  const toggle = document.getElementById('toggle-agent-transfer-human');
+  const configBox = document.getElementById('agent-transfer-config-box');
+
+  if (toggle && configBox) {
+    toggle.addEventListener('change', () => {
+      agentTransferSettings.enabled = toggle.checked;
+      if (toggle.checked) {
+        configBox.style.display = 'flex';
+        showToast('Transbordo para atendimento humano ativado.');
+      } else {
+        configBox.style.display = 'none';
+        showToast('Transbordo para atendimento humano desativado.');
+      }
+    });
+  }
+
+  // 2. Radio cards for Transfer Mode (Department | Specific Members | All Team)
+  const modeRadios = document.querySelectorAll('input[name="agent_transfer_mode"]');
+  modeRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.querySelectorAll('.transfer-mode-card').forEach(card => card.classList.remove('active'));
+      const activeCard = radio.closest('.transfer-mode-card');
+      if (activeCard) activeCard.classList.add('active');
+
+      agentTransferSettings.mode = radio.value;
+      switchTransferSubpanel(radio.value);
+      updateTransferSummaryBadge();
+    });
+  });
+
+  // 3. Department select change
+  const deptSelect = document.getElementById('select-transfer-dept');
+  if (deptSelect) {
+    deptSelect.addEventListener('change', () => {
+      agentTransferSettings.department = deptSelect.value;
+      updateDeptMembersPreview(deptSelect.value);
+      updateTransferSummaryBadge();
+    });
+  }
+
+  // 4. Search input for members
+  const memberSearch = document.getElementById('transfer-member-search');
+  if (memberSearch) {
+    memberSearch.addEventListener('input', () => {
+      filterTransferMembersGrid(memberSearch.value);
+    });
+  }
+
+  // 5. Select all members button
+  const btnSelectAll = document.getElementById('btn-transfer-select-all');
+  if (btnSelectAll) {
+    btnSelectAll.addEventListener('click', (e) => {
+      e.preventDefault();
+      const grid = document.getElementById('transfer-members-checkbox-grid');
+      if (!grid) return;
+      grid.querySelectorAll('.transfer-member-item-card').forEach(card => {
+        if (card.style.display !== 'none') {
+          const input = card.querySelector('input[type="checkbox"]');
+          if (input) {
+            input.checked = true;
+            card.classList.add('selected');
+            const id = card.getAttribute('data-member-id');
+            if (id && !agentTransferSettings.selectedMembers.includes(id)) {
+              agentTransferSettings.selectedMembers.push(id);
+            }
+          }
+        }
+      });
+      updateSelectedMembersBadge();
+      updateTransferSummaryBadge();
+    });
+  }
+
+  // 6. Clear all selected members button
+  const btnClearAll = document.getElementById('btn-transfer-clear-all');
+  if (btnClearAll) {
+    btnClearAll.addEventListener('click', (e) => {
+      e.preventDefault();
+      const grid = document.getElementById('transfer-members-checkbox-grid');
+      if (!grid) return;
+      grid.querySelectorAll('.transfer-member-item-card').forEach(card => {
+        const input = card.querySelector('input[type="checkbox"]');
+        if (input) input.checked = false;
+        card.classList.remove('selected');
+      });
+      agentTransferSettings.selectedMembers = [];
+      updateSelectedMembersBadge();
+      updateTransferSummaryBadge();
+    });
+  }
+
+  // 7. Delegated checkbox change for member cards
+  const grid = document.getElementById('transfer-members-checkbox-grid');
+  if (grid) {
+    grid.addEventListener('change', (e) => {
+      const input = e.target.closest('input[type="checkbox"]');
+      if (!input) return;
+      const card = input.closest('.transfer-member-item-card');
+      const memberId = card?.getAttribute('data-member-id');
+      if (!memberId) return;
+
+      if (input.checked) {
+        card.classList.add('selected');
+        if (!agentTransferSettings.selectedMembers.includes(memberId)) {
+          agentTransferSettings.selectedMembers.push(memberId);
+        }
+      } else {
+        card.classList.remove('selected');
+        agentTransferSettings.selectedMembers = agentTransferSettings.selectedMembers.filter(id => id !== memberId);
+      }
+      updateSelectedMembersBadge();
+      updateTransferSummaryBadge();
+    });
+  }
+
+  // 8. Distribution rule radio
+  const distRadios = document.querySelectorAll('input[name="dept_dist_rule"]');
+  distRadios.forEach(r => {
+    r.addEventListener('change', () => {
+      agentTransferSettings.deptDistributionRule = r.value;
+    });
+  });
+
+  // 9. Extra options
+  const msgInput = document.getElementById('transfer-custom-message');
+  if (msgInput) {
+    msgInput.addEventListener('input', () => {
+      agentTransferSettings.customMessage = msgInput.value;
+    });
+  }
+
+  const optNotify = document.getElementById('transfer-opt-notify');
+  if (optNotify) {
+    optNotify.addEventListener('change', () => {
+      agentTransferSettings.notifyAttendants = optNotify.checked;
+    });
+  }
+
+  const optAttach = document.getElementById('transfer-opt-attach-summary');
+  if (optAttach) {
+    optAttach.addEventListener('change', () => {
+      agentTransferSettings.attachSummary = optAttach.checked;
+    });
+  }
+}
+
+function switchTransferSubpanel(mode) {
+  const panelDept = document.getElementById('transfer-subpanel-department');
+  const panelMembers = document.getElementById('transfer-subpanel-members');
+  const panelAll = document.getElementById('transfer-subpanel-all');
+
+  if (panelDept) panelDept.style.display = mode === 'department' ? 'block' : 'none';
+  if (panelMembers) {
+    panelMembers.style.display = mode === 'members' ? 'block' : 'none';
+    if (mode === 'members') {
+      renderTransferMembersGrid();
+    }
+  }
+  if (panelAll) panelAll.style.display = mode === 'all_team' ? 'block' : 'none';
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function populateTransferDepartments(selectedDeptName) {
+  const select = document.getElementById('select-transfer-dept');
+  if (!select) return;
+
+  const departments = getDepartments();
+  select.innerHTML = departments.map(d => `
+    <option value="${d.name}" ${d.name === selectedDeptName ? 'selected' : ''}>
+      ${d.name} (${d.desc ? d.desc.substring(0, 36) + '...' : ''})
+    </option>
+  `).join('');
+
+  if (!selectedDeptName && departments.length > 0) {
+    select.value = departments[0].name;
+    agentTransferSettings.department = departments[0].name;
+  }
+
+  updateDeptMembersPreview(select.value);
+}
+
+function updateDeptMembersPreview(deptName) {
+  const container = document.getElementById('transfer-dept-members-chips');
+  const countEl = document.getElementById('transfer-dept-preview-count');
+  if (!container) return;
+
+  const members = getTeamMembers();
+  const filtered = members.filter(m => {
+    if (!m.department) return false;
+    return m.department === deptName ||
+           deptName.toLowerCase().includes(m.department.toLowerCase()) ||
+           m.department.toLowerCase().includes(deptName.toLowerCase());
+  });
+
+  if (countEl) {
+    countEl.textContent = `${filtered.length} ${filtered.length === 1 ? 'atendente' : 'atendentes'}`;
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<span style="font-size: 12px; color: var(--text-muted); font-style: italic;">Nenhum atendente vinculado a este departamento no momento.</span>`;
+  } else {
+    container.innerHTML = filtered.map(m => `
+      <div class="dept-member-chip" title="${m.role || 'Atendente'}">
+        <div class="dept-member-chip-avatar" style="background-color: ${m.avatarBg || '#00A868'}; color: ${m.avatarColor || '#FFFFFF'};">
+          ${m.initials || m.name.substring(0, 2).toUpperCase()}
+        </div>
+        <span>${m.name}</span>
+      </div>
+    `).join('');
+  }
+}
+
+function renderTransferMembersGrid() {
+  const grid = document.getElementById('transfer-members-checkbox-grid');
+  if (!grid) return;
+
+  const members = getTeamMembers();
+  const selectedIds = agentTransferSettings.selectedMembers || [];
+
+  grid.innerHTML = members.map(m => {
+    const isSelected = selectedIds.includes(m.id);
+    const statusDotClass = m.status === 'online' ? 'status-dot-online' : 'status-dot-offline';
+
+    return `
+      <label class="transfer-member-item-card ${isSelected ? 'selected' : ''}" data-member-id="${m.id}" data-search-text="${(m.name + ' ' + (m.role || '') + ' ' + (m.department || '')).toLowerCase()}">
+        <input type="checkbox" value="${m.id}" ${isSelected ? 'checked' : ''}>
+        <div class="transfer-member-card-avatar" style="background-color: ${m.avatarBg || '#00A868'}; color: ${m.avatarColor || '#FFFFFF'};">
+          ${m.initials || m.name.substring(0, 2).toUpperCase()}
+          <span class="team-status-indicator ${statusDotClass}"></span>
+        </div>
+        <div class="transfer-member-card-info">
+          <span class="transfer-member-card-name">
+            ${m.name}
+            ${m.isOwner ? '<span class="team-badge-owner">dono</span>' : ''}
+          </span>
+          <span class="transfer-member-card-sub">${m.department || 'Geral'} • ${m.role || 'Atendente'}</span>
+        </div>
+      </label>
+    `;
+  }).join('');
+
+  updateSelectedMembersBadge();
+}
+
+function filterTransferMembersGrid(query) {
+  const q = (query || '').toLowerCase().trim();
+  const grid = document.getElementById('transfer-members-checkbox-grid');
+  if (!grid) return;
+
+  grid.querySelectorAll('.transfer-member-item-card').forEach(card => {
+    const text = card.getAttribute('data-search-text') || '';
+    if (!q || text.includes(q)) {
+      card.style.display = 'flex';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+function updateSelectedMembersBadge() {
+  const badge = document.getElementById('transfer-selected-count-badge');
+  if (badge) {
+    const count = (agentTransferSettings.selectedMembers || []).length;
+    badge.textContent = `${count} ${count === 1 ? 'selecionado' : 'selecionados'}`;
+  }
+}
+
+function updateTransferSummaryBadge() {
+  const badge = document.getElementById('transfer-destination-summary-badge');
+  if (!badge) return;
+
+  if (agentTransferSettings.mode === 'department') {
+    badge.textContent = `Fila: ${agentTransferSettings.department || 'Comercial & Vendas'}`;
+  } else if (agentTransferSettings.mode === 'members') {
+    const count = (agentTransferSettings.selectedMembers || []).length;
+    badge.textContent = count === 1 ? '1 atendente específico' : `${count} atendentes específicos`;
+  } else {
+    badge.textContent = 'Toda a Equipe (Geral)';
+  }
+}
+
+function loadAgentTransferSettings(agentId) {
+  const saved = localStorage.getItem(`zapchat_agent_transfer_${agentId}`);
+  if (saved) {
+    try {
+      agentTransferSettings = JSON.parse(saved);
+    } catch (e) {
+      console.warn('Error loading agent transfer settings', e);
+    }
+  } else {
+    // Defaults: route to department
+    agentTransferSettings = {
+      enabled: true,
+      mode: 'department',
+      department: 'Comercial & Vendas',
+      selectedMembers: ['rafael_mota', 'alaine_felix'],
+      deptDistributionRule: 'round_robin',
+      customMessage: 'Aguarde um instante! Estou transferindo seu atendimento para um de nossos especialistas humanos.',
+      notifyAttendants: true,
+      attachSummary: true
+    };
+  }
+
+  // Update Toggle
+  const toggle = document.getElementById('toggle-agent-transfer-human');
+  const configBox = document.getElementById('agent-transfer-config-box');
+  if (toggle) toggle.checked = agentTransferSettings.enabled;
+  if (configBox) configBox.style.display = agentTransferSettings.enabled ? 'flex' : 'none';
+
+  // Mode cards
+  const modeRadios = document.querySelectorAll('input[name="agent_transfer_mode"]');
+  modeRadios.forEach(r => {
+    if (r.value === agentTransferSettings.mode) {
+      r.checked = true;
+      r.closest('.transfer-mode-card')?.classList.add('active');
+    } else {
+      r.checked = false;
+      r.closest('.transfer-mode-card')?.classList.remove('active');
+    }
+  });
+
+  // Populate departments
+  populateTransferDepartments(agentTransferSettings.department);
+
+  // Render members grid
+  renderTransferMembersGrid();
+
+  // Distribution rule
+  const distRadios = document.querySelectorAll('input[name="dept_dist_rule"]');
+  distRadios.forEach(r => {
+    r.checked = r.value === agentTransferSettings.deptDistributionRule;
+  });
+
+  // Custom message
+  const msgInput = document.getElementById('transfer-custom-message');
+  if (msgInput && agentTransferSettings.customMessage) {
+    msgInput.value = agentTransferSettings.customMessage;
+  }
+
+  // Checkboxes
+  const optNotify = document.getElementById('transfer-opt-notify');
+  if (optNotify) optNotify.checked = !!agentTransferSettings.notifyAttendants;
+
+  const optAttach = document.getElementById('transfer-opt-attach-summary');
+  if (optAttach) optAttach.checked = !!agentTransferSettings.attachSummary;
+
+  switchTransferSubpanel(agentTransferSettings.mode);
+  updateTransferSummaryBadge();
+}
+
+function saveAgentTransferSettings(agentId) {
+  const toggle = document.getElementById('toggle-agent-transfer-human');
+  if (toggle) agentTransferSettings.enabled = toggle.checked;
+
+  const activeMode = document.querySelector('input[name="agent_transfer_mode"]:checked');
+  if (activeMode) agentTransferSettings.mode = activeMode.value;
+
+  const deptSelect = document.getElementById('select-transfer-dept');
+  if (deptSelect) agentTransferSettings.department = deptSelect.value;
+
+  const activeRule = document.querySelector('input[name="dept_dist_rule"]:checked');
+  if (activeRule) agentTransferSettings.deptDistributionRule = activeRule.value;
+
+  const msgInput = document.getElementById('transfer-custom-message');
+  if (msgInput) agentTransferSettings.customMessage = msgInput.value;
+
+  const optNotify = document.getElementById('transfer-opt-notify');
+  if (optNotify) agentTransferSettings.notifyAttendants = optNotify.checked;
+
+  const optAttach = document.getElementById('transfer-opt-attach-summary');
+  if (optAttach) agentTransferSettings.attachSummary = optAttach.checked;
+
+  localStorage.setItem(`zapchat_agent_transfer_${agentId}`, JSON.stringify(agentTransferSettings));
 }
