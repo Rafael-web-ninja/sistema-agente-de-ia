@@ -1456,6 +1456,12 @@
                   </button>
                 </li>
                 <li class="settings-nav-item">
+                  <button type="button" class="settings-nav-btn" data-settings-tab="equipe">
+                    <i data-lucide="users"></i>
+                    <span>Equipe</span>
+                  </button>
+                </li>
+                <li class="settings-nav-item">
                   <button type="button" class="settings-nav-btn" data-settings-tab="faturamento">
                     <i data-lucide="credit-card"></i>
                     <span>Plano e Faturamento</span>
@@ -1606,6 +1612,116 @@
                     <i data-lucide="save" style="width: 15px; height: 15px;"></i>
                     Salvar alterações de perfil
                   </button>
+                </div>
+              </div>
+
+              <!-- ==========================================
+                   PANE: EQUIPE E ACESSOS (INSPIRADO EM BOTCONVERSA)
+                   ========================================== -->
+              <div class="settings-pane" id="settings-pane-equipe">
+                <div class="settings-card" style="padding: 24px;">
+                  
+                  <!-- Top Row: Title, Subtabs & Global Controls -->
+                  <div class="equipe-header-row">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                        <h2 style="font-size: 20px; font-weight: 700; color: var(--text-main); margin: 0;">Equipe</h2>
+                        <div class="equipe-subtabs-wrap">
+                          <button type="button" class="equipe-subtab-btn active" data-subtab="equipe">
+                            Equipe
+                          </button>
+                          <button type="button" class="equipe-subtab-btn" data-subtab="departamentos">
+                            Departamentos
+                          </button>
+                        </div>
+                      </div>
+                      <p style="font-size: 13px; color: var(--text-muted); margin: 0;">
+                        Gerencie os membros da sua equipe e defina o nível de permissão e acesso aos módulos de atendimento.
+                      </p>
+                    </div>
+
+                    <div class="equipe-header-actions">
+                      <label class="equipe-header-checkbox" title="Exibe o nome do atendente responsável no cabeçalho das mensagens nos chats ao vivo">
+                        <input type="checkbox" id="toggle-show-member-names" checked>
+                        <span>Mostrar nome dos membros nos chats ao vivo</span>
+                      </label>
+                      <button type="button" class="btn btn-primary" id="btn-open-add-member" data-modal-target="modal-add-team-member">
+                        <i data-lucide="user-plus" style="width: 15px; height: 15px;"></i>
+                        <span>Adicionar membro</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- SUBVIEW 1: MEMBROS DA EQUIPE -->
+                  <div id="equipe-view-members">
+                    <!-- Toolbar: Search, Dept Filter, Count -->
+                    <div class="team-toolbar">
+                      <div class="team-toolbar-left">
+                        <div class="team-search-wrap">
+                          <i data-lucide="search"></i>
+                          <input type="text" id="team-members-search" class="team-search-input" placeholder="Buscar por nome, e-mail ou cargo...">
+                        </div>
+                        <select id="team-members-filter-dept" class="team-dept-filter-select">
+                          <option value="all">Todos os departamentos</option>
+                        </select>
+                      </div>
+                      <span class="team-count-badge" id="team-count-badge">4 membros</span>
+                    </div>
+
+                    <!-- Botconversa Inspired Data Table -->
+                    <div class="team-table-card">
+                      <div class="team-table-scroll">
+                        <table class="team-table">
+                          <thead>
+                            <tr>
+                              <th class="th-member">E-mail</th>
+                              <th class="th-perm">Painel de Controle</th>
+                              <th class="th-perm">Contatos</th>
+                              <th class="th-perm">Campanhas</th>
+                              <th class="th-perm">Transmissão</th>
+                              <th class="th-perm">Automação</th>
+                              <th class="th-perm">Fluxos de conversa</th>
+                              <th class="th-perm">
+                                <span class="th-with-icon">
+                                  Configurações
+                                  <i data-lucide="sliders-horizontal" style="width: 13px; height: 13px;"></i>
+                                </span>
+                              </th>
+                              <th class="th-perm">
+                                <span class="th-with-icon">
+                                  Inbox
+                                  <i data-lucide="sliders-horizontal" style="width: 13px; height: 13px;"></i>
+                                </span>
+                              </th>
+                              <th class="th-actions"></th>
+                            </tr>
+                          </thead>
+                          <tbody id="team-table-tbody">
+                            <!-- Populated dynamically by team.js -->
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- SUBVIEW 2: DEPARTAMENTOS -->
+                  <div id="equipe-view-departments" style="display: none;">
+                    <div class="dept-view-header">
+                      <div class="dept-view-info">
+                        <h4>Departamentos & Filas de Atendimento</h4>
+                        <p>Distribua conversas e organize sua equipe em filas temáticas com transbordo humano inteligente.</p>
+                      </div>
+                      <button type="button" class="btn btn-secondary btn-sm" data-modal-target="modal-new-department">
+                        <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                        <span>Novo departamento</span>
+                      </button>
+                    </div>
+
+                    <div class="departments-grid" id="departments-grid-container">
+                      <!-- Populated dynamically by team.js -->
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
@@ -2883,6 +2999,385 @@
         </main>
 
       </div>
+    </div>
+  </div>
+
+  <!-- ==============================================
+       MODALS: EQUIPE & PERMISSÕES
+       ============================================== -->
+
+  <!-- 1. Modal Adicionar Novo Membro da Equipe -->
+  <div class="modal-backdrop" id="modal-add-team-member">
+    <div class="modal-dialog modal-dialog-team">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="user-plus" style="width: 20px; height: 20px; color: var(--primary);"></i>
+            <span>Adicionar Novo Membro</span>
+          </h3>
+          <p class="modal-header-sub">Cadastre um colaborador para ter acesso ao atendimento e aos módulos do ZapChat</p>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar">✕</button>
+      </div>
+
+      <form id="form-add-team-member">
+        <div class="settings-form-row">
+          <div class="form-group">
+            <label class="form-label">Nome Completo *</label>
+            <input type="text" id="add-member-name" class="form-input" placeholder="Ex: Juliana Santos" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-mail de Acesso *</label>
+            <input type="email" id="add-member-email" class="form-input" placeholder="Ex: juliana@empresa.com.br" required>
+          </div>
+        </div>
+
+        <div class="settings-form-row">
+          <div class="form-group">
+            <label class="form-label">Cargo / Função</label>
+            <input type="text" id="add-member-role" class="form-input" placeholder="Ex: Atendente de Vendas">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Departamento / Fila de Atendimento</label>
+            <select id="add-member-dept" class="form-select">
+              <option value="Comercial & Vendas">Comercial & Vendas</option>
+              <option value="Suporte Técnico">Suporte Técnico</option>
+              <option value="Atendimento Geral">Atendimento Geral</option>
+              <option value="Financeiro & Cobrança">Financeiro & Cobrança</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">WhatsApp / Telefone (Opcional)</label>
+          <input type="text" id="add-member-phone" class="form-input" placeholder="+55 (11) 98765-4321">
+        </div>
+
+        <!-- Presets Bar -->
+        <div style="margin-bottom: 14px;">
+          <label class="form-label" style="margin-bottom: 8px;">Modelo Rápido de Permissões</label>
+          <div class="perm-presets-bar">
+            <button type="button" class="perm-preset-btn active" data-add-preset="atendente">Atendente (Inbox & Contatos)</button>
+            <button type="button" class="perm-preset-btn" data-add-preset="comercial">Comercial & Campanhas</button>
+            <button type="button" class="perm-preset-btn" data-add-preset="suporte">Suporte Técnico</button>
+            <button type="button" class="perm-preset-btn" data-add-preset="admin">Administrador Completo</button>
+          </div>
+        </div>
+
+        <!-- Permissões por Módulo -->
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="margin-bottom: 8px;">Acesso aos Módulos</label>
+          <div class="perm-modules-grid">
+            <label class="perm-module-card">
+              <input type="checkbox" id="perm-add-dashboard" checked>
+              <div class="perm-module-info">
+                <span class="perm-module-title">Painel de Controle</span>
+                <span class="perm-module-desc">Visualizar métricas, gráficos e KPIs da conta</span>
+              </div>
+            </label>
+
+            <label class="perm-module-card">
+              <input type="checkbox" id="perm-add-inbox" checked>
+              <div class="perm-module-info">
+                <span class="perm-module-title">Inbox / Atendimento</span>
+                <span class="perm-module-desc">Acesso aos chats ao vivo e transbordo humano</span>
+              </div>
+            </label>
+
+            <label class="perm-module-card">
+              <input type="checkbox" id="perm-add-contatos" checked>
+              <div class="perm-module-info">
+                <span class="perm-module-title">Contatos & Leads</span>
+                <span class="perm-module-desc">Gerenciar contatos, tags e histórico</span>
+              </div>
+            </label>
+
+            <label class="perm-module-card">
+              <input type="checkbox" id="perm-add-campanhas">
+              <div class="perm-module-info">
+                <span class="perm-module-title">Campanhas</span>
+                <span class="perm-module-desc">Criar e agendar ações promocionais</span>
+              </div>
+            </label>
+
+            <label class="perm-module-card">
+              <input type="checkbox" id="perm-add-transmissao">
+              <div class="perm-module-info">
+                <span class="perm-module-title">Transmissão</span>
+                <span class="perm-module-desc">Disparos em massa e listas de transmissão</span>
+              </div>
+            </label>
+
+            <label class="perm-module-card">
+              <input type="checkbox" id="perm-add-automacao">
+              <div class="perm-module-info">
+                <span class="perm-module-title">Automação & IA</span>
+                <span class="perm-module-desc">Configurar e treinar agentes inteligentes</span>
+              </div>
+            </label>
+
+            <label class="perm-module-card">
+              <input type="checkbox" id="perm-add-fluxos">
+              <div class="perm-module-info">
+                <span class="perm-module-title">Fluxos de conversa</span>
+                <span class="perm-module-desc">Editar fluxos e caminhos do chatbot</span>
+              </div>
+            </label>
+
+            <label class="perm-module-card">
+              <input type="checkbox" id="perm-add-configuracoes">
+              <div class="perm-module-info">
+                <span class="perm-module-title">Configurações</span>
+                <span class="perm-module-desc">Acessar dados da empresa, canais e integrações</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Opções extras -->
+        <div style="background: var(--bg-hover); padding: 12px 14px; border-radius: var(--radius-md); margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px;">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; cursor: pointer;">
+            <input type="checkbox" id="add-member-send-invite" checked style="accent-color: var(--primary);">
+            <span>Enviar convite por e-mail com instruções para criação de senha</span>
+          </label>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-add-member">
+            <i data-lucide="check" style="width: 15px; height: 15px;"></i>
+            <span>Cadastrar Membro</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Modal Editar Membro da Equipe -->
+  <div class="modal-backdrop" id="modal-edit-team-member">
+    <div class="modal-dialog modal-dialog-team">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="user-cog" style="width: 20px; height: 20px; color: var(--primary);"></i>
+            <span>Editar Membro da Equipe</span>
+          </h3>
+          <p class="modal-header-sub">Atualize os dados e as permissões de acesso aos módulos</p>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar">✕</button>
+      </div>
+
+      <form id="form-edit-team-member">
+        <input type="hidden" id="edit-member-id">
+
+        <div id="edit-member-owner-notice" class="team-owner-notice" style="display: none;">
+          <i data-lucide="shield" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
+          <span>Este usuário é o <strong>Proprietário (Dono)</strong> da conta. Todas as permissões de acesso aos módulos permanecem liberadas permanentemente.</span>
+        </div>
+
+        <div class="settings-form-row">
+          <div class="form-group">
+            <label class="form-label">Nome Completo *</label>
+            <input type="text" id="edit-member-name" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-mail de Acesso *</label>
+            <input type="email" id="edit-member-email" class="form-input" required>
+          </div>
+        </div>
+
+        <div class="settings-form-row">
+          <div class="form-group">
+            <label class="form-label">Cargo / Função</label>
+            <input type="text" id="edit-member-role" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Departamento / Fila</label>
+            <select id="edit-member-dept" class="form-select">
+              <option value="Comercial & Vendas">Comercial & Vendas</option>
+              <option value="Suporte Técnico">Suporte Técnico</option>
+              <option value="Atendimento Geral">Atendimento Geral</option>
+              <option value="Financeiro & Cobrança">Financeiro & Cobrança</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">WhatsApp / Telefone</label>
+          <input type="text" id="edit-member-phone" class="form-input">
+        </div>
+
+        <!-- Presets Bar -->
+        <div style="margin-bottom: 14px;">
+          <label class="form-label" style="margin-bottom: 8px;">Predefinir Permissões</label>
+          <div class="perm-presets-bar">
+            <button type="button" class="perm-preset-btn" data-edit-preset="atendente">Atendente</button>
+            <button type="button" class="perm-preset-btn" data-edit-preset="comercial">Comercial</button>
+            <button type="button" class="perm-preset-btn" data-edit-preset="suporte">Suporte</button>
+            <button type="button" class="perm-preset-btn" data-edit-preset="admin">Administrador</button>
+          </div>
+        </div>
+
+        <!-- Permissões por Módulo -->
+        <div class="form-group" id="edit-member-permissions-section" style="margin-bottom: 20px;">
+          <label class="form-label" style="margin-bottom: 8px;">Acesso aos Módulos</label>
+          <div class="perm-modules-grid">
+            <label class="perm-module-card">
+              <input type="checkbox" id="perm-edit-dashboard">
+              <div class="perm-module-info">
+                <span class="perm-module-title">Painel de Controle</span>
+                <span class="perm-module-desc">Visualizar métricas e relatórios</span>
+              </div>
+            </label>
+
+            <label class="perm-module-card">
+              <input type="checkbox" id="perm-edit-inbox">
+              <div class="perm-module-info">
+                <span class="perm-module-title">Inbox / Atendimento</span>
+                <span class="perm-module-desc">Atendimento humano ao vivo</span>
+              </div>
+            </label>
+
+            <label class="perm-module-card">
+              <input type="checkbox" id="perm-edit-contatos">
+              <div class="perm-module-info">
+                <span class="perm-module-title">Contatos & Leads</span>
+                <span class="perm-module-desc">Gerenciar contatos e histórico</span>
+              </div>
+            </label>
+
+            <label class="perm-module-card">
+              <input type="checkbox" id="perm-edit-campanhas">
+              <div class="perm-module-info">
+                <span class="perm-module-title">Campanhas</span>
+                <span class="perm-module-desc">Criar e agendar campanhas</span>
+              </div>
+            </label>
+
+            <label class="perm-module-card">
+              <input type="checkbox" id="perm-edit-transmissao">
+              <div class="perm-module-info">
+                <span class="perm-module-title">Transmissão</span>
+                <span class="perm-module-desc">Disparos em massa</span>
+              </div>
+            </label>
+
+            <label class="perm-module-card">
+              <input type="checkbox" id="perm-edit-automacao">
+              <div class="perm-module-info">
+                <span class="perm-module-title">Automação & IA</span>
+                <span class="perm-module-desc">Configurar agentes de IA</span>
+              </div>
+            </label>
+
+            <label class="perm-module-card">
+              <input type="checkbox" id="perm-edit-fluxos">
+              <div class="perm-module-info">
+                <span class="perm-module-title">Fluxos de conversa</span>
+                <span class="perm-module-desc">Editar fluxos e caminhos</span>
+              </div>
+            </label>
+
+            <label class="perm-module-card">
+              <input type="checkbox" id="perm-edit-configuracoes">
+              <div class="perm-module-info">
+                <span class="perm-module-title">Configurações</span>
+                <span class="perm-module-desc">Acessar dados e integrações</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-edit-member">
+            <i data-lucide="save" style="width: 15px; height: 15px;"></i>
+            <span>Salvar Alterações</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. Modal Excluir Membro da Equipe -->
+  <div class="modal-backdrop" id="modal-delete-team-member">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" style="color: var(--status-danger); display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="alert-triangle" style="width: 20px; height: 20px;"></i>
+            <span>Remover Membro</span>
+          </h3>
+          <p class="modal-header-sub">Confirme a exclusão do acesso à equipe</p>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar">✕</button>
+      </div>
+
+      <div style="padding: 10px 0 20px 0;">
+        <input type="hidden" id="delete-member-id">
+        <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
+          Tem certeza de que deseja remover <strong id="delete-member-target-name" style="color: var(--text-main);"></strong> da sua equipe?
+        </p>
+        <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 8px;">
+          Este usuário perderá imediatamente o acesso ao painel, ao Inbox e não receberá mais transferências de atendimento.
+        </p>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-delete-member" style="background-color: var(--status-danger); color: white;">
+          <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+          <span>Confirmar Exclusão</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Modal Novo Departamento -->
+  <div class="modal-backdrop" id="modal-new-department">
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="folder-plus" style="width: 20px; height: 20px; color: var(--primary);"></i>
+            <span>Novo Departamento</span>
+          </h3>
+          <p class="modal-header-sub">Crie uma nova fila para roteamento inteligente de atendimentos</p>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar">✕</button>
+      </div>
+
+      <form id="form-new-department">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Nome do Departamento *</label>
+          <input type="text" id="new-dept-name" class="form-input" placeholder="Ex: Pós-Venda & Sucesso do Cliente" required>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Descrição da Fila</label>
+          <textarea id="new-dept-desc" class="form-textarea" rows="2" placeholder="Descreva o objetivo deste departamento e tipos de solicitações..."></textarea>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label">Cor de Identificação</label>
+          <select id="new-dept-color" class="form-select">
+            <option value="#00A868">Verde ZapChat</option>
+            <option value="#2563EB">Azul Suporte</option>
+            <option value="#7C3AED">Roxo Comercial</option>
+            <option value="#F59E0B">Âmbar Financeiro</option>
+            <option value="#EA580C">Laranja Atendimento</option>
+            <option value="#0D9488">Teal Operacional</option>
+          </select>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+            <span>Criar Departamento</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 

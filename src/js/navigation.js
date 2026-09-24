@@ -56,6 +56,8 @@ export function initNavigation() {
       openSettingsTab('faturamento');
     } else if (hash === 'perfil' || hash === 'minha-conta') {
       openSettingsTab('perfil');
+    } else if (hash === 'equipe' || hash === 'membros') {
+      openSettingsTab('equipe');
     } else {
       switchView('dashboard', updateHistory);
     }

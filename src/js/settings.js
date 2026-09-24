@@ -1,9 +1,11 @@
 // Settings View Module (Tabs & Interactions)
+import { initTeamSettings, renderTeamTable, renderDepartmentsView } from './team.js';
 
 export function initSettingsView() {
   setupSettingsTabs();
   setupSaveButtons();
   setupBillingActions();
+  initTeamSettings();
 
   // Expose globally for cross-module or inline access
   window.switchSettingsTab = switchSettingsTab;
@@ -34,6 +36,12 @@ export function switchSettingsTab(tabId) {
       pane.classList.remove('active');
     }
   });
+
+  // If switching to equipe, ensure table & icons are fresh
+  if (tabId === 'equipe') {
+    renderTeamTable();
+    renderDepartmentsView();
+  }
 
   // Refresh lucide icons in newly visible panel
   if (window.lucide) {
