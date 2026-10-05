@@ -864,126 +864,166 @@ const editAgentPageScript = `
       });
     });
 
-    // 1. Persona Cards selection
-    const personaCards = document.querySelectorAll('.persona-card[data-persona]');
-    personaCards.forEach(card => {
-      card.addEventListener('click', () => {
-        personaCards.forEach(c => c.classList.remove('active'));
-        card.classList.add('active');
-        if (window.lucide) window.lucide.createIcons();
+    // 1. Live Summary Generator
+    function updateLiveSummary() {
+      const summaryEl = document.getElementById('agent-behavior-live-summary');
+      if (!summaryEl) return;
+
+      const inputName = document.getElementById('input-agent-name');
+      const agentName = inputName && inputName.value.trim() ? inputName.value.trim() : 'teste';
+
+      const toneBtn = document.querySelector('[data-style-group="tom-de-voz"] .btn-style-option.active span');
+      const toneText = toneBtn ? toneBtn.textContent.trim().toLowerCase() : 'natural';
+
+      const lengthBtn = document.querySelector('[data-style-group="tamanho-respostas"] .btn-style-option.active span');
+      const lengthText = lengthBtn ? lengthBtn.textContent.trim().toLowerCase() : 'médias';
+
+      const emojiBtn = document.querySelector('[data-style-group="emojis"] .btn-style-option.active span');
+      const emojiVal = emojiBtn ? emojiBtn.textContent.trim().toLowerCase() : 'moderado';
+      let emojiDesc = 'poucos emojis';
+      if (emojiVal.includes('não') || emojiVal.includes('sem')) emojiDesc = 'sem emojis';
+      else if (emojiVal.includes('vontade') || emojiVal.includes('frequente')) emojiDesc = 'bastante emojis';
+
+      const primaryBtn = document.querySelector('#objective-primary-options .btn-objective-item.active span');
+      const primaryObj = primaryBtn ? primaryBtn.textContent.trim().toLowerCase() : 'agendamentos';
+      let primaryDesc = 'realizar ' + primaryObj;
+      if (primaryObj.includes('atendimento')) primaryDesc = 'fazer atendimento geral';
+      else if (primaryObj.includes('oportunidade')) primaryDesc = 'gerar oportunidades de negócio';
+      else if (primaryObj.includes('venda')) primaryDesc = 'realizar vendas';
+      else if (primaryObj.includes('suporte')) primaryDesc = 'prestar suporte técnico';
+
+      const secondaryItems = Array.from(document.querySelectorAll('#objective-secondary-options .btn-objective-subitem.active span'))
+        .map(s => s.textContent.trim().toLowerCase());
+      let secondaryDesc = '';
+      if (secondaryItems.length > 0) {
+        if (secondaryItems.length === 1) {
+          secondaryDesc = ' Ela também poderá ' + secondaryItems[0] + '.';
+        } else {
+          const last = secondaryItems.pop();
+          secondaryDesc = ' Ela também poderá ' + secondaryItems.join(', ') + ' e ' + last + '.';
+        }
+      }
+
+      const offerHuman = document.getElementById('check-safety-offer-human')?.checked;
+      const safetyDesc = offerHuman 
+        ? 'Quando não souber responder, oferecerá atendimento humano.'
+        : 'Quando não souber responder, informará que não possui a informação.';
+
+      summaryEl.textContent = agentName + ' atenderá clientes de forma ' + toneText + ', com respostas ' + lengthText + ' e ' + emojiDesc + '. Seu foco principal será ' + primaryDesc + '.' + secondaryDesc + ' ' + safetyDesc;
+    }
+
+    const nameInputEl = document.getElementById('input-agent-name');
+    if (nameInputEl) {
+      nameInputEl.addEventListener('input', () => {
+        updateLiveSummary();
+        const disp = document.getElementById('edit-agent-name-display');
+        if (disp) disp.textContent = nameInputEl.value.trim() || 'teste';
+        const circle = document.getElementById('edit-agent-avatar-circle');
+        if (circle) circle.textContent = (nameInputEl.value.trim()[0] || 'T').toUpperCase();
+      });
+    }
+
+    // 2. Segment Suggestions Chips & Input
+    const segmentChips = document.querySelectorAll('.segment-chip[data-segment]');
+    const segmentInput = document.getElementById('input-agent-segment');
+    segmentChips.forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.preventDefault();
+        segmentChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        const val = chip.getAttribute('data-segment');
+        if (segmentInput) segmentInput.value = val;
+        const titleModal = document.getElementById('segment-rules-modal-title');
+        if (titleModal) titleModal.textContent = 'Boas Práticas: ' + val;
       });
     });
 
-    // 2. WhatsApp preference pills
-    const prefGroups = document.querySelectorAll('.preference-pills[data-pref]');
-    prefGroups.forEach(group => {
-      const pills = group.querySelectorAll('.pref-pill');
-      pills.forEach(pill => {
-        pill.addEventListener('click', (e) => {
+    // Segment Rules Modal Trigger
+    const btnViewRules = document.getElementById('btn-view-segment-rules');
+    const modalRules = document.getElementById('modal-segment-rules');
+    if (btnViewRules && modalRules) {
+      btnViewRules.addEventListener('click', (e) => {
+        e.preventDefault();
+        modalRules.classList.add('active');
+      });
+    }
+
+    // 3. Objective Primary Buttons
+    const primaryBtns = document.querySelectorAll('#objective-primary-options .btn-objective-item');
+    primaryBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        primaryBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        updateLiveSummary();
+      });
+    });
+
+    // 4. Objective Secondary Buttons
+    const secondaryBtns = document.querySelectorAll('#objective-secondary-options .btn-objective-subitem');
+    secondaryBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const isActive = btn.classList.toggle('active');
+        const checkIcon = btn.querySelector('.subitem-check');
+        if (checkIcon) {
+          checkIcon.setAttribute('data-lucide', isActive ? 'check-square' : 'square');
+          if (window.lucide) window.lucide.createIcons();
+        }
+        updateLiveSummary();
+      });
+    });
+
+    // 5. Style Options Stack
+    const styleColumns = document.querySelectorAll('.style-column[data-style-group]');
+    styleColumns.forEach(col => {
+      const options = col.querySelectorAll('.btn-style-option');
+      options.forEach(opt => {
+        opt.addEventListener('click', (e) => {
           e.preventDefault();
-          pills.forEach(p => p.classList.remove('active'));
-          pill.classList.add('active');
+          options.forEach(o => o.classList.remove('active'));
+          opt.classList.add('active');
+          updateLiveSummary();
         });
       });
     });
 
-    // 3. Behavior chips toggle
-    const chips = document.querySelectorAll('.behavior-chip[data-chip]');
-    chips.forEach(chip => {
+    // 6. Client Data Chips
+    document.querySelectorAll('#client-data-chips-container .btn-data-chip').forEach(chip => {
       chip.addEventListener('click', (e) => {
         e.preventDefault();
         const isActive = chip.classList.toggle('active');
-        const icon = chip.querySelector('.chip-icon');
-        if (icon) {
-          icon.setAttribute('data-lucide', isActive ? 'check' : 'plus');
+        const checkIcon = chip.querySelector('.chip-check-icon');
+        if (checkIcon) {
+          checkIcon.setAttribute('data-lucide', isActive ? 'check-square' : 'square');
           if (window.lucide) window.lucide.createIcons();
         }
       });
     });
 
-    // 4. Templates dropdown & selection
-    const btnTemplates = document.getElementById('btn-open-templates');
-    const templateMenu = document.getElementById('template-dropdown-menu');
-    const templates = {
-      ecommerce: \`Você é o Pedro, atendente comercial especialista da Loja Download.
-Objetivo: Tirar dúvidas sobre os produtos do catálogo, orientar sobre tamanhos/modelos e enviar links de checkout com total segurança.
-Regras:
-1. Sempre cumprimente o cliente pelo primeiro nome com simpatia.
-2. Destaque nosso frete rápido em até 48h e informe que compras acima de R$ 199 possuem frete grátis.
-3. Se o cliente for novo, ofereça o cupom BEMVINDO10 para 10% de desconto na primeira compra.
-4. Responda de forma ágil, com no máximo 2 frases por mensagem no WhatsApp.\`,
-      servicos: \`Você é o Pedro, consultor comercial especialista da ZapChat Soluções B2B.
-Objetivo: Atender potenciais clientes corporativos, entender as dores da operação e qualificar o lead para agendamento de uma demonstração online.
-Regras:
-1. Seja formal, respeitoso e transmita máxima autoridade e credibilidade.
-2. Faça perguntas de diagnóstico: quantidade de atendentes, volume diário de conversas e canais utilizados.
-3. Sempre proponha um horário para uma reunião de 20 minutos com nosso time de especialistas.
-4. Se o cliente solicitar orçamento complexo, colete o e-mail corporativo e encaminhe para o consultor sênior.\`,
-      clinica: \`Você é o Pedro, atendente acolhedor da Clínica Médica Vida & Saúde.
-Objetivo: Recepcionar pacientes com extremo carinho, agilidade e empatia para esclarecer dúvidas e agendar consultas.
-Regras:
-1. Trate cada paciente com muita paciência e acolhimento humano.
-2. Pergunte qual especialidade ou médico ele procura e se o atendimento será particular ou por convênio.
-3. Apresente os próximos 2 horários disponíveis para facilitar a escolha.
-4. Nunca forneça diagnósticos ou prescreva remédios. Em casos urgentes, oriente buscar prontamente o pronto-socorro.\`,
-      suporte: \`Você é o Pedro, especialista em suporte técnico e atendimento ao cliente.
-Objetivo: Resolver dúvidas e dificuldades de uso dos clientes com agilidade e clareza passo a passo.
-Regras:
-1. Ouça com atenção o relato do usuário e confirme a compreensão antes de propor uma solução.
-2. Forneça instruções numeradas e curtas, testando cada etapa junto com o cliente.
-3. Se o problema envolver falha crítica de sistema ou dados de pagamento, transfira imediatamente para um atendente humano.
-4. Sempre verifique se ficou alguma dúvida pendente antes de finalizar.\`
-    };
+    // 7. Safety Checkboxes
+    document.querySelectorAll('.safety-check-item input[type="checkbox"]').forEach(input => {
+      input.addEventListener('change', updateLiveSummary);
+    });
 
-    if (btnTemplates && templateMenu) {
-      btnTemplates.addEventListener('click', (e) => {
-        e.stopPropagation();
-        templateMenu.classList.toggle('show');
-      });
-      document.addEventListener('click', (e) => {
-        if (!btnTemplates.contains(e.target) && !templateMenu.contains(e.target)) {
-          templateMenu.classList.remove('show');
-        }
-      });
-      templateMenu.querySelectorAll('.template-item[data-template]').forEach(item => {
-        item.addEventListener('click', () => {
-          const key = item.getAttribute('data-template');
-          const txt = document.getElementById('agent-behavior-textarea');
-          if (templates[key] && txt) {
-            txt.value = templates[key];
-            txt.dispatchEvent(new Event('input'));
-            templateMenu.classList.remove('show');
-            alert('Modelo pronto carregado com sucesso!');
-          }
-        });
-      });
-    }
-
-    // 5. Enhance with AI
-    const btnEnhance = document.getElementById('btn-enhance-prompt');
-    if (btnEnhance) {
-      btnEnhance.addEventListener('click', (e) => {
+    // 8. Test Agent CTA
+    const btnSummaryTest = document.getElementById('btn-summary-test-agent');
+    if (btnSummaryTest) {
+      btnSummaryTest.addEventListener('click', (e) => {
         e.preventDefault();
-        const activePersona = document.querySelector('.persona-card.active .persona-title')?.textContent.trim() || 'Atendente Acolhedor';
-        const activeChips = Array.from(document.querySelectorAll('.behavior-chip.active span')).map(s => s.textContent.trim());
-        const txt = document.getElementById('agent-behavior-textarea');
-        const orig = btnEnhance.innerHTML;
-        btnEnhance.disabled = true;
-        btnEnhance.innerHTML = '<i data-lucide="loader" class="rotating" style="width:13px;height:13px;"></i> Gerando...';
-        if (window.lucide) window.lucide.createIcons();
-
-        setTimeout(() => {
-          if (txt) {
-            txt.value = \`Você é o Pedro, atuando como \${activePersona} da Loja Download.\\nSeu objetivo é recepcionar os contatos no WhatsApp com agilidade, prestando um atendimento eficiente, cordial e de alta qualidade.\\n\\nDiretrizes obrigatórias de conduta:\\n\${activeChips.map((c, i) => \`\${i + 1}. \${c}.\`).join('\\n')}\\n\\nMantenha respostas fluídas e humanas, adequando-se ao ritmo da conversa no WhatsApp e garantindo que o cliente se sinta plenamente seguro e bem atendido.\`;
-            txt.dispatchEvent(new Event('input'));
-          }
-          btnEnhance.disabled = false;
-          btnEnhance.innerHTML = orig;
-          if (window.lucide) window.lucide.createIcons();
-          alert('Instruções aprimoradas com IA com base nas suas seleções!');
-        }, 600);
+        const modal = document.getElementById('modal-test-ai');
+        if (modal) modal.classList.add('active');
       });
     }
+
+    // Modal close listeners for new modals
+    document.querySelectorAll('.modal-close').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('active'));
+      });
+    });
+
+    updateLiveSummary();
 
     // Live name/role update and char counter
     const textarea = document.getElementById('agent-behavior-textarea');

@@ -119,146 +119,217 @@ function setupInternalTabs() {
 }
 
 /**
- * Interactive behavior configuration (Persona cards, WhatsApp preference pills, Behavior chips, Templates, AI enhancer)
+ * Interactive behavior configuration (New Modular Profile Cards: Segment, Objectives, Style, Client Data, Safety & Live Summary)
  */
 function setupBehaviorConfiguration() {
-  // 1. Persona Cards selection
-  const personaCards = document.querySelectorAll('.persona-card[data-persona]');
-  personaCards.forEach(card => {
-    card.addEventListener('click', () => {
-      personaCards.forEach(c => c.classList.remove('active'));
-      card.classList.add('active');
-      if (window.lucide) window.lucide.createIcons();
+  // 1. Live Summary Generator
+  function updateLiveSummary() {
+    const summaryEl = document.getElementById('agent-behavior-live-summary');
+    if (!summaryEl) return;
+
+    const inputName = document.getElementById('input-agent-name');
+    const agentName = inputName && inputName.value.trim() ? inputName.value.trim() : 'teste';
+
+    // Tom de voz
+    const toneBtn = document.querySelector('[data-style-group="tom-de-voz"] .btn-style-option.active span');
+    const toneText = toneBtn ? toneBtn.textContent.trim().toLowerCase() : 'natural';
+
+    // Tamanho das respostas
+    const lengthBtn = document.querySelector('[data-style-group="tamanho-respostas"] .btn-style-option.active span');
+    const lengthText = lengthBtn ? lengthBtn.textContent.trim().toLowerCase() : 'médias';
+
+    // Emojis
+    const emojiBtn = document.querySelector('[data-style-group="emojis"] .btn-style-option.active span');
+    const emojiVal = emojiBtn ? emojiBtn.textContent.trim().toLowerCase() : 'moderado';
+    let emojiDesc = 'poucos emojis';
+    if (emojiVal.includes('não') || emojiVal.includes('sem')) emojiDesc = 'sem emojis';
+    else if (emojiVal.includes('vontade') || emojiVal.includes('frequente')) emojiDesc = 'bastante emojis';
+
+    // Objetivo principal
+    const primaryBtn = document.querySelector('#objective-primary-options .btn-objective-item.active span');
+    const primaryObj = primaryBtn ? primaryBtn.textContent.trim().toLowerCase() : 'agendamentos';
+    let primaryDesc = `realizar ${primaryObj}`;
+    if (primaryObj.includes('atendimento')) primaryDesc = 'fazer atendimento geral';
+    else if (primaryObj.includes('oportunidade')) primaryDesc = 'gerar oportunidades de negócio';
+    else if (primaryObj.includes('venda')) primaryDesc = 'realizar vendas';
+    else if (primaryObj.includes('suporte')) primaryDesc = 'prestar suporte técnico';
+
+    // Ações secundárias
+    const secondaryItems = Array.from(document.querySelectorAll('#objective-secondary-options .btn-objective-subitem.active span'))
+      .map(s => s.textContent.trim().toLowerCase());
+    let secondaryDesc = '';
+    if (secondaryItems.length > 0) {
+      if (secondaryItems.length === 1) {
+        secondaryDesc = ` Ela também poderá ${secondaryItems[0]}.`;
+      } else {
+        const last = secondaryItems.pop();
+        secondaryDesc = ` Ela também poderá ${secondaryItems.join(', ')} e ${last}.`;
+      }
+    }
+
+    // Segurança e atendimento humano
+    const offerHuman = document.getElementById('check-safety-offer-human')?.checked;
+    const safetyDesc = offerHuman 
+      ? 'Quando não souber responder, oferecerá atendimento humano.'
+      : 'Quando não souber responder, informará que não possui a informação.';
+
+    summaryEl.textContent = `${agentName} atenderá clientes de forma ${toneText}, com respostas ${lengthText} e ${emojiDesc}. Seu foco principal será ${primaryDesc}.${secondaryDesc} ${safetyDesc}`;
+  }
+
+  const nameInputEl = document.getElementById('input-agent-name');
+  if (nameInputEl) {
+    nameInputEl.addEventListener('input', updateLiveSummary);
+  }
+
+  // 2. Segment Suggestions Chips & Input
+  const segmentChips = document.querySelectorAll('.segment-chip[data-segment]');
+  const segmentInput = document.getElementById('input-agent-segment');
+  segmentChips.forEach(chip => {
+    chip.addEventListener('click', (e) => {
+      e.preventDefault();
+      segmentChips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const val = chip.getAttribute('data-segment');
+      if (segmentInput) segmentInput.value = val;
+      const titleModal = document.getElementById('segment-rules-modal-title');
+      if (titleModal) titleModal.textContent = `Boas Práticas: ${val}`;
+      showToast(`Segmento alterado para ${val}! Boas práticas aplicadas.`);
     });
   });
 
-  // 2. WhatsApp preference pills (single select per group)
-  const prefGroups = document.querySelectorAll('.preference-pills[data-pref]');
-  prefGroups.forEach(group => {
-    const pills = group.querySelectorAll('.pref-pill');
-    pills.forEach(pill => {
-      pill.addEventListener('click', (e) => {
+  // Segment Rules Modal Trigger
+  const btnViewRules = document.getElementById('btn-view-segment-rules');
+  const modalRules = document.getElementById('modal-segment-rules');
+  if (btnViewRules && modalRules) {
+    btnViewRules.addEventListener('click', (e) => {
+      e.preventDefault();
+      modalRules.classList.add('open');
+    });
+  }
+
+  // 3. Objective Primary Buttons (Single select)
+  const primaryBtns = document.querySelectorAll('#objective-primary-options .btn-objective-item');
+  primaryBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      primaryBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateLiveSummary();
+    });
+  });
+
+  // 4. Objective Secondary Buttons (Multi select toggle)
+  const secondaryBtns = document.querySelectorAll('#objective-secondary-options .btn-objective-subitem');
+  secondaryBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const isActive = btn.classList.toggle('active');
+      const checkIcon = btn.querySelector('.subitem-check');
+      if (checkIcon) {
+        checkIcon.setAttribute('data-lucide', isActive ? 'check-square' : 'square');
+        if (window.lucide) window.lucide.createIcons();
+      }
+      updateLiveSummary();
+    });
+  });
+
+  // 5. Style Options Stack (Single select per column)
+  const styleColumns = document.querySelectorAll('.style-column[data-style-group]');
+  styleColumns.forEach(col => {
+    const options = col.querySelectorAll('.btn-style-option');
+    options.forEach(opt => {
+      opt.addEventListener('click', (e) => {
         e.preventDefault();
-        pills.forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
+        options.forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        updateLiveSummary();
       });
     });
   });
 
-  // 3. Behavior chips toggle (multi-select with icon update)
-  const chips = document.querySelectorAll('.behavior-chip[data-chip]');
-  chips.forEach(chip => {
+  // 6. Client Data Chips (Multi select toggle)
+  function attachDataChipListener(chip) {
     chip.addEventListener('click', (e) => {
       e.preventDefault();
       const isActive = chip.classList.toggle('active');
-      const icon = chip.querySelector('.chip-icon');
-      if (icon) {
-        icon.setAttribute('data-lucide', isActive ? 'check' : 'plus');
+      const checkIcon = chip.querySelector('.chip-check-icon');
+      if (checkIcon) {
+        checkIcon.setAttribute('data-lucide', isActive ? 'check-square' : 'square');
         if (window.lucide) window.lucide.createIcons();
       }
+    });
+  }
+  document.querySelectorAll('#client-data-chips-container .btn-data-chip').forEach(attachDataChipListener);
+
+  // Add custom client field
+  const btnAddField = document.getElementById('btn-add-client-field');
+  const modalAddField = document.getElementById('modal-add-client-field');
+  const formAddField = document.getElementById('form-add-client-field');
+  const inputNewField = document.getElementById('new-client-field-name');
+
+  if (btnAddField && modalAddField) {
+    btnAddField.addEventListener('click', (e) => {
+      e.preventDefault();
+      modalAddField.classList.add('open');
+      if (inputNewField) inputNewField.focus();
+    });
+  }
+
+  if (formAddField) {
+    formAddField.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = inputNewField ? inputNewField.value.trim() : '';
+      if (!val) return;
+
+      const container = document.getElementById('client-data-chips-container');
+      if (container && btnAddField) {
+        const newChip = document.createElement('button');
+        newChip.type = 'button';
+        newChip.className = 'btn-data-chip active';
+        newChip.setAttribute('data-field', val.toLowerCase().replace(/\s+/g, '-'));
+        newChip.innerHTML = `
+          <i data-lucide="check-square" class="chip-check-icon"></i>
+          <i data-lucide="tag" class="chip-field-icon"></i>
+          <span>${val}</span>
+        `;
+        container.insertBefore(newChip, btnAddField);
+        attachDataChipListener(newChip);
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      modalAddField.classList.remove('open');
+      formAddField.reset();
+      showToast(`Campo "${val}" adicionado com sucesso!`);
+    });
+  }
+
+  // Modal close handlers
+  document.querySelectorAll('#modal-segment-rules .modal-close, #modal-add-client-field .modal-close').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (modalRules) modalRules.classList.remove('open');
+      if (modalAddField) modalAddField.classList.remove('open');
     });
   });
 
-  // 4. Templates dropdown & selection
-  const btnTemplates = document.getElementById('btn-open-templates');
-  const templateMenu = document.getElementById('template-dropdown-menu');
-  const textarea = document.getElementById('agent-behavior-textarea');
+  // 7. Safety Checkboxes listener
+  const safetyInputs = document.querySelectorAll('.safety-check-item input[type="checkbox"]');
+  safetyInputs.forEach(input => {
+    input.addEventListener('change', updateLiveSummary);
+  });
 
-  const templates = {
-    ecommerce: `Você é o Pedro, atendente comercial especialista da Loja Download.
-Objetivo: Tirar dúvidas sobre os produtos do catálogo, orientar sobre tamanhos/modelos e enviar links de checkout com total segurança.
-Regras:
-1. Sempre cumprimente o cliente pelo primeiro nome com simpatia.
-2. Destaque nosso frete rápido em até 48h e informe que compras acima de R$ 199 possuem frete grátis.
-3. Se o cliente for novo, ofereça o cupom BEMVINDO10 para 10% de desconto na primeira compra.
-4. Responda de forma ágil, com no máximo 2 frases por mensagem no WhatsApp.`,
-
-    servicos: `Você é o Pedro, consultor comercial especialista da ZapChat Soluções B2B.
-Objetivo: Atender potenciais clientes corporativos, entender as dores da operação e qualificar o lead para agendamento de uma demonstração online.
-Regras:
-1. Seja formal, respeitoso e transmita máxima autoridade e credibilidade.
-2. Faça perguntas de diagnóstico: quantidade de atendentes, volume diário de conversas e canais utilizados.
-3. Sempre proponha um horário para uma reunião de 20 minutos com nosso time de especialistas.
-4. Se o cliente solicitar orçamento complexo, colete o e-mail corporativo e encaminhe para o consultor sênior.`,
-
-    clinica: `Você é o Pedro, atendente acolhedor da Clínica Médica Vida & Saúde.
-Objetivo: Recepcionar pacientes com extremo carinho, agilidade e empatia para esclarecer dúvidas e agendar consultas.
-Regras:
-1. Trate cada paciente com muita paciência e acolhimento humano.
-2. Pergunte qual especialidade ou médico ele procura e se o atendimento será particular ou por convênio.
-3. Apresente os próximos 2 horários disponíveis para facilitar a escolha.
-4. Nunca forneça diagnósticos ou prescreva remédios. Em casos urgentes, oriente buscar prontamente o pronto-socorro.`,
-
-    suporte: `Você é o Pedro, especialista em suporte técnico e atendimento ao cliente.
-Objetivo: Resolver dúvidas e dificuldades de uso dos clientes com agilidade e clareza passo a passo.
-Regras:
-1. Ouça com atenção o relato do usuário e confirme a compreensão antes de propor uma solução.
-2. Forneça instruções numeradas e curtas, testando cada etapa junto com o cliente.
-3. Se o problema envolver falha crítica de sistema ou dados de pagamento, transfira imediatamente para um atendente humano.
-4. Sempre verifique se ficou alguma dúvida pendente antes de finalizar.`
-  };
-
-  if (btnTemplates && templateMenu) {
-    btnTemplates.addEventListener('click', (e) => {
-      e.stopPropagation();
-      templateMenu.classList.toggle('show');
-    });
-
-    document.addEventListener('click', (e) => {
-      if (!btnTemplates.contains(e.target) && !templateMenu.contains(e.target)) {
-        templateMenu.classList.remove('show');
+  // 8. Test Agent CTA in summary card
+  const btnSummaryTest = document.getElementById('btn-summary-test-agent');
+  if (btnSummaryTest) {
+    btnSummaryTest.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (typeof window.openTestAiModal === 'function') {
+        window.openTestAiModal(currentAgentId);
       }
     });
-
-    const templateItems = templateMenu.querySelectorAll('.template-item[data-template]');
-    templateItems.forEach(item => {
-      item.addEventListener('click', () => {
-        const key = item.getAttribute('data-template');
-        if (templates[key] && textarea) {
-          textarea.value = templates[key];
-          textarea.dispatchEvent(new Event('input'));
-          templateMenu.classList.remove('show');
-          showToast('Modelo pronto carregado com sucesso!');
-        }
-      });
-    });
   }
 
-  // 5. Enhance prompt with AI button
-  const btnEnhance = document.getElementById('btn-enhance-prompt');
-  if (btnEnhance && textarea) {
-    btnEnhance.addEventListener('click', (e) => {
-      e.preventDefault();
-      const activePersonaCard = document.querySelector('.persona-card.active');
-      const personaTitle = activePersonaCard ? activePersonaCard.querySelector('.persona-title')?.textContent.trim() : 'Atendente Acolhedor';
-
-      const activeChips = Array.from(document.querySelectorAll('.behavior-chip.active span')).map(s => s.textContent.trim());
-
-      const originalText = btnEnhance.innerHTML;
-      btnEnhance.disabled = true;
-      btnEnhance.innerHTML = '<i data-lucide="loader" class="rotating" style="width:13px;height:13px;"></i> Gerando...';
-      if (window.lucide) window.lucide.createIcons();
-
-      setTimeout(() => {
-        const enhancedPrompt = `Você é o Pedro, atuando como ${personaTitle} da Loja Download.
-Seu objetivo é recepcionar os contatos no WhatsApp com agilidade, prestando um atendimento eficiente, cordial e de alta qualidade.
-
-Diretrizes obrigatórias de conduta:
-${activeChips.map((c, i) => `${i + 1}. ${c}.`).join('\n')}
-
-Mantenha respostas fluídas e humanas, adequando-se ao ritmo da conversa no WhatsApp e garantindo que o cliente se sinta plenamente seguro e bem atendido.`;
-
-        textarea.value = enhancedPrompt;
-        textarea.dispatchEvent(new Event('input'));
-
-        btnEnhance.disabled = false;
-        btnEnhance.innerHTML = originalText;
-        if (window.lucide) window.lucide.createIcons();
-
-        showToast('Instruções aprimoradas com IA com base nas suas seleções!');
-      }, 700);
-    });
-  }
+  // Initialize live summary
+  updateLiveSummary();
 }
 
 /**
@@ -282,9 +353,17 @@ function setupBehaviorCounter() {
     updateCount();
   }
 
-  if (inputName && nameDisplay) {
+  if (inputName) {
     inputName.addEventListener('input', (e) => {
-      nameDisplay.textContent = e.target.value.trim() || 'Agente';
+      const val = e.target.value.trim();
+      if (nameDisplay) nameDisplay.textContent = val || 'Agente';
+      const avatarCircle = document.getElementById('edit-agent-avatar-circle');
+      if (avatarCircle) avatarCircle.textContent = (val[0] || 'A').toUpperCase();
+      const summaryEl = document.getElementById('agent-behavior-live-summary');
+      if (summaryEl && typeof updateLiveSummary === 'function') {
+        // Will be picked up on event
+        inputName.dispatchEvent(new CustomEvent('namechange'));
+      }
     });
   }
 

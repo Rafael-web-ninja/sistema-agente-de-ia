@@ -836,275 +836,370 @@
               <div class="edit-agent-content-area">
                 
                 <!-- PANE 1: PERFIL -->
+                <!-- PANE 1: PERFIL (NOVO DESIGN DE PERFIL E COMPORTAMENTO) -->
                 <div class="agent-tab-pane active" id="agent-tab-pane-perfil">
-                  <!-- Informações pessoais & Comunicação -->
-                  <div class="agent-config-card">
-                    <div class="agent-config-card-header">
-                      <div>
-                        <h3 class="agent-config-card-title">Perfil do agente</h3>
-                        <p class="agent-config-card-subtitle">Defina o nome, objetivo/função e o estilo de linguagem do agente.</p>
+                  
+                  <!-- ROW 1: TOP GRID (Perfil do Agente + Objetivo do Agente) -->
+                  <div class="agent-profile-top-grid">
+                    
+                    <!-- CARD 1: Perfil do agente -->
+                    <div class="agent-profile-card">
+                      <div class="profile-card-header">
+                        <div class="profile-card-icon">
+                          <i data-lucide="user"></i>
+                        </div>
+                        <div class="profile-card-titles">
+                          <h3 class="profile-card-title">Perfil do agente</h3>
+                          <p class="profile-card-subtitle">Defina as informações principais do agente e o contexto do negócio.</p>
+                        </div>
+                      </div>
+
+                      <div class="profile-form-row">
+                        <div class="form-group" style="flex: 1;">
+                          <label class="form-label" for="input-agent-name">Nome do agente</label>
+                          <input type="text" id="input-agent-name" class="form-input" value="teste" placeholder="Ex: Sophia, Pedro">
+                        </div>
+                        <div class="form-group" style="flex: 1.35;">
+                          <label class="form-label" for="input-agent-role">Função do agente</label>
+                          <input type="text" id="input-agent-role" class="form-input" value="Atendente virtual da Clínica Bella" placeholder="Ex: Atendente virtual da Clínica Bella">
+                        </div>
+                      </div>
+
+                      <div class="form-group" style="margin-top: 14px;">
+                        <label class="form-label" for="input-agent-segment">Segmento do negócio</label>
+                        <div class="segment-input-wrap">
+                          <i data-lucide="search" class="segment-search-icon"></i>
+                          <input type="text" id="input-agent-segment" class="form-input segment-input" value="Clínica / Saúde" placeholder="Selecione ou busque o segmento">
+                          <i data-lucide="chevron-down" class="segment-chevron-icon"></i>
+                        </div>
+                      </div>
+
+                      <div class="segment-suggestions-row">
+                        <span class="segment-suggestions-label">Sugestões:</span>
+                        <div class="segment-suggestions-chips">
+                          <button type="button" class="segment-chip active" data-segment="Clínica / Saúde">Clínica</button>
+                          <button type="button" class="segment-chip" data-segment="Advocacia / Jurídico">Advocacia</button>
+                          <button type="button" class="segment-chip" data-segment="Imobiliária / Corretores">Imobiliária</button>
+                          <button type="button" class="segment-chip" data-segment="Academia / Fitness">Academia</button>
+                        </div>
+                      </div>
+
+                      <div class="segment-rules-banner">
+                        <div class="segment-rules-banner-left">
+                          <i data-lucide="check-circle-2" class="banner-check-icon"></i>
+                          <span>Boas práticas do segmento aplicadas automaticamente</span>
+                        </div>
+                        <a href="javascript:void(0)" class="segment-rules-link" id="btn-view-segment-rules">
+                          <span>Ver regras</span>
+                          <i data-lucide="arrow-right" style="width:13px;height:13px;"></i>
+                        </a>
                       </div>
                     </div>
 
-                    <div class="settings-form-row" style="margin-bottom: 16px;">
-                      <!-- Nome do agente -->
-                      <div class="form-group">
-                        <label class="form-label" for="input-agent-name">Nome do agente</label>
-                        <input type="text" id="input-agent-name" class="form-input" value="Pedro" placeholder="Ex: Pedro, Atendente Virtual">
-                      </div>
-
-                      <!-- Objetivo / Função do agente -->
-                      <div class="form-group">
-                        <label class="form-label" for="input-agent-role">Objetivo / Função do agente</label>
-                        <input type="text" id="input-agent-role" class="form-input" value="Vendedor em Loja Download" placeholder="Ex: Vendedor Comercial, Atendente de Suporte">
-                      </div>
-                    </div>
-
-                    <!-- NOVA SEÇÃO DE COMPORTAMENTO INTUITIVA -->
-                    <!-- 1. Persona e Estilo de Atendimento -->
-                    <div class="agent-behavior-block">
-                      <div class="behavior-block-header">
-                        <div>
-                          <label class="form-label" style="margin-bottom: 2px;">Persona e Estilo de Atendimento</label>
-                          <p class="form-sublabel">Escolha a personalidade e a postura do agente durante as conversas no WhatsApp.</p>
+                    <!-- CARD 2: Objetivo do agente -->
+                    <div class="agent-profile-card">
+                      <div class="profile-card-header">
+                        <div class="profile-card-icon">
+                          <i data-lucide="target"></i>
+                        </div>
+                        <div class="profile-card-titles">
+                          <h3 class="profile-card-title">Objetivo do agente</h3>
+                          <p class="profile-card-subtitle">Defina o foco principal e o que o agente também pode fazer.</p>
                         </div>
                       </div>
 
-                      <div class="persona-cards-grid">
-                        <!-- Card 1: Consultor Especialista -->
-                        <div class="persona-card" data-persona="consultor">
-                          <div class="persona-card-header">
-                            <div class="persona-icon-box">
-                              <i data-lucide="briefcase"></i>
-                            </div>
-                            <span class="persona-badge">B2B & Serviços</span>
-                          </div>
-                          <h4 class="persona-title">Consultor Especialista</h4>
-                          <p class="persona-desc">Formal, técnico e respeitoso. Passa máxima credibilidade, segurança e precisão técnica.</p>
-                          <div class="persona-check">
-                            <i data-lucide="check"></i>
-                          </div>
-                        </div>
-
-                        <!-- Card 2: Atendente Acolhedor (Padrão Ativo) -->
-                        <div class="persona-card active" data-persona="acolhedor">
-                          <div class="persona-card-header">
-                            <div class="persona-icon-box">
-                              <i data-lucide="heart-handshake"></i>
-                            </div>
-                            <span class="persona-badge badge-recommended">Mais Usado</span>
-                          </div>
-                          <h4 class="persona-title">Atendente Acolhedor</h4>
-                          <p class="persona-desc">Caloroso, empático e paciente. Perfeito para suporte humanizado, atendimento diário e SAC.</p>
-                          <div class="persona-check">
-                            <i data-lucide="check"></i>
-                          </div>
-                        </div>
-
-                        <!-- Card 3: Vendedor Persuasivo -->
-                        <div class="persona-card" data-persona="vendedor">
-                          <div class="persona-card-header">
-                            <div class="persona-icon-box">
-                              <i data-lucide="zap"></i>
-                            </div>
-                            <span class="persona-badge">Vendas Rápidas</span>
-                          </div>
-                          <h4 class="persona-title">Vendedor Comercial</h4>
-                          <p class="persona-desc">Ágil, persuasivo e proativo. Focado em quebrar objeções, qualificar o lead e fechar vendas.</p>
-                          <div class="persona-check">
-                            <i data-lucide="check"></i>
-                          </div>
-                        </div>
-
-                        <!-- Card 4: Dinâmico & Descontraído -->
-                        <div class="persona-card" data-persona="dinamico">
-                          <div class="persona-card-header">
-                            <div class="persona-icon-box">
-                              <i data-lucide="sparkles"></i>
-                            </div>
-                            <span class="persona-badge">Jovem & D2C</span>
-                          </div>
-                          <h4 class="persona-title">Dinâmico & Moderno</h4>
-                          <p class="persona-desc">Descontraído, ágil e informal. Comunicação leve, contemporânea e conectada às redes sociais.</p>
-                          <div class="persona-check">
-                            <i data-lucide="check"></i>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- 2. Preferências Práticas de Resposta (Pills) -->
-                    <div class="agent-behavior-block">
-                      <div class="behavior-block-header">
-                        <div>
-                          <label class="form-label" style="margin-bottom: 2px;">Preferências de Conversa no WhatsApp</label>
-                          <p class="form-sublabel">Ajuste o formato das respostas para ficarem naturais e adequadas ao seu público.</p>
-                        </div>
-                      </div>
-
-                      <div class="preference-pills-row">
-                        <!-- Extensão -->
-                        <div class="preference-group">
-                          <span class="preference-group-label">
-                            <i data-lucide="message-square" style="width:13px;height:13px;"></i>
-                            Extensão das Mensagens
-                          </span>
-                          <div class="preference-pills" data-pref="response-length">
-                            <button type="button" class="pref-pill active" data-value="curta" title="Mensagens curtas de 1 a 2 frases, estilo WhatsApp">
-                              <span>💬 Curtas</span>
-                            </button>
-                            <button type="button" class="pref-pill" data-value="detalhada" title="Respostas mais completas e explicativas">
-                              <span>📄 Detalhadas</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        <!-- Emojis -->
-                        <div class="preference-group">
-                          <span class="preference-group-label">
-                            <i data-lucide="smile" style="width:13px;height:13px;"></i>
-                            Uso de Emojis
-                          </span>
-                          <div class="preference-pills" data-pref="emojis">
-                            <button type="button" class="pref-pill" data-value="nenhum">
-                              <span>🚫 Nenhum</span>
-                            </button>
-                            <button type="button" class="pref-pill active" data-value="moderado">
-                              <span>😊 Moderado</span>
-                            </button>
-                            <button type="button" class="pref-pill" data-value="frequente">
-                              <span>🎉 Frequente</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        <!-- Se não souber -->
-                        <div class="preference-group">
-                          <span class="preference-group-label">
-                            <i data-lucide="help-circle" style="width:13px;height:13px;"></i>
-                            Se não souber a resposta
-                          </span>
-                          <div class="preference-pills" data-pref="fallback">
-                            <button type="button" class="pref-pill active" data-value="humano" title="Transferir para atendente humano">
-                              <span>👨‍💼 Chamar humano</span>
-                            </button>
-                            <button type="button" class="pref-pill" data-value="recado" title="Pedir recado e dados para contato">
-                              <span>📝 Pedir contato</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- 3. Diretrizes e Regras Rápidas (Chips de 1 clique) -->
-                    <div class="agent-behavior-block">
-                      <div class="behavior-block-header">
-                        <div>
-                          <label class="form-label" style="margin-bottom: 2px;">Diretrizes Rápidas do Agente</label>
-                          <p class="form-sublabel">Ative ou desative regras essenciais de conduta com apenas 1 clique.</p>
-                        </div>
-                      </div>
-
-                      <div class="behavior-chips-wrap">
-                        <button type="button" class="behavior-chip active" data-chip="primeiro-nome">
-                          <i data-lucide="check" class="chip-icon"></i>
-                          <span>Chamar sempre pelo primeiro nome</span>
-                        </button>
-                        <button type="button" class="behavior-chip active" data-chip="nao-inventar">
-                          <i data-lucide="check" class="chip-icon"></i>
-                          <span>Nunca inventar preços ou informações fora do catálogo</span>
-                        </button>
-                        <button type="button" class="behavior-chip active" data-chip="uma-pergunta">
-                          <i data-lucide="check" class="chip-icon"></i>
-                          <span>Fazer apenas uma pergunta por vez</span>
-                        </button>
-                        <button type="button" class="behavior-chip active" data-chip="links-sob-demanda">
-                          <i data-lucide="check" class="chip-icon"></i>
-                          <span>Enviar links somente quando solicitado</span>
-                        </button>
-                        <button type="button" class="behavior-chip active" data-chip="confirmar-encerramento">
-                          <i data-lucide="check" class="chip-icon"></i>
-                          <span>Confirmar se restam dúvidas antes de encerrar</span>
-                        </button>
-                        <button type="button" class="behavior-chip active" data-chip="proibir-dados-sensiveis">
-                          <i data-lucide="check" class="chip-icon"></i>
-                          <span>Nunca solicitar senhas ou dados bancários</span>
-                        </button>
-                        <button type="button" class="behavior-chip" data-chip="foco-agendamento">
-                          <i data-lucide="plus" class="chip-icon"></i>
-                          <span>Conduzir conversa para agendamento de reunião</span>
-                        </button>
-                        <button type="button" class="behavior-chip" data-chip="informar-expediente">
-                          <i data-lucide="plus" class="chip-icon"></i>
-                          <span>Avisar horário se estiver fora do expediente</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- 4. Instruções Extras e Regras Personalizadas (Opcional) -->
-                    <div class="agent-behavior-block" style="border-bottom: none; margin-bottom: 10px;">
-                      <div class="behavior-section-header">
-                        <div>
-                          <label class="form-label" style="margin-bottom: 2px;">Instruções Extras e Regras do Negócio <span class="optional-tag">(Opcional)</span></label>
-                          <p class="form-sublabel">Adicione detalhes específicos da sua empresa, políticas ou exceções.</p>
-                        </div>
-                        <div class="behavior-header-actions">
-                          <!-- Modelos Prontos -->
-                          <div class="template-dropdown-wrap">
-                            <button type="button" class="btn btn-secondary btn-xs btn-template-picker" id="btn-open-templates">
-                              <i data-lucide="layout-template" style="width:13px;height:13px;"></i>
-                              <span>Usar modelo pronto</span>
-                              <i data-lucide="chevron-down" style="width:12px;height:12px;"></i>
-                            </button>
-                            <div class="template-dropdown-menu" id="template-dropdown-menu">
-                              <div class="template-item" data-template="ecommerce">
-                                <strong>🛍️ Vendas Loja Virtual / E-commerce</strong>
-                                <span>Foco em catálogo, cupom de primeira compra e links de checkout seguros.</span>
-                              </div>
-                              <div class="template-item" data-template="servicos">
-                                <strong>💼 Consultoria & Serviços B2B</strong>
-                                <span>Qualificação de porte da empresa, orçamento e agendamento de reunião.</span>
-                              </div>
-                              <div class="template-item" data-template="clinica">
-                                <strong>🩺 Clínica & Agendamentos</strong>
-                                <span>Triagem inicial, confirmação de convênio e marcação de consultas.</span>
-                              </div>
-                              <div class="template-item" data-template="suporte">
-                                <strong>🛠️ Suporte Técnico & SAC</strong>
-                                <span>Diagnóstico rápido, passo a passo de solução e triagem para nível 2.</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <!-- Gerar / Aprimorar com IA -->
-                          <button type="button" class="btn btn-ai-enhance btn-xs" id="btn-enhance-prompt" title="Aprimorar instruções com IA">
-                            <i data-lucide="sparkles" style="width:13px;height:13px;"></i>
-                            <span>Aprimorar com IA</span>
+                      <!-- Objetivo principal -->
+                      <div class="objective-group">
+                        <span class="objective-group-label">Objetivo principal</span>
+                        <div class="objective-primary-grid" id="objective-primary-options">
+                          <button type="button" class="btn-objective-item active" data-objective="agendamentos">
+                            <i data-lucide="calendar"></i>
+                            <span>Agendamentos</span>
                           </button>
-
-                          <!-- Histórico -->
-                          <a href="javascript:void(0)" class="behavior-history-link" onclick="alert('Histórico de versões: Última alteração feita hoje às 11:42')">
-                            <i data-lucide="history" style="width:13px;height:13px;"></i>
-                            <span>Histórico</span>
-                          </a>
+                          <button type="button" class="btn-objective-item" data-objective="atendimento">
+                            <i data-lucide="message-square"></i>
+                            <span>Atendimento</span>
+                          </button>
+                          <button type="button" class="btn-objective-item" data-objective="oportunidades">
+                            <i data-lucide="trending-up"></i>
+                            <span>Gerar oportunidades</span>
+                          </button>
+                          <button type="button" class="btn-objective-item" data-objective="vendas">
+                            <i data-lucide="shopping-cart"></i>
+                            <span>Vendas</span>
+                          </button>
+                          <button type="button" class="btn-objective-item" data-objective="suporte">
+                            <i data-lucide="headphones"></i>
+                            <span>Suporte</span>
+                          </button>
                         </div>
                       </div>
 
-                      <div class="behavior-textarea-container">
-                        <textarea id="agent-behavior-textarea" class="behavior-textarea" rows="5" placeholder="Ex: Você é o Pedro da Loja Download. Não ofereça descontos maiores que 10%. Quando o cliente perguntar sobre frete, informe que entregamos em todo o Brasil em até 48h...">Você é o Pedro, atendente comercial especialista e atencioso da Loja Download. Seu objetivo é recepcionar os clientes com agilidade, tirar dúvidas sobre produtos do catálogo e encaminhar links de pagamento de forma clara e segura. Responda em português brasileiro de forma educada, precisa e amigável.</textarea>
-                        <div class="behavior-counter-bar">
-                          <span id="behavior-char-count">0/3000</span>
+                      <!-- O agente também pode -->
+                      <div class="objective-group" style="margin-top: 14px;">
+                        <span class="objective-group-label">O agente também pode:</span>
+                        <div class="objective-secondary-grid" id="objective-secondary-options">
+                          <button type="button" class="btn-objective-subitem active" data-action="duvidas">
+                            <i data-lucide="check-square" class="subitem-check"></i>
+                            <i data-lucide="message-circle" class="subitem-icon"></i>
+                            <span>Responder dúvidas</span>
+                          </button>
+                          <button type="button" class="btn-objective-subitem active" data-action="contatos">
+                            <i data-lucide="check-square" class="subitem-check"></i>
+                            <i data-lucide="users" class="subitem-icon"></i>
+                            <span>Coletar contatos</span>
+                          </button>
+                          <button type="button" class="btn-objective-subitem active" data-action="qualificar">
+                            <i data-lucide="check-square" class="subitem-check"></i>
+                            <i data-lucide="user-check" class="subitem-icon"></i>
+                            <span>Qualificar clientes</span>
+                          </button>
+                          <button type="button" class="btn-objective-subitem" data-action="servicos">
+                            <i data-lucide="square" class="subitem-check"></i>
+                            <i data-lucide="package" class="subitem-icon"></i>
+                            <span>Apresentar serviços</span>
+                          </button>
+                          <button type="button" class="btn-objective-subitem active" data-action="transferir">
+                            <i data-lucide="check-square" class="subitem-check"></i>
+                            <i data-lucide="headset" class="subitem-icon"></i>
+                            <span>Transferir para humano</span>
+                          </button>
                         </div>
                       </div>
                     </div>
+                  </div>
 
-                    <div class="agent-save-bar">
-                      <button type="button" class="btn btn-primary btn-save-agent">
-                        <i data-lucide="save" style="width: 14px; height: 14px;"></i>
-                        Salvar alterações
+                  <!-- CARD 3: Estilo de atendimento (Full-width) -->
+                  <div class="agent-profile-card">
+                    <div class="profile-card-header">
+                      <div class="profile-card-icon">
+                        <i data-lucide="sliders"></i>
+                      </div>
+                      <div class="profile-card-titles">
+                        <h3 class="profile-card-title">Estilo de atendimento</h3>
+                        <p class="profile-card-subtitle">Configure como o agente deve se comunicar com seus clientes.</p>
+                      </div>
+                    </div>
+
+                    <div class="style-columns-grid">
+                      <!-- Coluna 1: Tom de voz -->
+                      <div class="style-column" data-style-group="tom-de-voz">
+                        <span class="style-column-title">Tom de voz</span>
+                        <div class="style-options-stack">
+                          <button type="button" class="btn-style-option" data-value="profissional">
+                            <i data-lucide="briefcase"></i>
+                            <span>Profissional</span>
+                          </button>
+                          <button type="button" class="btn-style-option active" data-value="natural">
+                            <i data-lucide="smile"></i>
+                            <span>Natural</span>
+                          </button>
+                          <button type="button" class="btn-style-option" data-value="descontraido">
+                            <i data-lucide="laugh"></i>
+                            <span>Descontraído</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Coluna 2: Tamanho das respostas -->
+                      <div class="style-column" data-style-group="tamanho-respostas">
+                        <span class="style-column-title">Tamanho das respostas</span>
+                        <div class="style-options-stack">
+                          <button type="button" class="btn-style-option" data-value="curtas">
+                            <i data-lucide="file-text"></i>
+                            <span>Curtas</span>
+                          </button>
+                          <button type="button" class="btn-style-option active" data-value="medias">
+                            <i data-lucide="files"></i>
+                            <span>Médias</span>
+                          </button>
+                          <button type="button" class="btn-style-option" data-value="detalhadas">
+                            <i data-lucide="file-spreadsheet"></i>
+                            <span>Detalhadas</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Coluna 3: Forma de conversar -->
+                      <div class="style-column" data-style-group="forma-conversar">
+                        <span class="style-column-title">Forma de conversar</span>
+                        <div class="style-options-stack">
+                          <button type="button" class="btn-style-option" data-value="direta">
+                            <i data-lucide="target"></i>
+                            <span>Direta</span>
+                          </button>
+                          <button type="button" class="btn-style-option active" data-value="natural">
+                            <i data-lucide="message-circle"></i>
+                            <span>Natural</span>
+                          </button>
+                          <button type="button" class="btn-style-option" data-value="consultiva">
+                            <i data-lucide="trending-up"></i>
+                            <span>Consultiva</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Coluna 4: Emojis -->
+                      <div class="style-column" data-style-group="emojis">
+                        <span class="style-column-title">Emojis</span>
+                        <div class="style-options-stack">
+                          <button type="button" class="btn-style-option" data-value="nao-usar">
+                            <i data-lucide="ban"></i>
+                            <span>Não usar</span>
+                          </button>
+                          <button type="button" class="btn-style-option active" data-value="moderado">
+                            <i data-lucide="smile"></i>
+                            <span>Moderado</span>
+                          </button>
+                          <button type="button" class="btn-style-option" data-value="a-vontade">
+                            <i data-lucide="party-popper"></i>
+                            <span>À vontade</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- CARD 4: Dados do cliente (Full-width) -->
+                  <div class="agent-profile-card">
+                    <div class="profile-card-header">
+                      <div class="profile-card-icon">
+                        <i data-lucide="circle-user"></i>
+                      </div>
+                      <div class="profile-card-titles">
+                        <h3 class="profile-card-title">Dados do cliente</h3>
+                        <p class="profile-card-subtitle">Defina quais informações o agente pode solicitar durante a conversa.</p>
+                      </div>
+                    </div>
+
+                    <div class="client-data-chips-wrap" id="client-data-chips-container">
+                      <button type="button" class="btn-data-chip active" data-field="nome">
+                        <i data-lucide="check-square" class="chip-check-icon"></i>
+                        <i data-lucide="user" class="chip-field-icon"></i>
+                        <span>Nome</span>
+                      </button>
+                      <button type="button" class="btn-data-chip active" data-field="telefone">
+                        <i data-lucide="check-square" class="chip-check-icon"></i>
+                        <i data-lucide="phone" class="chip-field-icon"></i>
+                        <span>Telefone</span>
+                      </button>
+                      <button type="button" class="btn-data-chip" data-field="email">
+                        <i data-lucide="square" class="chip-check-icon"></i>
+                        <i data-lucide="mail" class="chip-field-icon"></i>
+                        <span>E-mail</span>
+                      </button>
+                      <button type="button" class="btn-data-chip active" data-field="melhor-horario">
+                        <i data-lucide="check-square" class="chip-check-icon"></i>
+                        <i data-lucide="clock" class="chip-field-icon"></i>
+                        <span>Melhor horário</span>
+                      </button>
+                      <button type="button" class="btn-data-chip active" data-field="tipo-atendimento">
+                        <i data-lucide="check-square" class="chip-check-icon"></i>
+                        <i data-lucide="clipboard-list" class="chip-field-icon"></i>
+                        <span>Tipo de atendimento</span>
+                      </button>
+                      <button type="button" class="btn-add-custom-field" id="btn-add-client-field">
+                        <i data-lucide="plus" style="width:13px;height:13px;"></i>
+                        <span>Adicionar campo</span>
                       </button>
                     </div>
                   </div>
+
+                  <!-- CARD 5: Segurança e atendimento humano (Full-width) -->
+                  <div class="agent-profile-card">
+                    <div class="profile-card-header">
+                      <div class="profile-card-icon">
+                        <i data-lucide="shield"></i>
+                      </div>
+                      <div class="profile-card-titles">
+                        <h3 class="profile-card-title">Segurança e atendimento humano</h3>
+                        <p class="profile-card-subtitle">Defina como o agente deve agir em situações sensíveis ou quando não souber responder.</p>
+                      </div>
+                    </div>
+
+                    <div class="safety-grid">
+                      <!-- Coluna 1: Se não souber responder -->
+                      <div class="safety-column">
+                        <span class="safety-column-title">Se não souber responder</span>
+                        <div class="safety-checkbox-list">
+                          <label class="safety-check-item">
+                            <input type="checkbox" id="check-safety-inform" checked>
+                            <span class="safety-check-box"></span>
+                            <span>Informar que não possui essa informação</span>
+                          </label>
+                          <label class="safety-check-item">
+                            <input type="checkbox" id="check-safety-offer-human" checked>
+                            <span class="safety-check-box"></span>
+                            <span>Oferecer atendimento humano</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <!-- Coluna 2: Transferir para uma pessoa quando -->
+                      <div class="safety-column">
+                        <span class="safety-column-title">Transferir para uma pessoa quando</span>
+                        <div class="safety-checkbox-list-grid">
+                          <label class="safety-check-item">
+                            <input type="checkbox" id="check-transfer-requested" checked>
+                            <span class="safety-check-box"></span>
+                            <span>Cliente solicitar</span>
+                          </label>
+                          <label class="safety-check-item">
+                            <input type="checkbox" id="check-transfer-sensitive" checked>
+                            <span class="safety-check-box"></span>
+                            <span>Identificar assunto sensível</span>
+                          </label>
+                          <label class="safety-check-item">
+                            <input type="checkbox" id="check-transfer-notfound" checked>
+                            <span class="safety-check-box"></span>
+                            <span>Não encontrar a informação</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- CARD 6: Instruções adicionais (Full-width) -->
+                  <div class="agent-profile-card">
+                    <div class="profile-card-header">
+                      <div class="profile-card-icon">
+                        <i data-lucide="file-edit"></i>
+                      </div>
+                      <div class="profile-card-titles">
+                        <h3 class="profile-card-title">Instruções adicionais</h3>
+                        <p class="profile-card-subtitle">Opcional. Adicione orientações específicas para o comportamento do agente.</p>
+                      </div>
+                    </div>
+
+                    <div class="behavior-textarea-container" style="margin-bottom: 0;">
+                      <textarea id="agent-behavior-textarea" class="behavior-textarea" rows="3" placeholder="Ex.: Nunca informe valores que não estejam na base de conhecimento. Sempre confirme o horário antes de realizar um agendamento."></textarea>
+                      <div class="behavior-counter-bar">
+                        <span id="behavior-char-count">0/3000</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- CARD 7: Resumo do comportamento do agente (Bottom summary bar) -->
+                  <div class="agent-profile-summary-card">
+                    <div class="summary-card-left">
+                      <div class="profile-card-icon" style="background: var(--primary-light); color: var(--primary);">
+                        <i data-lucide="file-text"></i>
+                      </div>
+                      <div class="summary-card-text">
+                        <h4 class="summary-card-title">Resumo do comportamento do agente</h4>
+                        <p class="summary-card-desc" id="agent-behavior-live-summary">
+                          Sophia atenderá clientes de forma natural, com respostas médias e poucos emojis. Seu foco principal será realizar agendamentos. Ela também poderá responder dúvidas, coletar contatos e qualificar clientes. Quando não souber responder, oferecerá atendimento humano.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="summary-card-right">
+                      <button type="button" class="btn-summary-test-agent" id="btn-summary-test-agent">
+                        <i data-lucide="play" style="width:14px;height:14px;fill:currentColor;"></i>
+                        <span>Testar agente</span>
+                      </button>
+                    </div>
+                  </div>
+
                 </div>
 
                 <!-- PANE 2: CONHECIMENTO (BASE DE CONHECIMENTO UNIFICADA) -->
@@ -4042,6 +4137,69 @@
             <i data-lucide="check" style="width: 14px; height: 14px;"></i>
             <span>Criar Departamento</span>
           </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 14: Regras do Segmento -->
+  <div class="modal-backdrop" id="modal-segment-rules">
+    <div class="modal-dialog" style="max-width: 560px;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:36px; height:36px; border-radius:50%; background:#E6F7F0; color:#00A868; display:flex; align-items:center; justify-content:center;">
+            <i data-lucide="shield-check" style="width:18px;height:18px;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" id="segment-rules-modal-title">Boas Práticas: Clínica / Saúde</h3>
+            <p class="modal-subtitle" style="font-size:12px; color:var(--text-muted); margin:0;">Regras de conduta e segurança ativadas automaticamente</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-body" id="segment-rules-modal-body" style="padding: 16px 20px;">
+        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px;">
+          <li style="display:flex; gap:10px; align-items:flex-start; font-size:13px; color:var(--text-secondary);">
+            <i data-lucide="check" style="width:16px;height:16px;color:#00A868;flex-shrink:0;margin-top:2px;"></i>
+            <span><strong>Sigilo & Privacidade Médica:</strong> O agente nunca divulga diagnósticos ou dados clínicos sensíveis a terceiros (em conformidade com a LGPD e CFM).</span>
+          </li>
+          <li style="display:flex; gap:10px; align-items:flex-start; font-size:13px; color:var(--text-secondary);">
+            <i data-lucide="check" style="width:16px;height:16px;color:#00A868;flex-shrink:0;margin-top:2px;"></i>
+            <span><strong>Triagem de Urgência:</strong> Casos graves de emergência ou dor aguda são imediatamente orientados a procurar o pronto-atendimento hospitalar.</span>
+          </li>
+          <li style="display:flex; gap:10px; align-items:flex-start; font-size:13px; color:var(--text-secondary);">
+            <i data-lucide="check" style="width:16px;height:16px;color:#00A868;flex-shrink:0;margin-top:2px;"></i>
+            <span><strong>Confirmação de Agendamentos:</strong> Confirmação de especialidade, médico responsável, convênio aceito e lembretes com antecedência.</span>
+          </li>
+          <li style="display:flex; gap:10px; align-items:flex-start; font-size:13px; color:var(--text-secondary);">
+            <i data-lucide="check" style="width:16px;height:16px;color:#00A868;flex-shrink:0;margin-top:2px;"></i>
+            <span><strong>Transparência de Valores:</strong> Informação clara sobre formas de pagamento e recibos para reembolso do plano de saúde.</span>
+          </li>
+        </ul>
+      </div>
+      <div class="modal-footer" style="padding: 14px 20px; display:flex; justify-content:flex-end;">
+        <button type="button" class="btn btn-primary modal-close">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 15: Adicionar Campo de Cliente -->
+  <div class="modal-backdrop" id="modal-add-client-field">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Adicionar Campo do Cliente</h3>
+        <button type="button" class="modal-close" aria-label="Fechar">&times;</button>
+      </div>
+      <form id="form-add-client-field">
+        <div class="modal-body" style="padding: 16px 20px;">
+          <div class="form-group">
+            <label class="form-label" for="new-client-field-name">Nome do campo</label>
+            <input type="text" id="new-client-field-name" class="form-input" placeholder="Ex: CPF, Cidade, Especialidade, Convênio..." required>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding: 14px 20px; display:flex; justify-content:flex-end; gap:8px;">
+          <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Adicionar campo</button>
         </div>
       </form>
     </div>
