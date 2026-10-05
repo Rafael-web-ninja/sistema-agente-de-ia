@@ -1,11 +1,11 @@
 import { zapChatData } from './data.js';
 import { initTheme } from './theme.js';
-import { initNavigation, switchView, closeAllModals } from './navigation.js';
+import { initNavigation, switchView, closeAllModals, openModal } from './navigation.js';
 import { renderConversasAreaChart, renderPlanUsageDonut, renderAgentsBarChart } from './charts.js';
 import { initLeadsView } from './leads.js';
 import { initChannelsView } from './channels.js';
 import { initChatView } from './chat.js';
-import { initSettingsView } from './settings.js';
+import { initSettingsView, showToast } from './settings.js';
 import { initSuporteView, renderTickets } from './suporte.js';
 import { initEditAgentView, openEditAgent, openTestAiModal } from './editar-agente.js';
 import { initNotifications } from './notifications.js';
@@ -103,20 +103,249 @@ function initDashboard() {
 }
 
 function initAgents() {
-  renderSimplifiedAgentsTable(zapChatData.agentes.list);
+  refreshAgentsTable();
+  setupAgentActions();
 
   // Search filter
   const searchInput = document.getElementById('agents-search-input');
   if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase().trim();
-      const filtered = zapChatData.agentes.list.filter(agent => {
-        return agent.name.toLowerCase().includes(q) ||
-               agent.role.toLowerCase().includes(q) ||
-               agent.channel.toLowerCase().includes(q) ||
-               agent.status.toLowerCase().includes(q);
-      });
-      renderSimplifiedAgentsTable(filtered);
+    searchInput.addEventListener('input', () => {
+      refreshAgentsTable();
+    });
+  }
+}
+
+export function updateAgentStats() {
+  const activeCount = zapChatData.agentes.list.filter(a => a.status === 'Ativo').length;
+  const totalCount = zapChatData.agentes.list.length;
+
+  const kpiActive = document.getElementById('kpi-agents-active-count');
+  const kpiTotal = document.getElementById('kpi-agents-total-count');
+  const tableCount = document.getElementById('agents-table-count');
+
+  if (kpiActive) kpiActive.textContent = activeCount;
+  if (kpiTotal) kpiTotal.textContent = `de ${totalCount} criados`;
+  if (tableCount) tableCount.textContent = `(${totalCount})`;
+}
+
+export function refreshAgentsTable() {
+  updateAgentStats();
+  const searchInput = document.getElementById('agents-search-input');
+  const q = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+  if (q) {
+    const filtered = zapChatData.agentes.list.filter(agent => {
+      return agent.name.toLowerCase().includes(q) ||
+             agent.role.toLowerCase().includes(q) ||
+             agent.channel.toLowerCase().includes(q) ||
+             agent.status.toLowerCase().includes(q);
+    });
+    renderSimplifiedAgentsTable(filtered);
+  } else {
+    renderSimplifiedAgentsTable(zapChatData.agentes.list);
+  }
+}
+
+export function toggleAgentActionsPopover(button, agentId) {
+  const popover = document.getElementById('agent-actions-popover');
+  if (!popover) return;
+
+  const currentActiveId = popover.getAttribute('data-active-agent-id');
+  const isAlreadyOpen = popover.classList.contains('show');
+
+  if (isAlreadyOpen && currentActiveId === agentId) {
+    closeAgentActionsPopover();
+    return;
+  }
+
+  const agent = zapChatData.agentes.list.find(a => a.id === agentId);
+  if (!agent) return;
+
+  // Set active agent ID
+  popover.setAttribute('data-active-agent-id', agentId);
+
+  // Mark active button
+  document.querySelectorAll('.agent-more-btn').forEach(b => b.classList.remove('is-active'));
+  button.classList.add('is-active');
+
+  const isActive = agent.status === 'Ativo';
+
+  popover.innerHTML = `
+    <button type="button" class="agent-popover-item" data-action="toggle-status" role="menuitem">
+      <i data-lucide="${isActive ? 'pause-circle' : 'play-circle'}"></i>
+      <span>${isActive ? 'Pausar agente' : 'Ativar agente'}</span>
+    </button>
+    <button type="button" class="agent-popover-item" data-action="duplicate" role="menuitem">
+      <i data-lucide="copy"></i>
+      <span>Duplicar agente</span>
+    </button>
+    <button type="button" class="agent-popover-item" data-action="chat" role="menuitem">
+      <i data-lucide="message-square"></i>
+      <span>Ver conversas</span>
+    </button>
+    <button type="button" class="agent-popover-item" data-action="config" role="menuitem">
+      <i data-lucide="sliders"></i>
+      <span>Configurações & Prompt</span>
+    </button>
+    <button type="button" class="agent-popover-item" data-action="copy-id" role="menuitem">
+      <i data-lucide="link"></i>
+      <span>Copiar ID do agente</span>
+    </button>
+    <div class="agent-popover-divider"></div>
+    <button type="button" class="agent-popover-item danger" data-action="delete" role="menuitem">
+      <i data-lucide="trash-2"></i>
+      <span>Excluir agente</span>
+    </button>
+  `;
+
+  if (window.lucide) window.lucide.createIcons();
+
+  // Show popover to calculate dimensions
+  popover.style.display = 'flex';
+  popover.style.visibility = 'hidden';
+  popover.classList.add('show');
+
+  const btnRect = button.getBoundingClientRect();
+  const popoverWidth = popover.offsetWidth || 220;
+  const popoverHeight = popover.offsetHeight || 230;
+
+  let left = btnRect.right - popoverWidth;
+  if (left < 10) left = 10;
+  if (left + popoverWidth > window.innerWidth - 10) {
+    left = window.innerWidth - popoverWidth - 10;
+  }
+
+  let top = btnRect.bottom + 6;
+  if (top + popoverHeight > window.innerHeight - 10) {
+    top = btnRect.top - popoverHeight - 6;
+  }
+
+  popover.style.top = `${top}px`;
+  popover.style.left = `${left}px`;
+  popover.style.visibility = 'visible';
+}
+
+export function closeAgentActionsPopover() {
+  const popover = document.getElementById('agent-actions-popover');
+  if (popover) {
+    popover.classList.remove('show');
+    popover.removeAttribute('data-active-agent-id');
+  }
+  document.querySelectorAll('.agent-more-btn').forEach(b => b.classList.remove('is-active'));
+}
+
+function setupAgentActions() {
+  const popover = document.getElementById('agent-actions-popover');
+
+  // Delegated click for .agent-more-btn
+  document.addEventListener('click', (e) => {
+    const moreBtn = e.target.closest('.agent-more-btn');
+    if (moreBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const agentId = moreBtn.getAttribute('data-agent-id');
+      toggleAgentActionsPopover(moreBtn, agentId);
+      return;
+    }
+
+    // Click outside closes popover
+    if (popover && popover.classList.contains('show') && !popover.contains(e.target)) {
+      closeAgentActionsPopover();
+    }
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && popover && popover.classList.contains('show')) {
+      closeAgentActionsPopover();
+    }
+  });
+
+  // Close on window scroll/resize
+  window.addEventListener('scroll', () => {
+    if (popover && popover.classList.contains('show')) {
+      closeAgentActionsPopover();
+    }
+  }, true);
+
+  window.addEventListener('resize', () => {
+    if (popover && popover.classList.contains('show')) {
+      closeAgentActionsPopover();
+    }
+  });
+
+  // Actions inside popover
+  if (popover) {
+    popover.addEventListener('click', (e) => {
+      const item = e.target.closest('.agent-popover-item');
+      if (!item) return;
+
+      const action = item.getAttribute('data-action');
+      const agentId = popover.getAttribute('data-active-agent-id');
+      closeAgentActionsPopover();
+
+      if (!agentId) return;
+      const agent = zapChatData.agentes.list.find(a => a.id === agentId);
+      if (!agent) return;
+
+      if (action === 'toggle-status') {
+        if (agent.status === 'Ativo') {
+          agent.status = 'Pausado';
+          agent.statusType = 'paused';
+          showToast(`Agente "${agent.name}" foi pausado.`);
+        } else {
+          agent.status = 'Ativo';
+          agent.statusType = 'active';
+          showToast(`Agente "${agent.name}" ativado com sucesso!`);
+        }
+        refreshAgentsTable();
+      } else if (action === 'duplicate') {
+        const newAgent = {
+          ...agent,
+          id: 'agent_' + Date.now(),
+          name: `${agent.name} (Cópia)`,
+          conversas: '0',
+          conversasTrend: '↑ 0%',
+          status: 'Em teste',
+          statusType: 'testing'
+        };
+        const origIndex = zapChatData.agentes.list.findIndex(a => a.id === agent.id);
+        zapChatData.agentes.list.splice(origIndex + 1, 0, newAgent);
+        refreshAgentsTable();
+        showToast(`Agente "${newAgent.name}" duplicado com sucesso!`);
+      } else if (action === 'chat') {
+        switchView('conversas');
+        showToast(`Visualizando conversas do agente "${agent.name}"`);
+      } else if (action === 'config') {
+        openEditAgent(agent.id);
+      } else if (action === 'copy-id') {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(agent.id);
+        }
+        showToast(`ID copiado: ${agent.id}`);
+      } else if (action === 'delete') {
+        const nameEl = document.getElementById('delete-agent-target-name');
+        const idInput = document.getElementById('delete-agent-id');
+        if (nameEl) nameEl.textContent = agent.name;
+        if (idInput) idInput.value = agent.id;
+        openModal('modal-delete-agent');
+      }
+    });
+  }
+
+  // Delete modal confirm button
+  const btnConfirmDelete = document.getElementById('btn-confirm-delete-agent');
+  if (btnConfirmDelete) {
+    btnConfirmDelete.addEventListener('click', () => {
+      const agentId = document.getElementById('delete-agent-id')?.value;
+      const idx = zapChatData.agentes.list.findIndex(a => a.id === agentId);
+      if (idx !== -1) {
+        const name = zapChatData.agentes.list[idx].name;
+        zapChatData.agentes.list.splice(idx, 1);
+        closeAllModals();
+        refreshAgentsTable();
+        showToast(`Agente "${name}" excluído com sucesso.`);
+      }
     });
   }
 }
@@ -126,8 +355,12 @@ function renderSimplifiedAgentsTable(agents) {
   if (!tableBody) return;
 
   tableBody.innerHTML = agents.map(agent => {
-    const isTesting = agent.statusType === 'testing';
-    const statusClass = isTesting ? 'badge-testing' : 'badge-active';
+    let statusClass = 'badge-active';
+    if (agent.statusType === 'testing' || agent.status === 'Em teste') {
+      statusClass = 'badge-testing';
+    } else if (agent.statusType === 'paused' || agent.status === 'Pausado') {
+      statusClass = 'badge-paused';
+    }
     const channelIcon = agent.channel === 'WhatsApp' ? '🟢' : (agent.channel === 'Instagram' ? '📷' : '💬');
 
     return `
@@ -168,7 +401,7 @@ function renderSimplifiedAgentsTable(agents) {
               <i data-lucide="play" style="width: 12px; height: 12px;"></i>
               Testar
             </button>
-            <button class="btn-action-round" style="width: 28px; height: 28px;">
+            <button class="btn-action-round agent-more-btn" data-agent-id="${agent.id}" title="Mais opções" style="width: 28px; height: 28px;">
               <i data-lucide="more-horizontal" style="width: 14px; height: 14px;"></i>
             </button>
           </div>
@@ -194,6 +427,7 @@ function setupForms() {
         id: 'agent_' + Date.now(),
         name: name,
         role: role,
+        channel: channel,
         channels: [channel],
         status: 'Ativo',
         statusType: 'active',
@@ -206,10 +440,10 @@ function setupForms() {
         avatarColor: '#00A868'
       });
 
-      initAgents();
+      refreshAgentsTable();
       closeAllModals();
       formAgent.reset();
-      alert(`Agente "${name}" criado com sucesso!`);
+      showToast(`Agente "${name}" criado com sucesso!`);
     });
   }
 

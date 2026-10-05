@@ -380,8 +380,8 @@
                 </div>
                 <div class="kpi-info">
                   <span class="kpi-title-text">Agentes ativos</span>
-                  <div class="kpi-value">4</div>
-                  <span class="kpi-subtitle-text">de 5 criados</span>
+                  <div class="kpi-value" id="kpi-agents-active-count">4</div>
+                  <span class="kpi-subtitle-text" id="kpi-agents-total-count">de 4 criados</span>
                 </div>
               </div>
               <i data-lucide="chevron-right" style="color: var(--text-muted); width: 18px; height: 18px; margin-left: auto;"></i>
@@ -425,7 +425,7 @@
             <!-- Left: Table Card with inline search -->
             <div class="table-card agents-table-card">
               <div class="table-header-bar">
-                <h3 class="table-header-title">Meus agentes <span style="font-size: 14px; font-weight: 500; color: var(--text-muted);">(4)</span></h3>
+                <h3 class="table-header-title">Meus agentes <span id="agents-table-count" style="font-size: 14px; font-weight: 500; color: var(--text-muted);">(4)</span></h3>
                 <div class="agents-search-box">
                   <i data-lucide="search" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
                   <input type="text" id="agents-search-input" placeholder="Buscar agente...">
@@ -1514,20 +1514,141 @@
                     <i data-lucide="x" style="width: 12px; height: 12px;"></i>
                   </button>
                 </div>
-                <button class="chat-filter-btn" id="chat-filter-btn" title="Filtros" aria-label="Filtros">
+                <button class="chat-filter-btn" id="chat-filter-btn" title="Filtrar conversas" aria-label="Filtrar conversas" aria-expanded="false" aria-haspopup="true">
                   <i data-lucide="sliders-horizontal" style="width: 15px; height: 15px;"></i>
+                  <span class="chat-filter-count-badge" id="chat-filter-badge" style="display: none;">0</span>
                 </button>
+              </div>
+
+              <!-- Filter Popover Menu -->
+              <div class="chat-filter-popover" id="chat-filter-popover" role="dialog" aria-modal="false" aria-label="Filtros de Conversas">
+                <div class="chat-filter-header">
+                  <div class="chat-filter-title">
+                    <i data-lucide="sliders-horizontal" style="width: 15px; height: 15px;"></i>
+                    <span>Filtrar Conversas</span>
+                  </div>
+                  <div class="chat-filter-header-actions">
+                    <button type="button" class="chat-filter-clear-link" id="btn-filter-reset-header">Limpar</button>
+                    <button type="button" class="chat-filter-close-btn" id="btn-close-filter-popover" title="Fechar filtros" aria-label="Fechar filtros">
+                      <i data-lucide="x" style="width: 13px; height: 13px;"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="chat-filter-body">
+                  <!-- Canal -->
+                  <div class="chat-filter-group">
+                    <label class="chat-filter-group-label">Canal</label>
+                    <div class="chat-filter-chips-row" id="filter-channel-group">
+                      <button type="button" class="chat-filter-chip active" data-filter-type="channel" data-filter-val="all">Todos</button>
+                      <button type="button" class="chat-filter-chip" data-filter-type="channel" data-filter-val="WhatsApp">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="#00A868"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2z"/></svg>
+                        <span>WhatsApp</span>
+                      </button>
+                      <button type="button" class="chat-filter-chip" data-filter-type="channel" data-filter-val="Instagram">
+                        <i data-lucide="instagram" style="width: 12px; height: 12px; color: #E1306C;"></i>
+                        <span>Instagram</span>
+                      </button>
+                      <button type="button" class="chat-filter-chip" data-filter-type="channel" data-filter-val="Widget">
+                        <i data-lucide="message-square" style="width: 12px; height: 12px; color: #2563EB;"></i>
+                        <span>Widget</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Status -->
+                  <div class="chat-filter-group">
+                    <label class="chat-filter-group-label">Status do Atendimento</label>
+                    <div class="chat-filter-chips-row" id="filter-status-group">
+                      <button type="button" class="chat-filter-chip active" data-filter-type="status" data-filter-val="all">Todos</button>
+                      <button type="button" class="chat-filter-chip" data-filter-type="status" data-filter-val="Em atendimento">Em atendimento</button>
+                      <button type="button" class="chat-filter-chip" data-filter-type="status" data-filter-val="Resolvido">Resolvido</button>
+                      <button type="button" class="chat-filter-chip" data-filter-type="status" data-filter-val="Em andamento">Em andamento</button>
+                    </div>
+                  </div>
+
+                  <!-- Responsável -->
+                  <div class="chat-filter-group">
+                    <label class="chat-filter-group-label">Responsável</label>
+                    <div class="chat-filter-chips-row" id="filter-attendant-group">
+                      <button type="button" class="chat-filter-chip active" data-filter-type="attendant" data-filter-val="all">Todos</button>
+                      <button type="button" class="chat-filter-chip" data-filter-type="attendant" data-filter-val="ai">
+                        <i data-lucide="sparkles" style="width: 12px; height: 12px; color: var(--ai-purple);"></i>
+                        <span>IA atendendo</span>
+                      </button>
+                      <button type="button" class="chat-filter-chip" data-filter-type="attendant" data-filter-val="human">
+                        <i data-lucide="user" style="width: 12px; height: 12px;"></i>
+                        <span>Humano</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Apenas não lidas toggle -->
+                  <div class="chat-filter-toggle-row">
+                    <div class="chat-filter-toggle-text">
+                      <span class="chat-filter-toggle-title">Apenas conversas não lidas</span>
+                      <span class="chat-filter-toggle-desc">Exibir somente pendentes de resposta</span>
+                    </div>
+                    <label class="chat-toggle-switch">
+                      <input type="checkbox" id="filter-unread-toggle">
+                      <span class="chat-toggle-slider"></span>
+                    </label>
+                  </div>
+
+                  <!-- Marcador / Tag -->
+                  <div class="chat-filter-group">
+                    <label class="chat-filter-group-label">Etiqueta / Marcador</label>
+                    <select id="filter-tag-select" class="chat-filter-select">
+                      <option value="all">Todas as etiquetas</option>
+                      <option value="Lead quente">Lead quente</option>
+                      <option value="Interessado - Pro">Interessado - Pro</option>
+                      <option value="CRM">CRM / RD Station</option>
+                      <option value="Setup">Setup / Configuração</option>
+                      <option value="Promoção">Promoção / Cupom</option>
+                      <option value="Retenção">Retenção</option>
+                      <option value="Suporte">Suporte</option>
+                      <option value="Pós-venda">Pós-venda</option>
+                    </select>
+                  </div>
+
+                  <!-- Ordenação -->
+                  <div class="chat-filter-group">
+                    <label class="chat-filter-group-label">Ordenar por</label>
+                    <select id="filter-sort-select" class="chat-filter-select">
+                      <option value="recent">Mais recentes primeiro</option>
+                      <option value="oldest">Mais antigas primeiro</option>
+                      <option value="unread">Mais não lidas primeiro</option>
+                      <option value="name">Nome do contato (A-Z)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="chat-filter-footer">
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-filter-clear-all">Limpar</button>
+                  <button type="button" class="btn btn-primary btn-sm" id="btn-filter-apply">
+                    <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+                    <span id="btn-filter-apply-label">Aplicar Filtros</span>
+                  </button>
+                </div>
               </div>
 
               <div class="chat-simplified-tabs">
                 <button class="chat-tab-pill active" data-tab="all">
-                  Todas <span class="chat-tab-count">7</span>
+                  Todas <span class="chat-tab-count" id="tab-count-all">7</span>
                 </button>
                 <button class="chat-tab-pill" data-tab="unread">
-                  Não lidas <span class="chat-tab-count purple">3</span>
+                  Não lidas <span class="chat-tab-count purple" id="tab-count-unread">3</span>
                 </button>
                 <button class="chat-tab-pill" data-tab="ongoing">
-                  Em atendimento <span class="chat-tab-count gray">2</span>
+                  Em atendimento <span class="chat-tab-count gray" id="tab-count-ongoing">2</span>
+                </button>
+              </div>
+
+              <!-- Active Filters Bar -->
+              <div class="chat-active-filters-bar" id="chat-active-filters-bar" style="display: none;">
+                <div class="chat-active-chips-list" id="chat-active-chips-list"></div>
+                <button type="button" class="chat-clear-chips-btn" id="btn-quick-clear-filters" title="Limpar todos os filtros">
+                  Limpar todos
                 </button>
               </div>
 
@@ -2474,6 +2595,153 @@
     </div>
   </div>
 
+  <!-- Modal Editar Contato -->
+  <div class="modal-backdrop" id="modal-edit-contact">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 34px; height: 34px; border-radius: var(--radius-sm); background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="user-cog" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 16px;">Editar Detalhes do Contato</h3>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">Atualize os dados cadastrais e anotações do cliente</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar">✕</button>
+      </div>
+      <form id="form-edit-contact">
+        <input type="hidden" id="edit-contact-thread-id">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label">Nome Completo</label>
+          <input type="text" id="edit-contact-name" class="form-input" placeholder="Nome do cliente" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div class="form-group">
+            <label class="form-label">Telefone / WhatsApp</label>
+            <input type="text" id="edit-contact-phone" class="form-input" placeholder="+55 11 98888-7777" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-mail</label>
+            <input type="email" id="edit-contact-email" class="form-input" placeholder="cliente@email.com" required>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label">Etiquetas / Tags (separadas por vírgula)</label>
+          <input type="text" id="edit-contact-tags" class="form-input" placeholder="Ex: Lead quente, Interessado - Pro, VIP">
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">Anotações Internas (apenas equipe)</label>
+          <textarea id="edit-contact-notes" class="form-input" rows="3" placeholder="Insira contexto, preferências ou detalhes combinados com o cliente..."></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+            <span>Salvar Alterações</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Gerenciar Etiquetas -->
+  <div class="modal-backdrop" id="modal-manage-contact-tags">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 34px; height: 34px; border-radius: var(--radius-sm); background: rgba(124, 58, 237, 0.1); color: var(--ai-purple); display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="tag" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 16px;">Gerenciar Etiquetas</h3>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);" id="modal-manage-tags-subtitle">Adicione ou remova marcadores deste contato</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar">✕</button>
+      </div>
+      <div style="padding: 14px 0;">
+        <label class="form-label" style="margin-bottom: 6px;">Etiquetas Atuais</label>
+        <div class="current-tags-container" id="manage-tags-list" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; min-height: 40px; padding: 10px; background: var(--bg-hover); border-radius: var(--radius-md); border: 1px solid var(--border-light);"></div>
+
+        <label class="form-label" style="margin-bottom: 6px;">Adicionar Nova Etiqueta</label>
+        <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+          <input type="text" id="input-new-tag-name" class="form-input" placeholder="Digite o nome da etiqueta..." style="flex: 1;">
+          <button type="button" class="btn btn-primary btn-sm" id="btn-add-tag-to-contact">Adicionar</button>
+        </div>
+
+        <label class="form-label" style="margin-bottom: 6px;">Sugestões Rápidas</label>
+        <div class="tag-suggestions-row" id="tag-suggestions-row" style="display: flex; flex-wrap: wrap; gap: 6px;">
+          <button type="button" class="tag-suggestion-chip" data-tag="Lead quente">🔥 Lead quente</button>
+          <button type="button" class="tag-suggestion-chip" data-tag="Interessado - Pro">⭐ Interessado - Pro</button>
+          <button type="button" class="tag-suggestion-chip" data-tag="VIP">💎 VIP</button>
+          <button type="button" class="tag-suggestion-chip" data-tag="Setup">⚙️ Setup</button>
+          <button type="button" class="tag-suggestion-chip" data-tag="Pós-venda">📦 Pós-venda</button>
+          <button type="button" class="tag-suggestion-chip" data-tag="Suporte">🎧 Suporte</button>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; border-top: 1px solid var(--border-light); padding-top: 14px;">
+        <button type="button" class="btn btn-primary modal-close" id="btn-save-tags-modal">Concluído</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Bloquear Contato -->
+  <div class="modal-backdrop" id="modal-block-contact">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: var(--status-danger); display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="alert-triangle" style="width: 20px; height: 20px;"></i>
+          <span>Bloquear Contato</span>
+        </h3>
+        <button type="button" class="modal-close" aria-label="Fechar">✕</button>
+      </div>
+      <div style="padding: 14px 0 20px 0;">
+        <p style="font-size: 13.5px; color: var(--text-main); margin-bottom: 8px;">
+          Tem certeza de que deseja bloquear <strong id="block-contact-name">Juliana Santos</strong>?
+        </p>
+        <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.5;">
+          O contato não poderá mais interagir via canais automáticos da sua empresa e a conversa será sinalizada como bloqueada.
+        </p>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-block-contact">
+          <i data-lucide="ban" style="width: 14px; height: 14px;"></i>
+          <span>Sim, bloquear contato</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Excluir Conversa -->
+  <div class="modal-backdrop" id="modal-delete-conversa">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: var(--status-danger); display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="trash-2" style="width: 20px; height: 20px;"></i>
+          <span>Excluir Conversa</span>
+        </h3>
+        <button type="button" class="modal-close" aria-label="Fechar">✕</button>
+      </div>
+      <div style="padding: 14px 0 20px 0;">
+        <p style="font-size: 13.5px; color: var(--text-main); margin-bottom: 8px;">
+          Tem certeza de que deseja excluir a conversa com <strong id="delete-conversa-name">Juliana Santos</strong>?
+        </p>
+        <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.5;">
+          Todo o histórico de mensagens deste atendimento será removido da sua caixa de entrada.
+        </p>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-delete-conversa">
+          <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+          <span>Sim, excluir conversa</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- 3.1 Modal Transferir Atendimento (Conversas) -->
   <div class="modal-backdrop" id="modal-transfer-chat">
     <div class="modal-dialog transfer-chat-dialog">
@@ -2990,6 +3258,38 @@
       <i data-lucide="trash-2"></i>
       <span>Excluir canal</span>
     </button>
+  </div>
+
+  <!-- Agent Row Actions Popover Menu -->
+  <div class="agent-actions-popover" id="agent-actions-popover" role="menu" aria-orientation="vertical">
+    <!-- Populated dynamically based on agent status -->
+  </div>
+
+  <!-- Modal Excluir Agente -->
+  <div class="modal-backdrop" id="modal-delete-agent">
+    <div class="modal-dialog channel-delete-dialog" style="max-width: 440px;">
+      <div style="display: flex; gap: 16px; align-items: flex-start;">
+        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(239, 68, 68, 0.12); color: #EF4444; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <i data-lucide="trash-2" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div style="flex: 1;">
+          <h3 class="modal-title" style="margin-bottom: 6px; color: var(--status-danger);">Excluir Agente</h3>
+          <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px;">
+            Tem certeza de que deseja excluir o agente <strong id="delete-agent-target-name" style="color: var(--text-main);">Pedro</strong>?
+          </p>
+          <div class="delete-channel-warning-box">
+            Esta ação removerá o agente e suas configurações de resposta automática. As conversas já realizadas continuarão preservadas no histórico.
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="delete-agent-id">
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+        <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+        <button type="button" class="btn btn-danger-confirm" id="btn-confirm-delete-agent" style="background-color: var(--status-danger); color: white;">
+          <i data-lucide="trash-2" style="width: 15px; height: 15px;"></i> Sim, Excluir Agente
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- 5. Modal Comprar Mensagens Extras -->

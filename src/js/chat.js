@@ -1,8 +1,8 @@
 import { zapChatData } from './data.js';
 import { showToast } from './settings.js';
+import { switchView, openModal, closeAllModals } from './navigation.js';
 
-let activeThreadId = zapChatData.conversas.threads[0].id;
-let currentTabFilter = 'all';
+let activeThreadId = zapChatData.conversas.threads[0]?.id || null;
 
 export function initChatView() {
   renderThreadList();
@@ -10,6 +10,7 @@ export function initChatView() {
   setupChatInputs();
   setupThreadFilters();
   setupTransferModal();
+  setupContactModals();
 
   document.getElementById('btn-close-chat-profile')?.addEventListener('click', () => {
     const layout = document.querySelector('.conversas-simplified-layout');
@@ -19,7 +20,7 @@ export function initChatView() {
   });
 }
 
-function getChannelBadgeHtml(channel) {
+export function getChannelBadgeHtml(channel) {
   if (channel === 'WhatsApp') {
     return `
       <span class="chat-channel-badge whatsapp">
@@ -44,15 +45,324 @@ function getChannelBadgeHtml(channel) {
   `;
 }
 
+export const chatFilterState = {
+  tab: 'all',          // 'all', 'unread', 'ongoing'
+  searchQuery: '',     // text search
+  channel: 'all',      // 'all', 'WhatsApp', 'Instagram', 'Widget'
+  status: 'all',       // 'all', 'Em atendimento', 'Resolvido', 'Em andamento'
+  attendant: 'all',    // 'all', 'ai', 'human'
+  unreadOnly: false,   // boolean
+  tag: 'all',          // 'all' or specific tag name
+  sortBy: 'recent'     // 'recent', 'oldest', 'unread', 'name'
+};
+
+export function getFilteredThreads() {
+  let list = [...zapChatData.conversas.threads];
+
+  // 1. Tab filter
+  if (chatFilterState.tab === 'unread') {
+    list = list.filter(t => t.unread > 0);
+  } else if (chatFilterState.tab === 'ongoing') {
+    list = list.filter(t => t.status === 'Em atendimento');
+  }
+
+  // 2. Channel filter
+  if (chatFilterState.channel !== 'all') {
+    list = list.filter(t => (t.channel || '').toLowerCase() === chatFilterState.channel.toLowerCase());
+  }
+
+  // 3. Status filter
+  if (chatFilterState.status !== 'all') {
+    list = list.filter(t => t.status === chatFilterState.status);
+  }
+
+  // 4. Attendant filter
+  if (chatFilterState.attendant === 'ai') {
+    list = list.filter(t => t.isAiAttending === true || (t.attendingStatus && t.attendingStatus.toLowerCase().includes('ia')));
+  } else if (chatFilterState.attendant === 'human') {
+    list = list.filter(t => !t.isAiAttending && (!t.attendingStatus || !t.attendingStatus.toLowerCase().includes('ia')));
+  }
+
+  // 5. Unread only toggle
+  if (chatFilterState.unreadOnly) {
+    list = list.filter(t => t.unread > 0);
+  }
+
+  // 6. Tag filter
+  if (chatFilterState.tag !== 'all') {
+    list = list.filter(t => t.tags && t.tags.some(tag => tag.toLowerCase().includes(chatFilterState.tag.toLowerCase())));
+  }
+
+  // 7. Search query filter
+  if (chatFilterState.searchQuery) {
+    const q = chatFilterState.searchQuery.toLowerCase().trim();
+    list = list.filter(t => {
+      const name = (t.name || '').toLowerCase();
+      const snippet = (t.snippet || '').toLowerCase();
+      const phone = (t.phone || '').toLowerCase();
+      const email = (t.email || '').toLowerCase();
+      const tags = (t.tags || []).join(' ').toLowerCase();
+      const messages = (t.messages || []).map(m => m.text).join(' ').toLowerCase();
+      return name.includes(q) || snippet.includes(q) || phone.includes(q) || email.includes(q) || tags.includes(q) || messages.includes(q);
+    });
+  }
+
+  // 8. Sorting
+  if (chatFilterState.sortBy === 'oldest') {
+    list = [...list].reverse();
+  } else if (chatFilterState.sortBy === 'unread') {
+    list = [...list].sort((a, b) => (b.unread || 0) - (a.unread || 0));
+  } else if (chatFilterState.sortBy === 'name') {
+    list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  return list;
+}
+
+export function getActiveFilterCount() {
+  let count = 0;
+  if (chatFilterState.channel !== 'all') count++;
+  if (chatFilterState.status !== 'all') count++;
+  if (chatFilterState.attendant !== 'all') count++;
+  if (chatFilterState.unreadOnly) count++;
+  if (chatFilterState.tag !== 'all') count++;
+  if (chatFilterState.sortBy !== 'recent') count++;
+  return count;
+}
+
+function updateTabCounts() {
+  const allCountEl = document.getElementById('tab-count-all');
+  const unreadCountEl = document.getElementById('tab-count-unread');
+  const ongoingCountEl = document.getElementById('tab-count-ongoing');
+
+  // Base list applying filters except tab
+  const baseList = zapChatData.conversas.threads.filter(t => {
+    if (chatFilterState.channel !== 'all' && (t.channel || '').toLowerCase() !== chatFilterState.channel.toLowerCase()) return false;
+    if (chatFilterState.status !== 'all' && t.status !== chatFilterState.status) return false;
+    if (chatFilterState.attendant === 'ai' && !t.isAiAttending && (!t.attendingStatus || !t.attendingStatus.toLowerCase().includes('ia'))) return false;
+    if (chatFilterState.attendant === 'human' && (t.isAiAttending || (t.attendingStatus && t.attendingStatus.toLowerCase().includes('ia')))) return false;
+    if (chatFilterState.unreadOnly && !(t.unread > 0)) return false;
+    if (chatFilterState.tag !== 'all' && (!t.tags || !t.tags.some(tag => tag.toLowerCase().includes(chatFilterState.tag.toLowerCase())))) return false;
+    if (chatFilterState.searchQuery) {
+      const q = chatFilterState.searchQuery.toLowerCase().trim();
+      const match = (t.name || '').toLowerCase().includes(q) ||
+                    (t.snippet || '').toLowerCase().includes(q) ||
+                    (t.phone || '').toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  const total = baseList.length;
+  const unread = baseList.filter(t => t.unread > 0).length;
+  const ongoing = baseList.filter(t => t.status === 'Em atendimento').length;
+
+  if (allCountEl) allCountEl.textContent = total;
+  if (unreadCountEl) unreadCountEl.textContent = unread;
+  if (ongoingCountEl) ongoingCountEl.textContent = ongoing;
+}
+
+export function updateFilterUI() {
+  const filterBtn = document.getElementById('chat-filter-btn');
+  const filterBadge = document.getElementById('chat-filter-badge');
+  const activeCount = getActiveFilterCount();
+
+  if (filterBadge) {
+    if (activeCount > 0) {
+      filterBadge.textContent = activeCount;
+      filterBadge.style.display = 'flex';
+      filterBtn?.classList.add('has-active-filters');
+    } else {
+      filterBadge.style.display = 'none';
+      filterBtn?.classList.remove('has-active-filters');
+    }
+  }
+
+  // Update button label inside popover with live matching count
+  const applyLabel = document.getElementById('btn-filter-apply-label');
+  if (applyLabel) {
+    const list = getFilteredThreads();
+    applyLabel.textContent = `Ver ${list.length} conversa${list.length === 1 ? '' : 's'}`;
+  }
+
+  renderActiveFilterChips();
+}
+
+export function renderActiveFilterChips() {
+  const bar = document.getElementById('chat-active-filters-bar');
+  const list = document.getElementById('chat-active-chips-list');
+  if (!bar || !list) return;
+
+  const chips = [];
+
+  if (chatFilterState.channel !== 'all') {
+    chips.push({ key: 'channel', label: `Canal: ${chatFilterState.channel}` });
+  }
+  if (chatFilterState.status !== 'all') {
+    chips.push({ key: 'status', label: `Status: ${chatFilterState.status}` });
+  }
+  if (chatFilterState.attendant !== 'all') {
+    chips.push({ key: 'attendant', label: chatFilterState.attendant === 'ai' ? 'IA atendendo' : 'Humano' });
+  }
+  if (chatFilterState.unreadOnly) {
+    chips.push({ key: 'unreadOnly', label: 'Não lidas' });
+  }
+  if (chatFilterState.tag !== 'all') {
+    chips.push({ key: 'tag', label: `Tag: ${chatFilterState.tag}` });
+  }
+  if (chatFilterState.sortBy !== 'recent') {
+    const sortLabels = { oldest: 'Mais antigas', unread: 'Mais não lidas', name: 'Nome (A-Z)' };
+    chips.push({ key: 'sortBy', label: `Ordem: ${sortLabels[chatFilterState.sortBy] || chatFilterState.sortBy}` });
+  }
+
+  if (chips.length === 0) {
+    bar.style.display = 'none';
+    list.innerHTML = '';
+    return;
+  }
+
+  bar.style.display = 'flex';
+  list.innerHTML = chips.map(c => `
+    <span class="active-chip-pill">
+      <span>${c.label}</span>
+      <button type="button" class="active-chip-remove" data-clear-key="${c.key}" title="Remover filtro">&times;</button>
+    </span>
+  `).join('');
+
+  list.querySelectorAll('.active-chip-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const key = btn.getAttribute('data-clear-key');
+      clearSpecificFilter(key);
+    });
+  });
+}
+
+export function clearSpecificFilter(key) {
+  if (key === 'channel') {
+    chatFilterState.channel = 'all';
+    document.querySelectorAll('#filter-channel-group .chat-filter-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.filterVal === 'all');
+    });
+  } else if (key === 'status') {
+    chatFilterState.status = 'all';
+    document.querySelectorAll('#filter-status-group .chat-filter-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.filterVal === 'all');
+    });
+  } else if (key === 'attendant') {
+    chatFilterState.attendant = 'all';
+    document.querySelectorAll('#filter-attendant-group .chat-filter-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.filterVal === 'all');
+    });
+  } else if (key === 'unreadOnly') {
+    chatFilterState.unreadOnly = false;
+    const unreadToggle = document.getElementById('filter-unread-toggle');
+    if (unreadToggle) unreadToggle.checked = false;
+  } else if (key === 'tag') {
+    chatFilterState.tag = 'all';
+    const tagSelect = document.getElementById('filter-tag-select');
+    if (tagSelect) tagSelect.value = 'all';
+  } else if (key === 'sortBy') {
+    chatFilterState.sortBy = 'recent';
+    const sortSelect = document.getElementById('filter-sort-select');
+    if (sortSelect) sortSelect.value = 'recent';
+  }
+
+  renderThreadList();
+}
+
+export function resetAllFilters(silent = false) {
+  chatFilterState.channel = 'all';
+  chatFilterState.status = 'all';
+  chatFilterState.attendant = 'all';
+  chatFilterState.unreadOnly = false;
+  chatFilterState.tag = 'all';
+  chatFilterState.sortBy = 'recent';
+
+  document.querySelectorAll('#filter-channel-group .chat-filter-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.filterVal === 'all');
+  });
+  document.querySelectorAll('#filter-status-group .chat-filter-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.filterVal === 'all');
+  });
+  document.querySelectorAll('#filter-attendant-group .chat-filter-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.filterVal === 'all');
+  });
+  const unreadToggle = document.getElementById('filter-unread-toggle');
+  if (unreadToggle) unreadToggle.checked = false;
+
+  const tagSelect = document.getElementById('filter-tag-select');
+  if (tagSelect) tagSelect.value = 'all';
+
+  const sortSelect = document.getElementById('filter-sort-select');
+  if (sortSelect) sortSelect.value = 'recent';
+
+  renderThreadList();
+  if (!silent) {
+    showToast('Filtros redefinidos');
+  }
+}
+
+export function openFilterPopover() {
+  const popover = document.getElementById('chat-filter-popover');
+  const btn = document.getElementById('chat-filter-btn');
+  if (!popover || !btn) return;
+  popover.classList.add('show');
+  btn.classList.add('active');
+  btn.setAttribute('aria-expanded', 'true');
+  updateFilterUI();
+  if (window.lucide) window.lucide.createIcons();
+}
+
+export function closeFilterPopover() {
+  const popover = document.getElementById('chat-filter-popover');
+  const btn = document.getElementById('chat-filter-btn');
+  if (!popover || !btn) return;
+  popover.classList.remove('show');
+  btn.classList.remove('active');
+  btn.setAttribute('aria-expanded', 'false');
+}
+
 export function renderThreadList() {
   const container = document.getElementById('chat-threads-container');
   if (!container) return;
 
-  let threads = zapChatData.conversas.threads;
-  if (currentTabFilter === 'unread') {
-    threads = threads.filter(t => t.unread > 0);
-  } else if (currentTabFilter === 'ongoing') {
-    threads = threads.filter(t => t.status === 'Em atendimento');
+  updateTabCounts();
+  updateFilterUI();
+
+  const threads = getFilteredThreads();
+
+  if (threads.length === 0) {
+    container.innerHTML = `
+      <div class="chat-threads-empty">
+        <div class="chat-empty-icon">
+          <i data-lucide="filter-x" style="width: 24px; height: 24px;"></i>
+        </div>
+        <h4 class="chat-empty-title">Nenhuma conversa encontrada</h4>
+        <p class="chat-empty-subtitle">Nenhum atendimento corresponde aos filtros aplicados.</p>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-empty-clear-filters">
+          <i data-lucide="rotate-ccw" style="width: 13px; height: 13px;"></i>
+          <span>Limpar filtros</span>
+        </button>
+      </div>
+    `;
+
+    const emptyClearBtn = document.getElementById('btn-empty-clear-filters');
+    if (emptyClearBtn) {
+      emptyClearBtn.addEventListener('click', () => {
+        resetAllFilters();
+      });
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
+
+  // Preserve or update active thread
+  const hasActiveInList = threads.some(t => t.id === activeThreadId);
+  if (!hasActiveInList && threads.length > 0) {
+    activeThreadId = threads[0].id;
+    renderActiveChat();
   }
 
   container.innerHTML = threads.map(thread => {
@@ -68,6 +378,8 @@ export function renderThreadList() {
             <div class="thread-name-group">
               <span class="thread-name">${thread.name}</span>
               ${getChannelBadgeHtml(thread.channel)}
+              ${thread.isMuted ? '<i data-lucide="bell-off" style="width: 12px; height: 12px; color: var(--text-muted); opacity: 0.8;" title="Silenciado"></i>' : ''}
+              ${thread.isBlocked ? '<span style="font-size: 9px; font-weight: 700; background: rgba(239, 68, 68, 0.15); color: #EF4444; padding: 1px 5px; border-radius: 4px;">BLOQUEADO</span>' : ''}
             </div>
             <span class="thread-time">${thread.time}</span>
           </div>
@@ -104,7 +416,30 @@ export function renderThreadList() {
 
 export function renderActiveChat() {
   const thread = zapChatData.conversas.threads.find(t => t.id === activeThreadId);
-  if (!thread) return;
+  if (!thread) {
+    const messagesScroll = document.getElementById('chat-messages-scroll');
+    if (messagesScroll) {
+      messagesScroll.innerHTML = `
+        <div class="chat-threads-empty" style="height: 100%;">
+          <div class="chat-empty-icon"><i data-lucide="message-square" style="width: 24px; height: 24px;"></i></div>
+          <div style="font-weight: 600; color: var(--text-main);">Nenhuma conversa selecionada</div>
+          <p style="font-size: 13px; color: var(--text-muted); margin: 0;">Selecione uma conversa ao lado para visualizar os detalhes.</p>
+        </div>
+      `;
+    }
+    const cardContato = document.getElementById('chat-profile-card');
+    if (cardContato) cardContato.innerHTML = '';
+    const cardAtendimento = document.getElementById('chat-attendance-card');
+    if (cardAtendimento) cardAtendimento.innerHTML = '';
+    const cardResumo = document.getElementById('chat-ai-summary-card');
+    if (cardResumo) cardResumo.innerHTML = '';
+    const strip = document.getElementById('ai-attending-strip');
+    if (strip) strip.style.display = 'none';
+    const header = document.getElementById('chat-arena-header');
+    if (header) header.innerHTML = '';
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
 
   // 1. Header
   const header = document.getElementById('chat-arena-header');
@@ -267,13 +602,26 @@ export function renderActiveChat() {
   // 4. Update Input State
   const inputStrip = document.getElementById('chat-input-strip');
   const inputField = document.getElementById('chat-input-textarea');
+  const sendBtn = document.getElementById('btn-send-chat-msg');
   if (inputField && inputStrip) {
-    if (thread.isAiAttending) {
-      inputField.placeholder = "A IA está respondendo. Você pode assumir o atendimento para enviar mensagens.";
+    if (thread.isBlocked) {
+      inputField.value = '';
+      inputField.disabled = true;
+      inputField.placeholder = "⛔ Este contato está bloqueado. Desbloqueie no menu do contato para conversar.";
       inputStrip.classList.remove('active-input');
+      inputStrip.style.opacity = '0.6';
+      if (sendBtn) sendBtn.disabled = true;
     } else {
-      inputField.placeholder = "Digite sua mensagem... (Pressione Enter para enviar)";
-      inputStrip.classList.add('active-input');
+      inputField.disabled = false;
+      inputStrip.style.opacity = '1';
+      if (sendBtn) sendBtn.disabled = false;
+      if (thread.isAiAttending) {
+        inputField.placeholder = "A IA está respondendo. Você pode assumir o atendimento para enviar mensagens.";
+        inputStrip.classList.remove('active-input');
+      } else {
+        inputField.placeholder = "Digite sua mensagem... (Pressione Enter para enviar)";
+        inputStrip.classList.add('active-input');
+      }
     }
   }
 
@@ -298,30 +646,86 @@ function renderRightColumnCards(thread) {
   // Card 1: Contato
   const cardContato = document.getElementById('chat-profile-card');
   if (cardContato) {
+    const isMuted = !!thread.isMuted;
+    const isBlocked = !!thread.isBlocked;
+    const tags = thread.tags || [];
+
     cardContato.innerHTML = `
       <div class="profile-card-top-bar">
         <span class="profile-card-top-title">Contato</span>
-        <button class="btn-action-round" style="width: 26px; height: 26px;">
-          <i data-lucide="more-horizontal" style="width: 13px; height: 13px;"></i>
-        </button>
+        <div class="contact-actions-wrap" style="position: relative;">
+          <button class="btn-action-round" id="btn-contact-menu-toggle" aria-label="Opções do contato" title="Opções do contato" style="width: 28px; height: 28px;">
+            <i data-lucide="more-horizontal" style="width: 14px; height: 14px;"></i>
+          </button>
+          <div class="contact-actions-dropdown" id="contact-actions-dropdown">
+            <button type="button" class="contact-dropdown-item" id="btn-action-edit-contact">
+              <i data-lucide="user-cog"></i>
+              <span>Editar dados do contato</span>
+            </button>
+            <button type="button" class="contact-dropdown-item" id="btn-action-copy-phone">
+              <i data-lucide="phone"></i>
+              <span>Copiar telefone</span>
+            </button>
+            <button type="button" class="contact-dropdown-item" id="btn-action-copy-email">
+              <i data-lucide="mail"></i>
+              <span>Copiar e-mail</span>
+            </button>
+            <button type="button" class="contact-dropdown-item" id="btn-action-manage-tags">
+              <i data-lucide="tag"></i>
+              <span>Gerenciar etiquetas</span>
+            </button>
+            <button type="button" class="contact-dropdown-item" id="btn-action-view-crm">
+              <i data-lucide="external-link"></i>
+              <span>Ver cadastro no CRM</span>
+            </button>
+            <button type="button" class="contact-dropdown-item" id="btn-action-export-chat">
+              <i data-lucide="download"></i>
+              <span>Exportar conversa (.txt)</span>
+            </button>
+            <button type="button" class="contact-dropdown-item" id="btn-action-toggle-mute">
+              <i data-lucide="${isMuted ? 'bell' : 'bell-off'}"></i>
+              <span>${isMuted ? 'Reativar notificações' : 'Silenciar notificações'}</span>
+            </button>
+            <div class="contact-dropdown-divider"></div>
+            <button type="button" class="contact-dropdown-item item-danger" id="btn-action-block-contact">
+              <i data-lucide="ban"></i>
+              <span>${isBlocked ? 'Desbloquear contato' : 'Bloquear contato'}</span>
+            </button>
+            <button type="button" class="contact-dropdown-item item-danger" id="btn-action-delete-conversa">
+              <i data-lucide="trash-2"></i>
+              <span>Excluir conversa</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="profile-contact-row">
         <img src="${thread.img}" alt="${thread.name}" class="profile-contact-avatar">
-        <span class="profile-contact-name">${thread.name}</span>
+        <div style="display: flex; flex-direction: column; min-width: 0;">
+          <span class="profile-contact-name">${thread.name}</span>
+          ${isBlocked ? '<span style="font-size: 11px; color: var(--status-danger); font-weight: 600; margin-top: 2px;">⛔ Bloqueado</span>' : (isMuted ? '<span style="font-size: 11px; color: var(--text-muted); font-weight: 500; margin-top: 2px;">🔕 Silenciado</span>' : '')}
+        </div>
       </div>
 
       <div class="contact-info-list">
         <div class="contact-info-item">
           <span style="color: #25D366; font-size: 15px;">🟢</span>
-          <span>${thread.phone}</span>
+          <span>${thread.phone || 'Sem telefone'}</span>
         </div>
         <div class="contact-info-item">
           <i data-lucide="mail" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
-          <span>${thread.email}</span>
+          <span>${thread.email || 'Sem e-mail'}</span>
         </div>
       </div>
+
+      ${tags.length > 0 ? `
+        <div class="contact-tags-display" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-light);">
+          ${tags.map(t => `<span class="contact-tag-pill"><i data-lucide="tag" style="width: 10px; height: 10px;"></i>${t}</span>`).join('')}
+        </div>
+      ` : ''}
     `;
+
+    setupContactActions(thread);
   }
 
   // Card 2: Atendimento
@@ -435,54 +839,41 @@ function setupChatInputs() {
 }
 
 function setupThreadFilters() {
+  // Tabs
   const tabs = document.querySelectorAll('.chat-tab-pill');
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       tabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-      currentTabFilter = tab.getAttribute('data-tab');
+      chatFilterState.tab = tab.getAttribute('data-tab') || 'all';
       renderThreadList();
     });
   });
 
+  // Search input & clear button
   const search = document.getElementById('chat-search-input');
   const searchWrap = document.getElementById('chat-search-wrap');
   const clearBtn = document.getElementById('chat-search-clear-btn');
-  const filterBtn = document.getElementById('chat-filter-btn');
-
-  function applySearchFilter(query) {
-    const q = query.toLowerCase().trim();
-    const container = document.getElementById('chat-threads-container');
-    if (!container) return;
-
-    if (searchWrap) {
-      if (q.length > 0) {
-        searchWrap.classList.add('has-value');
-      } else {
-        searchWrap.classList.remove('has-value');
-      }
-    }
-
-    const items = container.querySelectorAll('.chat-thread-item');
-    items.forEach(item => {
-      const text = item.textContent.toLowerCase();
-      if (text.includes(q)) {
-        item.style.display = 'flex';
-      } else {
-        item.style.display = 'none';
-      }
-    });
-  }
 
   if (search) {
     search.addEventListener('input', (e) => {
-      applySearchFilter(e.target.value);
+      chatFilterState.searchQuery = e.target.value;
+      if (searchWrap) {
+        if (e.target.value.trim().length > 0) {
+          searchWrap.classList.add('has-value');
+        } else {
+          searchWrap.classList.remove('has-value');
+        }
+      }
+      renderThreadList();
     });
 
     search.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         search.value = '';
-        applySearchFilter('');
+        chatFilterState.searchQuery = '';
+        if (searchWrap) searchWrap.classList.remove('has-value');
+        renderThreadList();
       }
     });
   }
@@ -491,21 +882,147 @@ function setupThreadFilters() {
     clearBtn.addEventListener('click', () => {
       if (search) {
         search.value = '';
-        applySearchFilter('');
+        chatFilterState.searchQuery = '';
+        if (searchWrap) searchWrap.classList.remove('has-value');
         search.focus();
+        renderThreadList();
       }
     });
   }
 
+  // Filter Button Toggle
+  const filterBtn = document.getElementById('chat-filter-btn');
+  const popover = document.getElementById('chat-filter-popover');
+
   if (filterBtn) {
-    filterBtn.addEventListener('click', () => {
-      filterBtn.classList.toggle('active');
-      const tabsWrap = document.querySelector('.chat-simplified-tabs');
-      if (tabsWrap) {
-        tabsWrap.classList.toggle('highlight-tabs');
+    filterBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (popover && popover.classList.contains('show')) {
+        closeFilterPopover();
+      } else {
+        openFilterPopover();
       }
     });
   }
+
+  // Close button in popover header
+  const closePopoverBtn = document.getElementById('btn-close-filter-popover');
+  if (closePopoverBtn) {
+    closePopoverBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeFilterPopover();
+    });
+  }
+
+  // Reset in popover header
+  const resetHeaderBtn = document.getElementById('btn-filter-reset-header');
+  if (resetHeaderBtn) {
+    resetHeaderBtn.addEventListener('click', () => {
+      resetAllFilters();
+    });
+  }
+
+  // Clear all in popover footer
+  const clearFooterBtn = document.getElementById('btn-filter-clear-all');
+  if (clearFooterBtn) {
+    clearFooterBtn.addEventListener('click', () => {
+      resetAllFilters();
+    });
+  }
+
+  // Quick clear in active chips bar
+  const quickClearBtn = document.getElementById('btn-quick-clear-filters');
+  if (quickClearBtn) {
+    quickClearBtn.addEventListener('click', () => {
+      resetAllFilters();
+    });
+  }
+
+  // Apply button in popover
+  const applyBtn = document.getElementById('btn-filter-apply');
+  if (applyBtn) {
+    applyBtn.addEventListener('click', () => {
+      closeFilterPopover();
+      const filtered = getFilteredThreads();
+      showToast(`Filtros aplicados (${filtered.length} conversas)`);
+    });
+  }
+
+  // Channel Chips
+  const channelChips = document.querySelectorAll('#filter-channel-group .chat-filter-chip');
+  channelChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      channelChips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      chatFilterState.channel = chip.getAttribute('data-filter-val') || 'all';
+      renderThreadList();
+    });
+  });
+
+  // Status Chips
+  const statusChips = document.querySelectorAll('#filter-status-group .chat-filter-chip');
+  statusChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      statusChips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      chatFilterState.status = chip.getAttribute('data-filter-val') || 'all';
+      renderThreadList();
+    });
+  });
+
+  // Attendant Chips
+  const attendantChips = document.querySelectorAll('#filter-attendant-group .chat-filter-chip');
+  attendantChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      attendantChips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      chatFilterState.attendant = chip.getAttribute('data-filter-val') || 'all';
+      renderThreadList();
+    });
+  });
+
+  // Unread Toggle
+  const unreadToggle = document.getElementById('filter-unread-toggle');
+  if (unreadToggle) {
+    unreadToggle.addEventListener('change', (e) => {
+      chatFilterState.unreadOnly = e.target.checked;
+      renderThreadList();
+    });
+  }
+
+  // Tag Select
+  const tagSelect = document.getElementById('filter-tag-select');
+  if (tagSelect) {
+    tagSelect.addEventListener('change', (e) => {
+      chatFilterState.tag = e.target.value;
+      renderThreadList();
+    });
+  }
+
+  // Sort Select
+  const sortSelect = document.getElementById('filter-sort-select');
+  if (sortSelect) {
+    sortSelect.addEventListener('change', (e) => {
+      chatFilterState.sortBy = e.target.value;
+      renderThreadList();
+    });
+  }
+
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (popover && popover.classList.contains('show')) {
+      if (!popover.contains(e.target) && !filterBtn?.contains(e.target)) {
+        closeFilterPopover();
+      }
+    }
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && popover && popover.classList.contains('show')) {
+      closeFilterPopover();
+    }
+  });
 }
 
 /* ==========================================================================
@@ -896,6 +1413,420 @@ function setupTransferModal() {
       showToast(`Atendimento com ${currentTransferThread.name} transferido para ${destObj.name} com sucesso!`);
     });
   }
+}
+
+// ==========================================
+// Contact Profile Actions & Modals Handling
+// ==========================================
+
+function setupContactActions(thread) {
+  const toggleBtn = document.getElementById('btn-contact-menu-toggle');
+  const dropdown = document.getElementById('contact-actions-dropdown');
+
+  if (toggleBtn && dropdown) {
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.classList.toggle('show');
+    });
+  }
+
+  // 1. Editar dados do contato
+  document.getElementById('btn-action-edit-contact')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown?.classList.remove('show');
+    openEditContactModal(thread);
+  });
+
+  // 2. Copiar telefone
+  document.getElementById('btn-action-copy-phone')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown?.classList.remove('show');
+    if (thread.phone) {
+      copyToClipboard(thread.phone);
+      showToast(`Telefone copiado: ${thread.phone}`);
+    } else {
+      showToast('Nenhum telefone informado para este contato.');
+    }
+  });
+
+  // 3. Copiar e-mail
+  document.getElementById('btn-action-copy-email')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown?.classList.remove('show');
+    if (thread.email) {
+      copyToClipboard(thread.email);
+      showToast(`E-mail copiado: ${thread.email}`);
+    } else {
+      showToast('Nenhum e-mail informado para este contato.');
+    }
+  });
+
+  // 4. Gerenciar etiquetas
+  document.getElementById('btn-action-manage-tags')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown?.classList.remove('show');
+    openManageTagsModal(thread);
+  });
+
+  // 5. Ver cadastro no CRM
+  document.getElementById('btn-action-view-crm')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown?.classList.remove('show');
+    viewInCRM(thread);
+  });
+
+  // 6. Exportar histórico (.txt)
+  document.getElementById('btn-action-export-chat')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown?.classList.remove('show');
+    exportChatTranscript(thread);
+  });
+
+  // 7. Silenciar notificações
+  document.getElementById('btn-action-toggle-mute')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown?.classList.remove('show');
+    thread.isMuted = !thread.isMuted;
+    renderRightColumnCards(thread);
+    renderThreadList();
+    showToast(thread.isMuted ? `Notificações silenciadas para ${thread.name}` : `Notificações reativadas para ${thread.name}`);
+    if (window.lucide) window.lucide.createIcons();
+  });
+
+  // 8. Bloquear contato
+  document.getElementById('btn-action-block-contact')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown?.classList.remove('show');
+    if (thread.isBlocked) {
+      thread.isBlocked = false;
+      renderRightColumnCards(thread);
+      renderActiveChat();
+      renderThreadList();
+      showToast(`Contato ${thread.name} foi desbloqueado com sucesso.`);
+    } else {
+      openBlockContactModal(thread);
+    }
+  });
+
+  // 9. Excluir conversa
+  document.getElementById('btn-action-delete-conversa')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown?.classList.remove('show');
+    openDeleteConversaModal(thread);
+  });
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopyText(text));
+  } else {
+    fallbackCopyText(text);
+  }
+}
+
+function fallbackCopyText(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    document.execCommand('copy');
+  } catch (err) {
+    console.error('Fallback copy failed', err);
+  }
+  document.body.removeChild(textarea);
+}
+
+function openEditContactModal(thread) {
+  const idInput = document.getElementById('edit-contact-thread-id');
+  const nameInput = document.getElementById('edit-contact-name');
+  const phoneInput = document.getElementById('edit-contact-phone');
+  const emailInput = document.getElementById('edit-contact-email');
+  const tagsInput = document.getElementById('edit-contact-tags');
+  const notesInput = document.getElementById('edit-contact-notes');
+
+  if (idInput) idInput.value = thread.id;
+  if (nameInput) nameInput.value = thread.name || '';
+  if (phoneInput) phoneInput.value = thread.phone || '';
+  if (emailInput) emailInput.value = thread.email || '';
+  if (tagsInput) tagsInput.value = (thread.tags || []).join(', ');
+  if (notesInput) notesInput.value = thread.notes || '';
+
+  openModal('modal-edit-contact');
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function openManageTagsModal(thread) {
+  const subtitle = document.getElementById('modal-manage-tags-subtitle');
+  if (subtitle) {
+    subtitle.textContent = `Gerenciando etiquetas de ${thread.name}`;
+  }
+  renderManageTagsList(thread);
+  openModal('modal-manage-contact-tags');
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function renderManageTagsList(thread) {
+  const container = document.getElementById('manage-tags-list');
+  if (!container) return;
+
+  const tags = thread.tags || [];
+  if (tags.length === 0) {
+    container.innerHTML = `<span style="font-size: 12px; color: var(--text-muted); font-style: italic;">Nenhuma etiqueta vinculada a este contato.</span>`;
+    return;
+  }
+
+  container.innerHTML = tags.map((t, idx) => `
+    <span class="manage-tag-item" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; color: var(--text-main);">
+      <span>${t}</span>
+      <button type="button" class="btn-remove-tag" data-tag-index="${idx}" aria-label="Remover etiqueta" style="background: none; border: none; padding: 0; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; font-size: 13px; line-height: 1;">✕</button>
+    </span>
+  `).join('');
+
+  container.querySelectorAll('.btn-remove-tag').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.getAttribute('data-tag-index'), 10);
+      if (!isNaN(idx) && thread.tags) {
+        const removed = thread.tags.splice(idx, 1);
+        renderManageTagsList(thread);
+        renderRightColumnCards(thread);
+        showToast(`Etiqueta "${removed[0]}" removida.`);
+        if (window.lucide) window.lucide.createIcons();
+      }
+    });
+  });
+}
+
+function viewInCRM(thread) {
+  // Check if lead already exists in zapChatData.leads.list
+  let lead = zapChatData.leads.list.find(l => 
+    l.id === thread.id || 
+    (l.email && thread.email && l.email.toLowerCase() === thread.email.toLowerCase()) ||
+    (l.phone && thread.phone && l.phone.replace(/\D/g, '') === thread.phone.replace(/\D/g, ''))
+  );
+
+  if (!lead) {
+    const nameParts = (thread.name || 'Contato').split(' ');
+    const initials = nameParts.length > 1 ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase() : nameParts[0].substring(0, 2).toUpperCase();
+    lead = {
+      id: thread.id,
+      name: thread.name,
+      initials: initials,
+      phone: thread.phone || '+55 11 98888-0000',
+      email: thread.email || 'contato@zapchat.com',
+      channel: thread.channel || 'WhatsApp',
+      status: thread.status || 'Novo',
+      statusKey: 'novo',
+      score: 85,
+      scoreLevel: 'Alto',
+      agentName: thread.assignedAgent || 'Pedro',
+      agentImg: thread.img,
+      lastContact: 'Agora',
+      tags: thread.tags || ['Conversa']
+    };
+    zapChatData.leads.list.unshift(lead);
+  }
+
+  // Switch to leads view
+  switchView('leads');
+  showToast(`Exibindo cadastro de ${thread.name} no CRM de Leads.`);
+}
+
+function exportChatTranscript(thread) {
+  const dateStr = new Date().toLocaleString('pt-BR');
+  const divider = '==============================================================';
+  const subDivider = '--------------------------------------------------------------';
+
+  let content = `${divider}\n`;
+  content += `ZAPCHAT - HISTÓRICO DE ATENDIMENTO\n`;
+  content += `${divider}\n\n`;
+  content += `Contato: ${thread.name}\n`;
+  content += `Telefone: ${thread.phone || 'Não informado'}\n`;
+  content += `E-mail: ${thread.email || 'Não informado'}\n`;
+  content += `Canal: ${thread.channel}\n`;
+  content += `Atendente Atual: ${thread.assignedAgent || 'Não atribuído'}\n`;
+  content += `Status do Atendimento: ${thread.attendingStatus || thread.status}\n`;
+  content += `Etiquetas: ${(thread.tags || []).join(', ') || 'Nenhuma'}\n`;
+  content += `Data da Exportação: ${dateStr}\n\n`;
+  content += `${subDivider}\n`;
+  content += `HISTÓRICO DE MENSAGENS (${thread.messages ? thread.messages.length : 0} mensagens)\n`;
+  content += `${subDivider}\n\n`;
+
+  if (thread.messages && thread.messages.length > 0) {
+    thread.messages.forEach(msg => {
+      let senderName = 'Desconhecido';
+      if (msg.sender === 'user') senderName = thread.name;
+      else if (msg.sender === 'bot') senderName = `${thread.assignedAgent || 'IA'} (ZapChat)`;
+      else if (msg.sender === 'system') senderName = '[EVENTO DO SISTEMA]';
+
+      content += `[${msg.time || '00:00'}] ${senderName}:\n${msg.text}\n\n`;
+    });
+  } else {
+    content += `Nenhuma mensagem registrada nesta conversa.\n\n`;
+  }
+
+  content += `${subDivider}\n`;
+  content += `Fim do histórico exportado - ZapChat Atendimento Inteligente\n`;
+  content += `${divider}\n`;
+
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const safeName = (thread.name || 'conversa').toLowerCase().replace(/[^a-z0-9]/g, '_');
+  link.download = `zapchat_${safeName}_${Date.now()}.txt`;
+  link.href = url;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  showToast(`Histórico da conversa com ${thread.name} exportado com sucesso!`);
+}
+
+function openBlockContactModal(thread) {
+  const nameEl = document.getElementById('block-contact-name');
+  if (nameEl) nameEl.textContent = thread.name;
+  openModal('modal-block-contact');
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function openDeleteConversaModal(thread) {
+  const nameEl = document.getElementById('delete-conversa-name');
+  if (nameEl) nameEl.textContent = thread.name;
+  openModal('modal-delete-conversa');
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function setupContactModals() {
+  // 1. Edit Contact Form
+  const formEdit = document.getElementById('form-edit-contact');
+  if (formEdit) {
+    formEdit.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const threadId = document.getElementById('edit-contact-thread-id')?.value;
+      const thread = zapChatData.conversas.threads.find(t => t.id === threadId);
+      if (!thread) return;
+
+      const nameVal = document.getElementById('edit-contact-name')?.value.trim();
+      const phoneVal = document.getElementById('edit-contact-phone')?.value.trim();
+      const emailVal = document.getElementById('edit-contact-email')?.value.trim();
+      const tagsVal = document.getElementById('edit-contact-tags')?.value.trim();
+      const notesVal = document.getElementById('edit-contact-notes')?.value.trim();
+
+      if (nameVal) thread.name = nameVal;
+      if (phoneVal) thread.phone = phoneVal;
+      if (emailVal) thread.email = emailVal;
+      thread.notes = notesVal;
+
+      if (tagsVal) {
+        thread.tags = tagsVal.split(',').map(s => s.trim()).filter(Boolean);
+      } else {
+        thread.tags = [];
+      }
+
+      closeAllModals();
+      renderActiveChat();
+      renderThreadList();
+      showToast(`Dados de ${thread.name} atualizados com sucesso!`);
+    });
+  }
+
+  // 2. Manage Tags Modal
+  const addTagBtn = document.getElementById('btn-add-tag-to-contact');
+  const tagInput = document.getElementById('input-new-tag-name');
+  if (addTagBtn && tagInput) {
+    const handleAdd = () => {
+      const tagText = tagInput.value.trim();
+      if (!tagText) return;
+      const thread = zapChatData.conversas.threads.find(t => t.id === activeThreadId);
+      if (!thread) return;
+      if (!thread.tags) thread.tags = [];
+      if (!thread.tags.includes(tagText)) {
+        thread.tags.push(tagText);
+        tagInput.value = '';
+        renderManageTagsList(thread);
+        renderRightColumnCards(thread);
+        showToast(`Etiqueta "${tagText}" adicionada.`);
+      } else {
+        showToast(`A etiqueta "${tagText}" já existe neste contato.`);
+      }
+    };
+    addTagBtn.addEventListener('click', handleAdd);
+    tagInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleAdd();
+      }
+    });
+  }
+
+  // Suggestions row
+  document.querySelectorAll('.tag-suggestion-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const tagText = chip.getAttribute('data-tag');
+      if (!tagText) return;
+      const thread = zapChatData.conversas.threads.find(t => t.id === activeThreadId);
+      if (!thread) return;
+      if (!thread.tags) thread.tags = [];
+      if (!thread.tags.includes(tagText)) {
+        thread.tags.push(tagText);
+        renderManageTagsList(thread);
+        renderRightColumnCards(thread);
+        showToast(`Etiqueta "${tagText}" adicionada.`);
+      }
+    });
+  });
+
+  // Done button in Manage Tags Modal
+  document.getElementById('btn-save-tags-modal')?.addEventListener('click', () => {
+    closeAllModals();
+    renderThreadList();
+  });
+
+  // 3. Block Contact Confirm
+  document.getElementById('btn-confirm-block-contact')?.addEventListener('click', () => {
+    const thread = zapChatData.conversas.threads.find(t => t.id === activeThreadId);
+    if (!thread) return;
+    thread.isBlocked = true;
+    closeAllModals();
+    renderRightColumnCards(thread);
+    renderActiveChat();
+    renderThreadList();
+    showToast(`Contato ${thread.name} foi bloqueado.`);
+  });
+
+  // 4. Delete Conversa Confirm
+  document.getElementById('btn-confirm-delete-conversa')?.addEventListener('click', () => {
+    const threadIdx = zapChatData.conversas.threads.findIndex(t => t.id === activeThreadId);
+    if (threadIdx === -1) return;
+    const thread = zapChatData.conversas.threads[threadIdx];
+    const threadName = thread.name;
+
+    zapChatData.conversas.threads.splice(threadIdx, 1);
+    closeAllModals();
+
+    if (zapChatData.conversas.threads.length > 0) {
+      activeThreadId = zapChatData.conversas.threads[0].id;
+    } else {
+      activeThreadId = null;
+    }
+
+    renderThreadList();
+    renderActiveChat();
+    showToast(`Conversa com ${threadName} excluída com sucesso.`);
+  });
+
+  // Global click outside to close contact dropdown
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.contact-actions-wrap')) {
+      const dropdown = document.getElementById('contact-actions-dropdown');
+      if (dropdown && dropdown.classList.contains('show')) {
+        dropdown.classList.remove('show');
+      }
+    }
+  });
 }
 
 

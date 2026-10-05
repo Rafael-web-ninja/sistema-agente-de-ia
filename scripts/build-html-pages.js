@@ -47,7 +47,8 @@ function extractSection(html, sectionId) {
 // Extract modals block from index.html
 function extractModals(html) {
   const findModalsStart = html.indexOf('<!-- 1. Modal Novo Agente -->');
-  const modalsEnd = html.indexOf('<!-- Mobile Bottom Navigation -->');
+  let modalsEnd = html.indexOf('<!-- Mobile Bottom Navigation');
+  if (modalsEnd === -1) modalsEnd = html.indexOf('<script type="module" src="./src/js/app.js">');
   if (findModalsStart !== -1 && modalsEnd !== -1) {
     return html.substring(findModalsStart, modalsEnd).trim();
   }
@@ -558,6 +559,8 @@ function renderShell(contentHtml, activePage, pageTitle, extraScripts = '') {
     });
   </script>
 
+  ${allModalsHtml}
+
   ${extraScripts}
 </body>
 </html>`;
@@ -665,7 +668,7 @@ const agentsRowsHtml = zapChatData.agentes.list.map(agent => {
             <i data-lucide="play" style="width: 12px; height: 12px;"></i>
             Testar
           </button>
-          <button class="btn-action-round" style="width: 28px; height: 28px;">
+          <button class="btn-action-round agent-more-btn" data-agent-id="${agent.id}" title="Mais opções" style="width: 28px; height: 28px;">
             <i data-lucide="more-horizontal" style="width: 14px; height: 14px;"></i>
           </button>
         </div>
@@ -689,10 +692,143 @@ const agentesScript = `
         });
       });
     }
+
+    // Agent Actions Popover
+    const popover = document.getElementById('agent-actions-popover');
+    function closePopover() {
+      if (popover) {
+        popover.classList.remove('show');
+        popover.removeAttribute('data-active-agent-id');
+      }
+      document.querySelectorAll('.agent-more-btn').forEach(b => b.classList.remove('is-active'));
+    }
+
+    document.addEventListener('click', (e) => {
+      const moreBtn = e.target.closest('.agent-more-btn');
+      if (moreBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const agentId = moreBtn.getAttribute('data-agent-id');
+        if (popover) {
+          const isSame = popover.classList.contains('show') && popover.getAttribute('data-active-agent-id') === agentId;
+          if (isSame) {
+            closePopover();
+            return;
+          }
+          popover.setAttribute('data-active-agent-id', agentId);
+          document.querySelectorAll('.agent-more-btn').forEach(b => b.classList.remove('is-active'));
+          moreBtn.classList.add('is-active');
+
+          const row = moreBtn.closest('tr');
+          const isAtivo = row ? row.textContent.includes('Ativo') : true;
+
+          popover.innerHTML = \`
+            <button type="button" class="agent-popover-item" data-action="toggle-status">
+              <i data-lucide="\${isAtivo ? 'pause-circle' : 'play-circle'}"></i>
+              <span>\${isAtivo ? 'Pausar agente' : 'Ativar agente'}</span>
+            </button>
+            <button type="button" class="agent-popover-item" data-action="duplicate">
+              <i data-lucide="copy"></i>
+              <span>Duplicar agente</span>
+            </button>
+            <button type="button" class="agent-popover-item" data-action="chat">
+              <i data-lucide="message-square"></i>
+              <span>Ver conversas</span>
+            </button>
+            <button type="button" class="agent-popover-item" data-action="config">
+              <i data-lucide="sliders"></i>
+              <span>Configurações & Prompt</span>
+            </button>
+            <button type="button" class="agent-popover-item" data-action="copy-id">
+              <i data-lucide="link"></i>
+              <span>Copiar ID do agente</span>
+            </button>
+            <div class="agent-popover-divider"></div>
+            <button type="button" class="agent-popover-item danger" data-action="delete">
+              <i data-lucide="trash-2"></i>
+              <span>Excluir agente</span>
+            </button>
+          \`;
+          if (window.lucide) window.lucide.createIcons();
+
+          popover.style.display = 'flex';
+          popover.style.visibility = 'hidden';
+          popover.classList.add('show');
+
+          const btnRect = moreBtn.getBoundingClientRect();
+          const pWidth = popover.offsetWidth || 220;
+          const pHeight = popover.offsetHeight || 230;
+
+          let left = btnRect.right - pWidth;
+          if (left < 10) left = 10;
+          if (left + pWidth > window.innerWidth - 10) left = window.innerWidth - pWidth - 10;
+
+          let top = btnRect.bottom + 6;
+          if (top + pHeight > window.innerHeight - 10) top = btnRect.top - pHeight - 6;
+
+          popover.style.top = top + 'px';
+          popover.style.left = left + 'px';
+          popover.style.visibility = 'visible';
+        }
+        return;
+      }
+
+      if (popover && popover.classList.contains('show') && !popover.contains(e.target)) {
+        closePopover();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closePopover();
+    });
+
+    window.addEventListener('scroll', closePopover, true);
+    window.addEventListener('resize', closePopover);
+
+    if (popover) {
+      popover.addEventListener('click', (e) => {
+        const item = e.target.closest('.agent-popover-item');
+        if (!item) return;
+        const action = item.getAttribute('data-action');
+        const agentId = popover.getAttribute('data-active-agent-id');
+        closePopover();
+
+        if (action === 'config') {
+          window.location.href = 'editar-agente.html';
+        } else if (action === 'chat') {
+          window.location.href = 'conversas.html';
+        } else if (action === 'copy-id') {
+          if (navigator.clipboard) navigator.clipboard.writeText(agentId);
+          alert('ID copiado: ' + agentId);
+        } else if (action === 'toggle-status') {
+          const btn = document.querySelector(\`.agent-more-btn[data-agent-id="\${agentId}"]\`);
+          const row = btn ? btn.closest('tr') : null;
+          if (row) {
+            const badge = row.querySelector('.badge');
+            if (badge) {
+              if (badge.textContent.includes('Ativo')) {
+                badge.className = 'badge badge-dot badge-paused';
+                badge.textContent = 'Pausado';
+              } else {
+                badge.className = 'badge badge-dot badge-active';
+                badge.textContent = 'Ativo';
+              }
+            }
+          }
+        } else if (action === 'delete') {
+          const btn = document.querySelector(\`.agent-more-btn[data-agent-id="\${agentId}"]\`);
+          const row = btn ? btn.closest('tr') : null;
+          if (row && confirm('Deseja excluir este agente?')) {
+            row.remove();
+          }
+        }
+      });
+    }
   </script>
 `;
 
 fs.writeFileSync(path.join(htmlDir, 'agentes.html'), renderShell(agentesSection, 'agentes', 'Agentes de IA', agentesScript));
+
 
 // -------------------------------------------------------------
 // 3. GENERATE EDITAR-AGENTE.HTML
@@ -1143,14 +1279,58 @@ conversasSection = conversasSection.replace('<div class="chat-messages-scroll" i
 const profileCardHtml = `
   <div class="profile-card-top-bar">
     <span class="profile-card-top-title">Contato</span>
-    <button class="btn-action-round" style="width: 26px; height: 26px;">
-      <i data-lucide="more-horizontal" style="width: 13px; height: 13px;"></i>
-    </button>
+    <div class="contact-actions-wrap" style="position: relative;">
+      <button class="btn-action-round" id="btn-contact-menu-toggle" aria-label="Opções do contato" title="Opções do contato" style="width: 28px; height: 28px;">
+        <i data-lucide="more-horizontal" style="width: 14px; height: 14px;"></i>
+      </button>
+      <div class="contact-actions-dropdown" id="contact-actions-dropdown">
+        <button type="button" class="contact-dropdown-item" id="btn-action-edit-contact">
+          <i data-lucide="user-cog"></i>
+          <span>Editar dados do contato</span>
+        </button>
+        <button type="button" class="contact-dropdown-item" id="btn-action-copy-phone">
+          <i data-lucide="phone"></i>
+          <span>Copiar telefone</span>
+        </button>
+        <button type="button" class="contact-dropdown-item" id="btn-action-copy-email">
+          <i data-lucide="mail"></i>
+          <span>Copiar e-mail</span>
+        </button>
+        <button type="button" class="contact-dropdown-item" id="btn-action-manage-tags">
+          <i data-lucide="tag"></i>
+          <span>Gerenciar etiquetas</span>
+        </button>
+        <button type="button" class="contact-dropdown-item" id="btn-action-view-crm">
+          <i data-lucide="external-link"></i>
+          <span>Ver cadastro no CRM</span>
+        </button>
+        <button type="button" class="contact-dropdown-item" id="btn-action-export-chat">
+          <i data-lucide="download"></i>
+          <span>Exportar conversa (.txt)</span>
+        </button>
+        <button type="button" class="contact-dropdown-item" id="btn-action-toggle-mute">
+          <i data-lucide="bell-off"></i>
+          <span id="btn-label-mute">Silenciar notificações</span>
+        </button>
+        <div class="contact-dropdown-divider"></div>
+        <button type="button" class="contact-dropdown-item item-danger" id="btn-action-block-contact">
+          <i data-lucide="ban"></i>
+          <span id="btn-label-block">Bloquear contato</span>
+        </button>
+        <button type="button" class="contact-dropdown-item item-danger" id="btn-action-delete-conversa">
+          <i data-lucide="trash-2"></i>
+          <span>Excluir conversa</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <div class="profile-contact-row">
     <img src="${activeThread.img}" alt="${activeThread.name}" class="profile-contact-avatar" id="side-profile-img">
-    <span class="profile-contact-name" id="side-profile-name">${activeThread.name}</span>
+    <div style="display: flex; flex-direction: column; min-width: 0;">
+      <span class="profile-contact-name" id="side-profile-name">${activeThread.name}</span>
+      <span id="side-profile-status-badge" style="display: none; font-size: 11px; margin-top: 2px;"></span>
+    </div>
   </div>
 
   <div class="contact-info-list">
@@ -1162,6 +1342,10 @@ const profileCardHtml = `
       <i data-lucide="mail" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
       <span id="side-profile-email">${activeThread.email}</span>
     </div>
+  </div>
+
+  <div class="contact-tags-display" id="side-profile-tags" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-light);">
+    ${(activeThread.tags || []).map(t => `<span class="contact-tag-pill"><i data-lucide="tag" style="width: 10px; height: 10px;"></i>${t}</span>`).join('')}
   </div>
 `;
 conversasSection = conversasSection.replace('<div class="profile-section-card" id="chat-profile-card"></div>', `<div class="profile-section-card" id="chat-profile-card">${profileCardHtml}</div>`);
@@ -1270,21 +1454,226 @@ const conversasScript = `
       closeProfileBtn.addEventListener('click', () => layout.classList.remove('chat-profile-open'));
     }
 
+    // Filter State
+    const filterState = {
+      tab: 'all',
+      query: '',
+      channel: 'all',
+      status: 'all',
+      attendant: 'all',
+      unreadOnly: false,
+      tag: 'all',
+      sortBy: 'recent'
+    };
+
+    function applyAllFilters() {
+      let filtered = [...threadsData];
+
+      // Tab
+      if (filterState.tab === 'unread') filtered = filtered.filter(t => t.unread > 0);
+      else if (filterState.tab === 'ongoing') filtered = filtered.filter(t => t.status === 'Em atendimento');
+
+      // Channel
+      if (filterState.channel !== 'all') filtered = filtered.filter(t => (t.channel || '').toLowerCase() === filterState.channel.toLowerCase());
+
+      // Status
+      if (filterState.status !== 'all') filtered = filtered.filter(t => t.status === filterState.status);
+
+      // Attendant
+      if (filterState.attendant === 'ai') filtered = filtered.filter(t => t.isAiAttending);
+      else if (filterState.attendant === 'human') filtered = filtered.filter(t => !t.isAiAttending);
+
+      // Unread only
+      if (filterState.unreadOnly) filtered = filtered.filter(t => t.unread > 0);
+
+      // Tag
+      if (filterState.tag !== 'all') filtered = filtered.filter(t => t.tags && t.tags.includes(filterState.tag));
+
+      // Query
+      if (filterState.query) {
+        const q = filterState.query.toLowerCase().trim();
+        filtered = filtered.filter(t => (t.name || '').toLowerCase().includes(q) || (t.snippet || '').toLowerCase().includes(q));
+      }
+
+      // Sort
+      if (filterState.sortBy === 'oldest') filtered = filtered.reverse();
+      else if (filterState.sortBy === 'unread') filtered = filtered.sort((a,b) => (b.unread || 0) - (a.unread || 0));
+      else if (filterState.sortBy === 'name') filtered = filtered.sort((a,b) => a.name.localeCompare(b.name));
+
+      const visibleIds = new Set(filtered.map(t => t.id));
+      threadItems.forEach(item => {
+        const id = item.getAttribute('data-thread-id');
+        item.style.display = visibleIds.has(id) ? 'flex' : 'none';
+      });
+
+      // Update badge count
+      let count = 0;
+      if (filterState.channel !== 'all') count++;
+      if (filterState.status !== 'all') count++;
+      if (filterState.attendant !== 'all') count++;
+      if (filterState.unreadOnly) count++;
+      if (filterState.tag !== 'all') count++;
+      if (filterState.sortBy !== 'recent') count++;
+
+      const filterBadge = document.getElementById('chat-filter-badge');
+      const filterBtn = document.getElementById('chat-filter-btn');
+      if (filterBadge) {
+        if (count > 0) {
+          filterBadge.textContent = count;
+          filterBadge.style.display = 'flex';
+          filterBtn?.classList.add('has-active-filters');
+        } else {
+          filterBadge.style.display = 'none';
+          filterBtn?.classList.remove('has-active-filters');
+        }
+      }
+
+      const applyLabel = document.getElementById('btn-filter-apply-label');
+      if (applyLabel) applyLabel.textContent = 'Ver ' + filtered.length + ' conversa' + (filtered.length === 1 ? '' : 's');
+
+      // Active chips bar
+      const bar = document.getElementById('chat-active-filters-bar');
+      const list = document.getElementById('chat-active-chips-list');
+      if (bar && list) {
+        if (count > 0) {
+          bar.style.display = 'flex';
+          const chips = [];
+          if (filterState.channel !== 'all') chips.push('Canal: ' + filterState.channel);
+          if (filterState.status !== 'all') chips.push('Status: ' + filterState.status);
+          if (filterState.attendant !== 'all') chips.push(filterState.attendant === 'ai' ? 'IA atendendo' : 'Humano');
+          if (filterState.unreadOnly) chips.push('Não lidas');
+          if (filterState.tag !== 'all') chips.push('Tag: ' + filterState.tag);
+          list.innerHTML = chips.map(c => '<span class="active-chip-pill"><span>' + c + '</span></span>').join('');
+        } else {
+          bar.style.display = 'none';
+          list.innerHTML = '';
+        }
+      }
+    }
+
     // Tabs filter
     document.querySelectorAll('.chat-tab-pill').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.chat-tab-pill').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        const tab = btn.getAttribute('data-tab');
-        threadItems.forEach(item => {
-          const id = item.getAttribute('data-thread-id');
-          const t = threadsData.find(x => x.id === id);
-          if (!t) return;
-          if (tab === 'all') item.style.display = 'flex';
-          else if (tab === 'unread') item.style.display = t.unread > 0 ? 'flex' : 'none';
-          else if (tab === 'ongoing') item.style.display = t.status === 'Em atendimento' ? 'flex' : 'none';
-        });
+        filterState.tab = btn.getAttribute('data-tab');
+        applyAllFilters();
       });
+    });
+
+    // Search filter
+    const searchInputEl = document.getElementById('chat-search-input');
+    const searchWrapEl = document.getElementById('chat-search-wrap');
+    const clearSearchBtn = document.getElementById('chat-search-clear-btn');
+    if (searchInputEl) {
+      searchInputEl.addEventListener('input', (e) => {
+        filterState.query = e.target.value;
+        if (searchWrapEl) {
+          if (e.target.value.trim()) searchWrapEl.classList.add('has-value');
+          else searchWrapEl.classList.remove('has-value');
+        }
+        applyAllFilters();
+      });
+    }
+    if (clearSearchBtn) {
+      clearSearchBtn.addEventListener('click', () => {
+        if (searchInputEl) {
+          searchInputEl.value = '';
+          filterState.query = '';
+          if (searchWrapEl) searchWrapEl.classList.remove('has-value');
+          applyAllFilters();
+        }
+      });
+    }
+
+    // Popover
+    const filterBtnEl = document.getElementById('chat-filter-btn');
+    const filterPopoverEl = document.getElementById('chat-filter-popover');
+    if (filterBtnEl && filterPopoverEl) {
+      filterBtnEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        filterPopoverEl.classList.toggle('show');
+        filterBtnEl.classList.toggle('active');
+      });
+    }
+    const closePopoverBtn = document.getElementById('btn-close-filter-popover');
+    if (closePopoverBtn && filterPopoverEl) {
+      closePopoverBtn.addEventListener('click', () => {
+        filterPopoverEl.classList.remove('show');
+        filterBtnEl?.classList.remove('active');
+      });
+    }
+    document.addEventListener('click', (e) => {
+      if (filterPopoverEl && filterPopoverEl.classList.contains('show')) {
+        if (!filterPopoverEl.contains(e.target) && !filterBtnEl?.contains(e.target)) {
+          filterPopoverEl.classList.remove('show');
+          filterBtnEl?.classList.remove('active');
+        }
+      }
+    });
+
+    // Reset filters
+    function resetFiltersFn() {
+      filterState.channel = 'all';
+      filterState.status = 'all';
+      filterState.attendant = 'all';
+      filterState.unreadOnly = false;
+      filterState.tag = 'all';
+      filterState.sortBy = 'recent';
+      document.querySelectorAll('#filter-channel-group .chat-filter-chip').forEach(c => c.classList.toggle('active', c.dataset.filterVal === 'all'));
+      document.querySelectorAll('#filter-status-group .chat-filter-chip').forEach(c => c.classList.toggle('active', c.dataset.filterVal === 'all'));
+      document.querySelectorAll('#filter-attendant-group .chat-filter-chip').forEach(c => c.classList.toggle('active', c.dataset.filterVal === 'all'));
+      const unreadToggle = document.getElementById('filter-unread-toggle');
+      if (unreadToggle) unreadToggle.checked = false;
+      const tagSelect = document.getElementById('filter-tag-select');
+      if (tagSelect) tagSelect.value = 'all';
+      const sortSelect = document.getElementById('filter-sort-select');
+      if (sortSelect) sortSelect.value = 'recent';
+      applyAllFilters();
+    }
+    document.getElementById('btn-filter-reset-header')?.addEventListener('click', resetFiltersFn);
+    document.getElementById('btn-filter-clear-all')?.addEventListener('click', resetFiltersFn);
+    document.getElementById('btn-quick-clear-filters')?.addEventListener('click', resetFiltersFn);
+
+    document.querySelectorAll('#filter-channel-group .chat-filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('#filter-channel-group .chat-filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        filterState.channel = chip.dataset.filterVal || 'all';
+        applyAllFilters();
+      });
+    });
+    document.querySelectorAll('#filter-status-group .chat-filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('#filter-status-group .chat-filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        filterState.status = chip.dataset.filterVal || 'all';
+        applyAllFilters();
+      });
+    });
+    document.querySelectorAll('#filter-attendant-group .chat-filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('#filter-attendant-group .chat-filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        filterState.attendant = chip.dataset.filterVal || 'all';
+        applyAllFilters();
+      });
+    });
+    document.getElementById('filter-unread-toggle')?.addEventListener('change', (e) => {
+      filterState.unreadOnly = e.target.checked;
+      applyAllFilters();
+    });
+    document.getElementById('filter-tag-select')?.addEventListener('change', (e) => {
+      filterState.tag = e.target.value;
+      applyAllFilters();
+    });
+    document.getElementById('filter-sort-select')?.addEventListener('change', (e) => {
+      filterState.sortBy = e.target.value;
+      applyAllFilters();
+    });
+    document.getElementById('btn-filter-apply')?.addEventListener('click', () => {
+      filterPopoverEl?.classList.remove('show');
+      filterBtnEl?.classList.remove('active');
     });
 
     // Transfer Modal Logic
@@ -1415,6 +1804,200 @@ const conversasScript = `
         alert('Atendimento transferido para ' + dest.name + ' com sucesso!');
       });
     }
+
+    // Contact Profile Actions Menu & Modals
+    const contactMenuBtn = document.getElementById('btn-contact-menu-toggle');
+    const contactDropdown = document.getElementById('contact-actions-dropdown');
+    if (contactMenuBtn && contactDropdown) {
+      contactMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        contactDropdown.classList.toggle('show');
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.contact-actions-wrap')) {
+          contactDropdown.classList.remove('show');
+        }
+      });
+    }
+
+    function getCurrentThread() {
+      const activeItem = document.querySelector('.chat-thread-item.active');
+      const id = activeItem ? activeItem.getAttribute('data-thread-id') : 'juliana_santos';
+      return threadsData.find(x => x.id === id) || threadsData[0];
+    }
+
+    // 1. Copy phone
+    document.getElementById('btn-action-copy-phone')?.addEventListener('click', () => {
+      contactDropdown?.classList.remove('show');
+      const t = getCurrentThread();
+      if (t && t.phone) {
+        navigator.clipboard?.writeText(t.phone);
+        alert('Telefone copiado: ' + t.phone);
+      }
+    });
+
+    // 2. Copy email
+    document.getElementById('btn-action-copy-email')?.addEventListener('click', () => {
+      contactDropdown?.classList.remove('show');
+      const t = getCurrentThread();
+      if (t && t.email) {
+        navigator.clipboard?.writeText(t.email);
+        alert('E-mail copiado: ' + t.email);
+      }
+    });
+
+    // 3. Edit contact modal
+    document.getElementById('btn-action-edit-contact')?.addEventListener('click', () => {
+      contactDropdown?.classList.remove('show');
+      const t = getCurrentThread();
+      const modal = document.getElementById('modal-edit-contact');
+      if (modal && t) {
+        const idInp = document.getElementById('edit-contact-thread-id');
+        const nameInp = document.getElementById('edit-contact-name');
+        const phoneInp = document.getElementById('edit-contact-phone');
+        const emailInp = document.getElementById('edit-contact-email');
+        const tagsInp = document.getElementById('edit-contact-tags');
+        if (idInp) idInp.value = t.id;
+        if (nameInp) nameInp.value = t.name || '';
+        if (phoneInp) phoneInp.value = t.phone || '';
+        if (emailInp) emailInp.value = t.email || '';
+        if (tagsInp) tagsInp.value = (t.tags || []).join(', ');
+        modal.classList.add('open');
+        if (window.lucide) window.lucide.createIcons();
+      }
+    });
+
+    // 4. Manage tags modal
+    document.getElementById('btn-action-manage-tags')?.addEventListener('click', () => {
+      contactDropdown?.classList.remove('show');
+      const t = getCurrentThread();
+      const modal = document.getElementById('modal-manage-contact-tags');
+      const list = document.getElementById('manage-tags-list');
+      if (modal && t && list) {
+        list.innerHTML = (t.tags || []).map((tag, idx) => 
+          '<span class="manage-tag-item" style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-pill);font-size:12px;font-weight:600;">' +
+            '<span>' + tag + '</span>' +
+            '<button type="button" class="btn-remove-tag" data-tag-idx="' + idx + '" style="background:none;border:none;cursor:pointer;color:var(--text-muted);">✕</button>' +
+          '</span>'
+        ).join('');
+        list.querySelectorAll('.btn-remove-tag').forEach(b => {
+          b.addEventListener('click', () => {
+            const idx = parseInt(b.getAttribute('data-tag-idx'), 10);
+            t.tags.splice(idx, 1);
+            b.parentElement.remove();
+            const tagsContainer = document.getElementById('side-profile-tags');
+            if (tagsContainer) {
+              tagsContainer.innerHTML = (t.tags || []).map(tg => '<span class="contact-tag-pill"><i data-lucide="tag" style="width:10px;height:10px;"></i>' + tg + '</span>').join('');
+              if (window.lucide) window.lucide.createIcons();
+            }
+          });
+        });
+        modal.classList.add('open');
+        if (window.lucide) window.lucide.createIcons();
+      }
+    });
+
+    // 5. View in CRM
+    document.getElementById('btn-action-view-crm')?.addEventListener('click', () => {
+      contactDropdown?.classList.remove('show');
+      window.location.href = 'leads.html';
+    });
+
+    // 6. Export chat .txt
+    document.getElementById('btn-action-export-chat')?.addEventListener('click', () => {
+      contactDropdown?.classList.remove('show');
+      const t = getCurrentThread();
+      const text = 'ZAPCHAT - HISTÓRICO DE ATENDIMENTO\\nContato: ' + t.name + '\\nTelefone: ' + t.phone + '\\nE-mail: ' + t.email + '\\n\\n' +
+        t.messages.map(m => '[' + m.time + '] ' + (m.sender === 'user' ? t.name : 'ZapChat') + ': ' + m.text).join('\\n\\n');
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'historico_' + (t.name || 'chat').replace(/\\s+/g, '_') + '.txt';
+      a.click();
+    });
+
+    // 7. Toggle Mute
+    let isMuted = false;
+    document.getElementById('btn-action-toggle-mute')?.addEventListener('click', () => {
+      contactDropdown?.classList.remove('show');
+      isMuted = !isMuted;
+      const label = document.getElementById('btn-label-mute');
+      if (label) label.textContent = isMuted ? 'Reativar notificações' : 'Silenciar notificações';
+      alert(isMuted ? 'Notificações silenciadas para esta conversa.' : 'Notificações reativadas.');
+    });
+
+    // 8. Block Contact Modal
+    document.getElementById('btn-action-block-contact')?.addEventListener('click', () => {
+      contactDropdown?.classList.remove('show');
+      const t = getCurrentThread();
+      const modal = document.getElementById('modal-block-contact');
+      const nameEl = document.getElementById('block-contact-name');
+      if (nameEl) nameEl.textContent = t.name;
+      if (modal) modal.classList.add('open');
+    });
+    document.getElementById('btn-confirm-block-contact')?.addEventListener('click', () => {
+      document.getElementById('modal-block-contact')?.classList.remove('open');
+      const badge = document.getElementById('side-profile-status-badge');
+      if (badge) {
+        badge.textContent = '⛔ Contato bloqueado';
+        badge.style.color = 'var(--status-danger)';
+        badge.style.display = 'inline';
+      }
+      alert('Contato bloqueado.');
+    });
+
+    // 9. Delete Conversa Modal
+    document.getElementById('btn-action-delete-conversa')?.addEventListener('click', () => {
+      contactDropdown?.classList.remove('show');
+      const t = getCurrentThread();
+      const modal = document.getElementById('modal-delete-conversa');
+      const nameEl = document.getElementById('delete-conversa-name');
+      if (nameEl) nameEl.textContent = t.name;
+      if (modal) modal.classList.add('open');
+    });
+    document.getElementById('btn-confirm-delete-conversa')?.addEventListener('click', () => {
+      document.getElementById('modal-delete-conversa')?.classList.remove('open');
+      const activeItem = document.querySelector('.chat-thread-item.active');
+      if (activeItem) activeItem.remove();
+      alert('Conversa excluída com sucesso.');
+    });
+
+    // Form edit contact submit
+    document.getElementById('form-edit-contact')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const t = getCurrentThread();
+      const newName = document.getElementById('edit-contact-name')?.value;
+      const newPhone = document.getElementById('edit-contact-phone')?.value;
+      const newEmail = document.getElementById('edit-contact-email')?.value;
+      const newTags = document.getElementById('edit-contact-tags')?.value;
+      if (newName) {
+        t.name = newName;
+        const sideName = document.getElementById('side-profile-name');
+        const activeChatName = document.getElementById('active-chat-name');
+        if (sideName) sideName.textContent = newName;
+        if (activeChatName) activeChatName.textContent = newName;
+      }
+      if (newPhone) {
+        t.phone = newPhone;
+        const sidePhone = document.getElementById('side-profile-phone');
+        if (sidePhone) sidePhone.textContent = newPhone;
+      }
+      if (newEmail) {
+        t.email = newEmail;
+        const sideEmail = document.getElementById('side-profile-email');
+        if (sideEmail) sideEmail.textContent = newEmail;
+      }
+      if (newTags) {
+        t.tags = newTags.split(',').map(s => s.trim()).filter(Boolean);
+        const tagsContainer = document.getElementById('side-profile-tags');
+        if (tagsContainer) {
+          tagsContainer.innerHTML = t.tags.map(tg => '<span class="contact-tag-pill"><i data-lucide="tag" style="width:10px;height:10px;"></i>' + tg + '</span>').join('');
+        }
+      }
+      document.getElementById('modal-edit-contact')?.classList.remove('open');
+      if (window.lucide) window.lucide.createIcons();
+      alert('Dados do contato atualizados com sucesso!');
+    });
   </script>
 `;
 
