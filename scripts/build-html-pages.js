@@ -864,14 +864,126 @@ const editAgentPageScript = `
       });
     });
 
-    // Tone buttons toggle
-    const toneBtns = document.querySelectorAll('.tone-btn');
-    toneBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        toneBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    // 1. Persona Cards selection
+    const personaCards = document.querySelectorAll('.persona-card[data-persona]');
+    personaCards.forEach(card => {
+      card.addEventListener('click', () => {
+        personaCards.forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        if (window.lucide) window.lucide.createIcons();
       });
     });
+
+    // 2. WhatsApp preference pills
+    const prefGroups = document.querySelectorAll('.preference-pills[data-pref]');
+    prefGroups.forEach(group => {
+      const pills = group.querySelectorAll('.pref-pill');
+      pills.forEach(pill => {
+        pill.addEventListener('click', (e) => {
+          e.preventDefault();
+          pills.forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+        });
+      });
+    });
+
+    // 3. Behavior chips toggle
+    const chips = document.querySelectorAll('.behavior-chip[data-chip]');
+    chips.forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.preventDefault();
+        const isActive = chip.classList.toggle('active');
+        const icon = chip.querySelector('.chip-icon');
+        if (icon) {
+          icon.setAttribute('data-lucide', isActive ? 'check' : 'plus');
+          if (window.lucide) window.lucide.createIcons();
+        }
+      });
+    });
+
+    // 4. Templates dropdown & selection
+    const btnTemplates = document.getElementById('btn-open-templates');
+    const templateMenu = document.getElementById('template-dropdown-menu');
+    const templates = {
+      ecommerce: \`Você é o Pedro, atendente comercial especialista da Loja Download.
+Objetivo: Tirar dúvidas sobre os produtos do catálogo, orientar sobre tamanhos/modelos e enviar links de checkout com total segurança.
+Regras:
+1. Sempre cumprimente o cliente pelo primeiro nome com simpatia.
+2. Destaque nosso frete rápido em até 48h e informe que compras acima de R$ 199 possuem frete grátis.
+3. Se o cliente for novo, ofereça o cupom BEMVINDO10 para 10% de desconto na primeira compra.
+4. Responda de forma ágil, com no máximo 2 frases por mensagem no WhatsApp.\`,
+      servicos: \`Você é o Pedro, consultor comercial especialista da ZapChat Soluções B2B.
+Objetivo: Atender potenciais clientes corporativos, entender as dores da operação e qualificar o lead para agendamento de uma demonstração online.
+Regras:
+1. Seja formal, respeitoso e transmita máxima autoridade e credibilidade.
+2. Faça perguntas de diagnóstico: quantidade de atendentes, volume diário de conversas e canais utilizados.
+3. Sempre proponha um horário para uma reunião de 20 minutos com nosso time de especialistas.
+4. Se o cliente solicitar orçamento complexo, colete o e-mail corporativo e encaminhe para o consultor sênior.\`,
+      clinica: \`Você é o Pedro, atendente acolhedor da Clínica Médica Vida & Saúde.
+Objetivo: Recepcionar pacientes com extremo carinho, agilidade e empatia para esclarecer dúvidas e agendar consultas.
+Regras:
+1. Trate cada paciente com muita paciência e acolhimento humano.
+2. Pergunte qual especialidade ou médico ele procura e se o atendimento será particular ou por convênio.
+3. Apresente os próximos 2 horários disponíveis para facilitar a escolha.
+4. Nunca forneça diagnósticos ou prescreva remédios. Em casos urgentes, oriente buscar prontamente o pronto-socorro.\`,
+      suporte: \`Você é o Pedro, especialista em suporte técnico e atendimento ao cliente.
+Objetivo: Resolver dúvidas e dificuldades de uso dos clientes com agilidade e clareza passo a passo.
+Regras:
+1. Ouça com atenção o relato do usuário e confirme a compreensão antes de propor uma solução.
+2. Forneça instruções numeradas e curtas, testando cada etapa junto com o cliente.
+3. Se o problema envolver falha crítica de sistema ou dados de pagamento, transfira imediatamente para um atendente humano.
+4. Sempre verifique se ficou alguma dúvida pendente antes de finalizar.\`
+    };
+
+    if (btnTemplates && templateMenu) {
+      btnTemplates.addEventListener('click', (e) => {
+        e.stopPropagation();
+        templateMenu.classList.toggle('show');
+      });
+      document.addEventListener('click', (e) => {
+        if (!btnTemplates.contains(e.target) && !templateMenu.contains(e.target)) {
+          templateMenu.classList.remove('show');
+        }
+      });
+      templateMenu.querySelectorAll('.template-item[data-template]').forEach(item => {
+        item.addEventListener('click', () => {
+          const key = item.getAttribute('data-template');
+          const txt = document.getElementById('agent-behavior-textarea');
+          if (templates[key] && txt) {
+            txt.value = templates[key];
+            txt.dispatchEvent(new Event('input'));
+            templateMenu.classList.remove('show');
+            alert('Modelo pronto carregado com sucesso!');
+          }
+        });
+      });
+    }
+
+    // 5. Enhance with AI
+    const btnEnhance = document.getElementById('btn-enhance-prompt');
+    if (btnEnhance) {
+      btnEnhance.addEventListener('click', (e) => {
+        e.preventDefault();
+        const activePersona = document.querySelector('.persona-card.active .persona-title')?.textContent.trim() || 'Atendente Acolhedor';
+        const activeChips = Array.from(document.querySelectorAll('.behavior-chip.active span')).map(s => s.textContent.trim());
+        const txt = document.getElementById('agent-behavior-textarea');
+        const orig = btnEnhance.innerHTML;
+        btnEnhance.disabled = true;
+        btnEnhance.innerHTML = '<i data-lucide="loader" class="rotating" style="width:13px;height:13px;"></i> Gerando...';
+        if (window.lucide) window.lucide.createIcons();
+
+        setTimeout(() => {
+          if (txt) {
+            txt.value = \`Você é o Pedro, atuando como \${activePersona} da Loja Download.\\nSeu objetivo é recepcionar os contatos no WhatsApp com agilidade, prestando um atendimento eficiente, cordial e de alta qualidade.\\n\\nDiretrizes obrigatórias de conduta:\\n\${activeChips.map((c, i) => \`\${i + 1}. \${c}.\`).join('\\n')}\\n\\nMantenha respostas fluídas e humanas, adequando-se ao ritmo da conversa no WhatsApp e garantindo que o cliente se sinta plenamente seguro e bem atendido.\`;
+            txt.dispatchEvent(new Event('input'));
+          }
+          btnEnhance.disabled = false;
+          btnEnhance.innerHTML = orig;
+          if (window.lucide) window.lucide.createIcons();
+          alert('Instruções aprimoradas com IA com base nas suas seleções!');
+        }, 600);
+      });
+    }
 
     // Live name/role update and char counter
     const textarea = document.getElementById('agent-behavior-textarea');

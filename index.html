@@ -860,39 +860,248 @@
                       </div>
                     </div>
 
-                    <!-- Comunicação (Tom de voz) -->
-                    <div class="form-group communication-tone-wrap" style="margin-bottom: 20px;">
-                      <span class="communication-tone-label">Comunicação</span>
-                      <div class="communication-tone-buttons">
-                        <button type="button" class="tone-btn" data-tone="formal">FORMAL</button>
-                        <button type="button" class="tone-btn active" data-tone="normal">NORMAL</button>
-                        <button type="button" class="tone-btn" data-tone="descontraida">DESCONTRAÍDA</button>
+                    <!-- NOVA SEÇÃO DE COMPORTAMENTO INTUITIVA -->
+                    <!-- 1. Persona e Estilo de Atendimento -->
+                    <div class="agent-behavior-block">
+                      <div class="behavior-block-header">
+                        <div>
+                          <label class="form-label" style="margin-bottom: 2px;">Persona e Estilo de Atendimento</label>
+                          <p class="form-sublabel">Escolha a personalidade e a postura do agente durante as conversas no WhatsApp.</p>
+                        </div>
+                      </div>
+
+                      <div class="persona-cards-grid">
+                        <!-- Card 1: Consultor Especialista -->
+                        <div class="persona-card" data-persona="consultor">
+                          <div class="persona-card-header">
+                            <div class="persona-icon-box">
+                              <i data-lucide="briefcase"></i>
+                            </div>
+                            <span class="persona-badge">B2B & Serviços</span>
+                          </div>
+                          <h4 class="persona-title">Consultor Especialista</h4>
+                          <p class="persona-desc">Formal, técnico e respeitoso. Passa máxima credibilidade, segurança e precisão técnica.</p>
+                          <div class="persona-check">
+                            <i data-lucide="check"></i>
+                          </div>
+                        </div>
+
+                        <!-- Card 2: Atendente Acolhedor (Padrão Ativo) -->
+                        <div class="persona-card active" data-persona="acolhedor">
+                          <div class="persona-card-header">
+                            <div class="persona-icon-box">
+                              <i data-lucide="heart-handshake"></i>
+                            </div>
+                            <span class="persona-badge badge-recommended">Mais Usado</span>
+                          </div>
+                          <h4 class="persona-title">Atendente Acolhedor</h4>
+                          <p class="persona-desc">Caloroso, empático e paciente. Perfeito para suporte humanizado, atendimento diário e SAC.</p>
+                          <div class="persona-check">
+                            <i data-lucide="check"></i>
+                          </div>
+                        </div>
+
+                        <!-- Card 3: Vendedor Persuasivo -->
+                        <div class="persona-card" data-persona="vendedor">
+                          <div class="persona-card-header">
+                            <div class="persona-icon-box">
+                              <i data-lucide="zap"></i>
+                            </div>
+                            <span class="persona-badge">Vendas Rápidas</span>
+                          </div>
+                          <h4 class="persona-title">Vendedor Comercial</h4>
+                          <p class="persona-desc">Ágil, persuasivo e proativo. Focado em quebrar objeções, qualificar o lead e fechar vendas.</p>
+                          <div class="persona-check">
+                            <i data-lucide="check"></i>
+                          </div>
+                        </div>
+
+                        <!-- Card 4: Dinâmico & Descontraído -->
+                        <div class="persona-card" data-persona="dinamico">
+                          <div class="persona-card-header">
+                            <div class="persona-icon-box">
+                              <i data-lucide="sparkles"></i>
+                            </div>
+                            <span class="persona-badge">Jovem & D2C</span>
+                          </div>
+                          <h4 class="persona-title">Dinâmico & Moderno</h4>
+                          <p class="persona-desc">Descontraído, ágil e informal. Comunicação leve, contemporânea e conectada às redes sociais.</p>
+                          <div class="persona-check">
+                            <i data-lucide="check"></i>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    <!-- Comportamento -->
-                    <div class="behavior-section-header">
-                      <div>
-                        <label class="form-label" style="margin-bottom: 2px;">Comportamento</label>
-                        <p style="font-size: 12.5px; color: var(--text-muted); margin: 0;">Descreva um pouco sobre como o agente deve se comportar durante a conversa.</p>
+                    <!-- 2. Preferências Práticas de Resposta (Pills) -->
+                    <div class="agent-behavior-block">
+                      <div class="behavior-block-header">
+                        <div>
+                          <label class="form-label" style="margin-bottom: 2px;">Preferências de Conversa no WhatsApp</label>
+                          <p class="form-sublabel">Ajuste o formato das respostas para ficarem naturais e adequadas ao seu público.</p>
+                        </div>
                       </div>
-                      <a href="javascript:void(0)" class="behavior-history-link" onclick="alert('Histórico de versões: Última alteração feita hoje às 11:42')">
-                        <i data-lucide="history" style="width:13px;height:13px;"></i>
-                        <span>Histórico</span>
-                      </a>
+
+                      <div class="preference-pills-row">
+                        <!-- Extensão -->
+                        <div class="preference-group">
+                          <span class="preference-group-label">
+                            <i data-lucide="message-square" style="width:13px;height:13px;"></i>
+                            Extensão das Mensagens
+                          </span>
+                          <div class="preference-pills" data-pref="response-length">
+                            <button type="button" class="pref-pill active" data-value="curta" title="Mensagens curtas de 1 a 2 frases, estilo WhatsApp">
+                              <span>💬 Curtas</span>
+                            </button>
+                            <button type="button" class="pref-pill" data-value="detalhada" title="Respostas mais completas e explicativas">
+                              <span>📄 Detalhadas</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Emojis -->
+                        <div class="preference-group">
+                          <span class="preference-group-label">
+                            <i data-lucide="smile" style="width:13px;height:13px;"></i>
+                            Uso de Emojis
+                          </span>
+                          <div class="preference-pills" data-pref="emojis">
+                            <button type="button" class="pref-pill" data-value="nenhum">
+                              <span>🚫 Nenhum</span>
+                            </button>
+                            <button type="button" class="pref-pill active" data-value="moderado">
+                              <span>😊 Moderado</span>
+                            </button>
+                            <button type="button" class="pref-pill" data-value="frequente">
+                              <span>🎉 Frequente</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Se não souber -->
+                        <div class="preference-group">
+                          <span class="preference-group-label">
+                            <i data-lucide="help-circle" style="width:13px;height:13px;"></i>
+                            Se não souber a resposta
+                          </span>
+                          <div class="preference-pills" data-pref="fallback">
+                            <button type="button" class="pref-pill active" data-value="humano" title="Transferir para atendente humano">
+                              <span>👨‍💼 Chamar humano</span>
+                            </button>
+                            <button type="button" class="pref-pill" data-value="recado" title="Pedir recado e dados para contato">
+                              <span>📝 Pedir contato</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
-                    <div class="behavior-textarea-container">
-                      <textarea id="agent-behavior-textarea" class="behavior-textarea" rows="8" placeholder="Ex. Seja extrovertido, na primeira interação procure saber o nome do usuário...">Você é o Pedro, atendente comercial especialista e atencioso da Loja Download. Seu objetivo é recepcionar os clientes com agilidade, tirar dúvidas sobre produtos do catálogo e encaminhar links de pagamento de forma clara e segura. Responda em português brasileiro de forma educada, precisa e amigável.</textarea>
-                      <div class="behavior-counter-bar">
-                        <span id="behavior-char-count">0/3000</span>
+                    <!-- 3. Diretrizes e Regras Rápidas (Chips de 1 clique) -->
+                    <div class="agent-behavior-block">
+                      <div class="behavior-block-header">
+                        <div>
+                          <label class="form-label" style="margin-bottom: 2px;">Diretrizes Rápidas do Agente</label>
+                          <p class="form-sublabel">Ative ou desative regras essenciais de conduta com apenas 1 clique.</p>
+                        </div>
+                      </div>
+
+                      <div class="behavior-chips-wrap">
+                        <button type="button" class="behavior-chip active" data-chip="primeiro-nome">
+                          <i data-lucide="check" class="chip-icon"></i>
+                          <span>Chamar sempre pelo primeiro nome</span>
+                        </button>
+                        <button type="button" class="behavior-chip active" data-chip="nao-inventar">
+                          <i data-lucide="check" class="chip-icon"></i>
+                          <span>Nunca inventar preços ou informações fora do catálogo</span>
+                        </button>
+                        <button type="button" class="behavior-chip active" data-chip="uma-pergunta">
+                          <i data-lucide="check" class="chip-icon"></i>
+                          <span>Fazer apenas uma pergunta por vez</span>
+                        </button>
+                        <button type="button" class="behavior-chip active" data-chip="links-sob-demanda">
+                          <i data-lucide="check" class="chip-icon"></i>
+                          <span>Enviar links somente quando solicitado</span>
+                        </button>
+                        <button type="button" class="behavior-chip active" data-chip="confirmar-encerramento">
+                          <i data-lucide="check" class="chip-icon"></i>
+                          <span>Confirmar se restam dúvidas antes de encerrar</span>
+                        </button>
+                        <button type="button" class="behavior-chip active" data-chip="proibir-dados-sensiveis">
+                          <i data-lucide="check" class="chip-icon"></i>
+                          <span>Nunca solicitar senhas ou dados bancários</span>
+                        </button>
+                        <button type="button" class="behavior-chip" data-chip="foco-agendamento">
+                          <i data-lucide="plus" class="chip-icon"></i>
+                          <span>Conduzir conversa para agendamento de reunião</span>
+                        </button>
+                        <button type="button" class="behavior-chip" data-chip="informar-expediente">
+                          <i data-lucide="plus" class="chip-icon"></i>
+                          <span>Avisar horário se estiver fora do expediente</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- 4. Instruções Extras e Regras Personalizadas (Opcional) -->
+                    <div class="agent-behavior-block" style="border-bottom: none; margin-bottom: 10px;">
+                      <div class="behavior-section-header">
+                        <div>
+                          <label class="form-label" style="margin-bottom: 2px;">Instruções Extras e Regras do Negócio <span class="optional-tag">(Opcional)</span></label>
+                          <p class="form-sublabel">Adicione detalhes específicos da sua empresa, políticas ou exceções.</p>
+                        </div>
+                        <div class="behavior-header-actions">
+                          <!-- Modelos Prontos -->
+                          <div class="template-dropdown-wrap">
+                            <button type="button" class="btn btn-secondary btn-xs btn-template-picker" id="btn-open-templates">
+                              <i data-lucide="layout-template" style="width:13px;height:13px;"></i>
+                              <span>Usar modelo pronto</span>
+                              <i data-lucide="chevron-down" style="width:12px;height:12px;"></i>
+                            </button>
+                            <div class="template-dropdown-menu" id="template-dropdown-menu">
+                              <div class="template-item" data-template="ecommerce">
+                                <strong>🛍️ Vendas Loja Virtual / E-commerce</strong>
+                                <span>Foco em catálogo, cupom de primeira compra e links de checkout seguros.</span>
+                              </div>
+                              <div class="template-item" data-template="servicos">
+                                <strong>💼 Consultoria & Serviços B2B</strong>
+                                <span>Qualificação de porte da empresa, orçamento e agendamento de reunião.</span>
+                              </div>
+                              <div class="template-item" data-template="clinica">
+                                <strong>🩺 Clínica & Agendamentos</strong>
+                                <span>Triagem inicial, confirmação de convênio e marcação de consultas.</span>
+                              </div>
+                              <div class="template-item" data-template="suporte">
+                                <strong>🛠️ Suporte Técnico & SAC</strong>
+                                <span>Diagnóstico rápido, passo a passo de solução e triagem para nível 2.</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- Gerar / Aprimorar com IA -->
+                          <button type="button" class="btn btn-ai-enhance btn-xs" id="btn-enhance-prompt" title="Aprimorar instruções com IA">
+                            <i data-lucide="sparkles" style="width:13px;height:13px;"></i>
+                            <span>Aprimorar com IA</span>
+                          </button>
+
+                          <!-- Histórico -->
+                          <a href="javascript:void(0)" class="behavior-history-link" onclick="alert('Histórico de versões: Última alteração feita hoje às 11:42')">
+                            <i data-lucide="history" style="width:13px;height:13px;"></i>
+                            <span>Histórico</span>
+                          </a>
+                        </div>
+                      </div>
+
+                      <div class="behavior-textarea-container">
+                        <textarea id="agent-behavior-textarea" class="behavior-textarea" rows="5" placeholder="Ex: Você é o Pedro da Loja Download. Não ofereça descontos maiores que 10%. Quando o cliente perguntar sobre frete, informe que entregamos em todo o Brasil em até 48h...">Você é o Pedro, atendente comercial especialista e atencioso da Loja Download. Seu objetivo é recepcionar os clientes com agilidade, tirar dúvidas sobre produtos do catálogo e encaminhar links de pagamento de forma clara e segura. Responda em português brasileiro de forma educada, precisa e amigável.</textarea>
+                        <div class="behavior-counter-bar">
+                          <span id="behavior-char-count">0/3000</span>
+                        </div>
                       </div>
                     </div>
 
                     <div class="agent-save-bar">
                       <button type="button" class="btn btn-primary btn-save-agent">
                         <i data-lucide="save" style="width: 14px; height: 14px;"></i>
-                        Salvar
+                        Salvar alterações
                       </button>
                     </div>
                   </div>
