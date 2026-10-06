@@ -783,6 +783,71 @@ export function setupSegmentCombobox(updateLiveSummary) {
   }
 
   const customSegmentsList = [];
+  let editingSegmentName = null;
+
+  function deleteCustomSegment(name) {
+    const idx = customSegmentsList.indexOf(name);
+    if (idx !== -1) {
+      customSegmentsList.splice(idx, 1);
+    }
+
+    // Remove chip from suggestions container
+    const chipsContainer = document.querySelector('.segment-suggestions-chips');
+    if (chipsContainer) {
+      const chip = chipsContainer.querySelector(`.segment-chip[data-segment="${escapeHtml(name)}"]`);
+      if (chip) chip.remove();
+    }
+
+    // If currently selected, revert to default "Clínica / Saúde"
+    if (segmentInput.value.trim() === name) {
+      selectSegment('Clínica / Saúde', false);
+    }
+
+    showToast(`Segmento personalizado "${name}" excluído com sucesso.`);
+    renderOptions(segmentInput.value);
+  }
+
+  function renameCustomSegment(oldName, newName) {
+    const cleanNew = String(newName || '').trim();
+    if (!cleanNew) {
+      showToast('O nome do segmento não pode ficar vazio.');
+      return;
+    }
+    if (cleanNew === oldName) {
+      editingSegmentName = null;
+      renderOptions(segmentInput.value);
+      return;
+    }
+
+    const idx = customSegmentsList.indexOf(oldName);
+    if (idx !== -1) {
+      customSegmentsList[idx] = cleanNew;
+    }
+
+    // Update chip
+    const chipsContainer = document.querySelector('.segment-suggestions-chips');
+    if (chipsContainer) {
+      const chip = chipsContainer.querySelector(`.segment-chip[data-segment="${escapeHtml(oldName)}"]`);
+      if (chip) {
+        chip.setAttribute('data-segment', cleanNew);
+        chip.innerHTML = `
+          <span>${escapeHtml(cleanNew)}</span>
+          <span class="chip-delete-btn" title="Excluir segmento" data-delete-chip="${escapeHtml(cleanNew)}">&times;</span>
+        `;
+      }
+    }
+
+    // If currently selected, update input and re-apply
+    if (segmentInput.value.trim() === oldName) {
+      segmentInput.value = cleanNew;
+      segmentInput.setAttribute('data-selected-segment', cleanNew);
+      applySegmentConfiguration(cleanNew, true, updateLiveSummary, false);
+    }
+
+    editingSegmentName = null;
+    showToast(`Segmento alterado para "${cleanNew}".`);
+    renderOptions(segmentInput.value);
+  }
 
   function addAndSelectCustomSegment(newSegment) {
     const clean = String(newSegment || '').trim();
@@ -799,10 +864,21 @@ export function setupSegmentCombobox(updateLiveSummary) {
       if (!existingChip) {
         const newChip = document.createElement('button');
         newChip.type = 'button';
-        newChip.className = 'segment-chip active';
+        newChip.className = 'segment-chip custom-chip active';
         newChip.setAttribute('data-segment', clean);
-        newChip.textContent = clean;
+        newChip.innerHTML = `
+          <span>${escapeHtml(clean)}</span>
+          <span class="chip-delete-btn" title="Excluir segmento" data-delete-chip="${escapeHtml(clean)}">&times;</span>
+        `;
         newChip.addEventListener('click', (e) => {
+          if (e.target.closest('.chip-delete-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (confirm(`Deseja excluir o segmento personalizado "${clean}"?`)) {
+              deleteCustomSegment(clean);
+            }
+            return;
+          }
           e.preventDefault();
           selectSegment(clean, !SEGMENT_CONFIGS[clean]);
         });
@@ -869,21 +945,46 @@ export function setupSegmentCombobox(updateLiveSummary) {
 
       filteredCustom.forEach(name => {
         const isSelected = name.toLowerCase() === currentVal.toLowerCase();
-        html += `
-          <button type="button" class="segment-dropdown-item ${isSelected ? 'selected' : ''}" data-custom-segment="${escapeHtml(name)}">
-            <div class="segment-item-left">
-              <div class="segment-item-icon-wrap custom-icon">
-                <i data-lucide="sparkles"></i>
+        const isEditingThis = editingSegmentName === name;
+
+        if (isEditingThis) {
+          html += `
+            <div class="segment-rename-inline-box" data-custom-segment="${escapeHtml(name)}">
+              <input type="text" class="segment-rename-inline-input" value="${escapeHtml(name)}" data-original-name="${escapeHtml(name)}" autocomplete="off">
+              <button type="button" class="btn-confirm-rename-segment" data-save-rename="${escapeHtml(name)}" title="Salvar alteração">
+                <i data-lucide="check" style="width: 13px; height: 13px;"></i>
+                <span>Salvar</span>
+              </button>
+              <button type="button" class="btn-cancel-rename-segment" title="Cancelar">
+                <i data-lucide="x" style="width: 13px; height: 13px;"></i>
+              </button>
+            </div>
+          `;
+        } else {
+          html += `
+            <div class="segment-dropdown-item custom-segment-row ${isSelected ? 'selected' : ''}" data-custom-segment="${escapeHtml(name)}">
+              <div class="segment-item-left" role="button" tabindex="0">
+                <div class="segment-item-icon-wrap custom-icon">
+                  <i data-lucide="sparkles"></i>
+                </div>
+                <div class="segment-item-text-wrap">
+                  <div class="segment-item-name">${escapeHtml(name)}</div>
+                  <div class="segment-item-category">Segmento personalizado</div>
+                </div>
               </div>
-              <div class="segment-item-text-wrap">
-                <div class="segment-item-name">${escapeHtml(name)}</div>
-                <div class="segment-item-category">Segmento personalizado</div>
+              <div class="segment-custom-actions">
+                <button type="button" class="btn-segment-action-edit" title="Editar nome do segmento" data-edit-segment="${escapeHtml(name)}">
+                  <i data-lucide="pencil" style="width: 12px; height: 12px;"></i>
+                </button>
+                <button type="button" class="btn-segment-action-delete" title="Excluir segmento" data-delete-segment="${escapeHtml(name)}">
+                  <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+                </button>
+                <span class="segment-badge-custom">Personalizado</span>
+                ${isSelected ? '<i data-lucide="check" class="segment-item-check"></i>' : ''}
               </div>
             </div>
-            <span class="segment-badge-custom">Personalizado</span>
-            ${isSelected ? '<i data-lucide="check" class="segment-item-check"></i>' : ''}
-          </button>
-        `;
+          `;
+        }
       });
     } else {
       html += `
@@ -935,8 +1036,8 @@ export function setupSegmentCombobox(updateLiveSummary) {
 
     menu.innerHTML = html;
 
-    // Attach click events on dropdown items
-    menu.querySelectorAll('.segment-dropdown-item').forEach(item => {
+    // Attach click events on standard dropdown items
+    menu.querySelectorAll('.segment-dropdown-item:not(.custom-segment-row)').forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -947,6 +1048,89 @@ export function setupSegmentCombobox(updateLiveSummary) {
         } else {
           const segName = item.getAttribute('data-segment-name');
           selectSegment(segName, false);
+        }
+      });
+    });
+
+    // Attach click on custom segment row body (left part) to select
+    menu.querySelectorAll('.custom-segment-row .segment-item-left').forEach(rowLeft => {
+      rowLeft.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const row = rowLeft.closest('.custom-segment-row');
+        if (row) {
+          const customVal = row.getAttribute('data-custom-segment');
+          selectSegment(customVal, true);
+        }
+      });
+    });
+
+    // Edit custom segment
+    menu.querySelectorAll('.btn-segment-action-edit').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const segName = btn.getAttribute('data-edit-segment');
+        editingSegmentName = segName;
+        renderOptions(segmentInput.value);
+        const renameInput = menu.querySelector('.segment-rename-inline-input');
+        if (renameInput) {
+          renameInput.focus();
+          renameInput.select();
+        }
+      });
+    });
+
+    // Delete custom segment
+    menu.querySelectorAll('.btn-segment-action-delete').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const segName = btn.getAttribute('data-delete-segment');
+        if (confirm(`Deseja excluir o segmento personalizado "${segName}"?`)) {
+          deleteCustomSegment(segName);
+        }
+      });
+    });
+
+    // Save rename custom segment
+    menu.querySelectorAll('.btn-confirm-rename-segment').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const box = btn.closest('.segment-rename-inline-box');
+        const input = box ? box.querySelector('.segment-rename-inline-input') : null;
+        if (input) {
+          const oldName = input.getAttribute('data-original-name');
+          const newName = input.value.trim();
+          renameCustomSegment(oldName, newName);
+        }
+      });
+    });
+
+    // Cancel rename
+    menu.querySelectorAll('.btn-cancel-rename-segment').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        editingSegmentName = null;
+        renderOptions(segmentInput.value);
+      });
+    });
+
+    // Keydown on rename input
+    menu.querySelectorAll('.segment-rename-inline-input').forEach(input => {
+      input.addEventListener('click', (e) => e.stopPropagation());
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const oldName = input.getAttribute('data-original-name');
+          const newName = input.value.trim();
+          renameCustomSegment(oldName, newName);
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          editingSegmentName = null;
+          renderOptions(segmentInput.value);
         }
       });
     });
