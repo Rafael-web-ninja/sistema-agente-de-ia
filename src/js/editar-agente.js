@@ -782,6 +782,38 @@ export function setupSegmentCombobox(updateLiveSummary) {
     highlightedIndex = -1;
   }
 
+  const customSegmentsList = [];
+
+  function addAndSelectCustomSegment(newSegment) {
+    const clean = String(newSegment || '').trim();
+    if (!clean) return;
+
+    if (!customSegmentsList.includes(clean) && !SEGMENT_CONFIGS[clean]) {
+      customSegmentsList.push(clean);
+    }
+
+    // Add quick chip to suggestions container if not already present
+    const chipsContainer = document.querySelector('.segment-suggestions-chips');
+    if (chipsContainer) {
+      let existingChip = chipsContainer.querySelector(`.segment-chip[data-segment="${escapeHtml(clean)}"]`);
+      if (!existingChip) {
+        const newChip = document.createElement('button');
+        newChip.type = 'button';
+        newChip.className = 'segment-chip active';
+        newChip.setAttribute('data-segment', clean);
+        newChip.textContent = clean;
+        newChip.addEventListener('click', (e) => {
+          e.preventDefault();
+          selectSegment(clean, !SEGMENT_CONFIGS[clean]);
+        });
+        chipsContainer.appendChild(newChip);
+      }
+    }
+
+    selectSegment(clean, !SEGMENT_CONFIGS[clean]);
+    showToast(`Segmento "${clean}" adicionado com sucesso!`);
+  }
+
   function renderOptions(searchText) {
     const rawSearch = searchText ? searchText.trim() : '';
     const normSearch = normalize(rawSearch);
@@ -791,26 +823,32 @@ export function setupSegmentCombobox(updateLiveSummary) {
     const currentSelected = segmentInput.getAttribute('data-selected-segment') || segmentInput.value.trim();
     const isShowingAll = !normSearch || normSearch === normalize(currentSelected);
 
-    const filtered = knownKeys.filter(k => {
+    const filteredKnown = knownKeys.filter(k => {
       if (isShowingAll) return true;
       const config = SEGMENT_CONFIGS[k];
       return normalize(k).includes(normSearch) || normalize(config.category).includes(normSearch);
     });
 
-    const hasExactMatch = knownKeys.some(k => normalize(k) === normSearch);
+    const filteredCustom = customSegmentsList.filter(k => {
+      if (isShowingAll) return true;
+      return normalize(k).includes(normSearch);
+    });
+
+    const hasExactMatch = knownKeys.some(k => normalize(k) === normSearch) || customSegmentsList.some(k => normalize(k) === normSearch);
     const currentVal = segmentInput.value.trim();
+    const totalCount = filteredKnown.length + filteredCustom.length;
 
     let html = '';
 
-    if (filtered.length > 0) {
+    if (totalCount > 0) {
       html += `
         <div class="segment-dropdown-header">
           <span>${isShowingAll ? 'Segmentos recomendados' : 'Resultados da busca'}</span>
-          <span>${filtered.length}</span>
+          <span>${totalCount}</span>
         </div>
       `;
 
-      filtered.forEach(key => {
+      filteredKnown.forEach(key => {
         const item = SEGMENT_CONFIGS[key];
         const isSelected = key.toLowerCase() === currentVal.toLowerCase();
         html += `
@@ -824,6 +862,25 @@ export function setupSegmentCombobox(updateLiveSummary) {
                 <div class="segment-item-category">${escapeHtml(item.category)}</div>
               </div>
             </div>
+            ${isSelected ? '<i data-lucide="check" class="segment-item-check"></i>' : ''}
+          </button>
+        `;
+      });
+
+      filteredCustom.forEach(name => {
+        const isSelected = name.toLowerCase() === currentVal.toLowerCase();
+        html += `
+          <button type="button" class="segment-dropdown-item ${isSelected ? 'selected' : ''}" data-custom-segment="${escapeHtml(name)}">
+            <div class="segment-item-left">
+              <div class="segment-item-icon-wrap custom-icon">
+                <i data-lucide="sparkles"></i>
+              </div>
+              <div class="segment-item-text-wrap">
+                <div class="segment-item-name">${escapeHtml(name)}</div>
+                <div class="segment-item-category">Segmento personalizado</div>
+              </div>
+            </div>
+            <span class="segment-badge-custom">Personalizado</span>
             ${isSelected ? '<i data-lucide="check" class="segment-item-check"></i>' : ''}
           </button>
         `;
@@ -842,29 +899,51 @@ export function setupSegmentCombobox(updateLiveSummary) {
         <button type="button" class="segment-dropdown-item custom-segment-option" data-custom-segment="${escapeHtml(rawSearch)}">
           <div class="segment-item-left">
             <div class="segment-item-icon-wrap custom-icon">
-              <i data-lucide="sparkles"></i>
+              <i data-lucide="plus"></i>
             </div>
             <div class="segment-item-text-wrap">
-              <div class="segment-item-name">Usar "<strong>${escapeHtml(rawSearch)}</strong>" como segmento personalizado</div>
-              <div class="segment-item-category">Aplica configurações gerais de atendimento</div>
+              <div class="segment-item-name">+ Adicionar "<strong>${escapeHtml(rawSearch)}</strong>" como novo segmento</div>
+              <div class="segment-item-category">Salvar nicho e aplicar configurações de atendimento</div>
             </div>
           </div>
-          <span class="segment-badge-custom">Personalizado</span>
+          <span class="segment-badge-custom">+ Adicionar</span>
         </button>
       `;
     }
 
+    // Dropdown footer for adding custom segment
+    html += `
+      <div class="segment-dropdown-footer">
+        <button type="button" class="btn-open-add-segment" id="btn-open-add-segment">
+          <div class="segment-footer-left">
+            <i data-lucide="plus-circle" style="width: 14px; height: 14px;"></i>
+            <span>Não encontrou seu nicho? <strong>Adicionar novo segmento</strong></span>
+          </div>
+          <i data-lucide="chevron-right" style="width: 13px; height: 13px; opacity: 0.7;"></i>
+        </button>
+        <div class="segment-add-inline-box" id="segment-add-inline-box">
+          <div class="segment-add-input-wrap">
+            <input type="text" id="segment-new-custom-input" class="segment-new-custom-input" placeholder="Nome do nicho (ex: Pet Shop, Contabilidade)..." autocomplete="off">
+            <button type="button" id="btn-confirm-add-segment" class="btn-confirm-add-segment">
+              <i data-lucide="plus" style="width: 13px; height: 13px;"></i>
+              <span>Adicionar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
     menu.innerHTML = html;
 
-    // Attach click events
+    // Attach click events on dropdown items
     menu.querySelectorAll('.segment-dropdown-item').forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
 
-        if (item.classList.contains('custom-segment-option')) {
+        if (item.classList.contains('custom-segment-option') || item.hasAttribute('data-custom-segment')) {
           const customVal = item.getAttribute('data-custom-segment');
-          selectSegment(customVal, true);
+          addAndSelectCustomSegment(customVal);
         } else {
           const segName = item.getAttribute('data-segment-name');
           selectSegment(segName, false);
@@ -872,12 +951,62 @@ export function setupSegmentCombobox(updateLiveSummary) {
       });
     });
 
+    // Attach footer inline creator events
+    const openAddBtn = menu.querySelector('#btn-open-add-segment');
+    const inlineBox = menu.querySelector('#segment-add-inline-box');
+    const customInput = menu.querySelector('#segment-new-custom-input');
+    const confirmAddBtn = menu.querySelector('#btn-confirm-add-segment');
+
+    if (openAddBtn && inlineBox && customInput && confirmAddBtn) {
+      openAddBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const isOpen = inlineBox.classList.toggle('show');
+        if (isOpen) {
+          customInput.focus();
+        }
+      });
+
+      const handleConfirm = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const val = customInput.value.trim();
+        if (val) {
+          addAndSelectCustomSegment(val);
+        } else {
+          customInput.focus();
+        }
+      };
+
+      confirmAddBtn.addEventListener('click', handleConfirm);
+
+      customInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleConfirm(e);
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          inlineBox.classList.remove('show');
+        }
+      });
+
+      customInput.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+    }
+
     if (window.lucide) window.lucide.createIcons();
   }
 
   function selectSegment(val, isCustom) {
     segmentInput.value = val;
     segmentInput.setAttribute('data-selected-segment', val);
+
+    // Update chips active state
+    document.querySelectorAll('.segment-suggestions-chips .segment-chip').forEach(chip => {
+      chip.classList.toggle('active', chip.getAttribute('data-segment') === val);
+    });
+
     applySegmentConfiguration(val, isCustom, updateLiveSummary, true);
     closeDropdown();
   }
@@ -944,7 +1073,7 @@ export function setupSegmentCombobox(updateLiveSummary) {
           if (knownKey) {
             selectSegment(knownKey, false);
           } else {
-            selectSegment(typed, true);
+            addAndSelectCustomSegment(typed);
           }
         }
       }
@@ -953,11 +1082,11 @@ export function setupSegmentCombobox(updateLiveSummary) {
     }
   });
 
-  // Chevron toggle
-  if (chevron) {
-    chevron.style.cursor = 'pointer';
-    chevron.style.pointerEvents = 'auto';
-    chevron.addEventListener('click', (e) => {
+  // Chevron button toggle
+  const chevronBtn = document.getElementById('segment-chevron-btn') || document.getElementById('segment-chevron-icon');
+  if (chevronBtn) {
+    chevronBtn.addEventListener('click', (e) => {
+      e.preventDefault();
       e.stopPropagation();
       if (wrap.classList.contains('open')) {
         closeDropdown();

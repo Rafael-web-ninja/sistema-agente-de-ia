@@ -463,16 +463,39 @@
   color: var(--primary);
 }
 
-.segment-chevron-icon {
+.segment-chevron-btn {
   position: absolute;
-  right: 14px;
-  width: 15px;
-  height: 15px;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
   color: var(--text-muted);
-  pointer-events: none;
-  transition: transform 0.2s ease, color 0.15s ease;
+  cursor: pointer;
+  z-index: 10;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  padding: 0;
 }
 
+.segment-chevron-btn:hover {
+  color: var(--primary);
+  background: var(--bg-hover);
+}
+
+.segment-chevron-icon {
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
+}
+
+.segment-input-wrap.open .segment-chevron-btn .segment-chevron-icon,
 .segment-input-wrap.open .segment-chevron-icon {
   transform: rotate(180deg);
   color: var(--primary);
@@ -689,6 +712,106 @@
   background: rgba(0, 168, 104, 0.2);
   color: #99E2C4;
   border-color: rgba(0, 168, 104, 0.4);
+}
+
+/* Dropdown Footer & Inline Segment Creator */
+.segment-dropdown-footer {
+  border-top: 1px solid var(--border-light);
+  margin-top: 6px;
+  padding-top: 6px;
+}
+
+.btn-open-add-segment {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 168, 104, 0.05);
+  border: 1px dashed rgba(0, 168, 104, 0.35);
+  color: var(--primary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.btn-open-add-segment:hover {
+  background: rgba(0, 168, 104, 0.12);
+  border-color: var(--primary);
+}
+
+.btn-open-add-segment .segment-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+[data-theme="dark"] .btn-open-add-segment {
+  background: rgba(0, 168, 104, 0.1);
+  border-color: rgba(0, 168, 104, 0.4);
+}
+
+.segment-add-inline-box {
+  padding: 8px 10px;
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  margin-top: 6px;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  animation: segmentDropdownAnim 0.15s ease;
+}
+
+.segment-add-inline-box.show {
+  display: flex;
+}
+
+.segment-add-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.segment-new-custom-input {
+  flex: 1;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.segment-new-custom-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-glow);
+}
+
+.btn-confirm-add-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: #ffffff;
+  border: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+}
+
+.btn-confirm-add-segment:hover {
+  background: var(--primary-hover);
 }
 
 .segment-dropdown-empty {
