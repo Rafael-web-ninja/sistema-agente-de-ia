@@ -1,6 +1,7 @@
 import { zapChatData } from './data.js';
 import { switchView, openModal, closeAllModals } from './navigation.js';
 import { showToast } from './settings.js';
+import { openChatThread } from './chat.js';
 
 export const availableAgents = [
   {
@@ -96,6 +97,7 @@ let currentAssignFilter = 'all';
 let currentAssignSearch = '';
 let selectedAgentForAssign = null;
 let currentLeadForAssign = null;
+let leadToDelete = null;
 
 export function initLeadsView() {
   renderLeadsTable(zapChatData.leads.list);
@@ -104,6 +106,16 @@ export function initLeadsView() {
   setupMasterCheckbox();
   setupExportCsv();
   setupAssignAgentModal();
+  setupEditLeadModal();
+  setupDeleteLeadModal();
+
+  // Close dropdown on outside click
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#lead-active-dropdown') && !e.target.closest('.btn-lead-more-actions')) {
+      closeLeadActionDropdown();
+    }
+  });
+
   if (window.lucide) window.lucide.createIcons();
 }
 
@@ -145,12 +157,12 @@ export function renderLeadsTable(leads) {
           </div>
         </td>
         <td style="color: var(--text-muted); font-size: 12.5px;">${lead.lastContact}</td>
-        <td style="text-align: right;">
+        <td style="text-align: right; position: relative;">
           <div class="lead-row-actions" onclick="event.stopPropagation()">
-            <button class="lead-action-btn btn-open-lead-chat-row" title="Abrir conversa" data-open-chat="${lead.name}">
+            <button class="lead-action-btn btn-open-lead-chat-row" title="Abrir conversa" data-lead-id="${lead.id}">
               <i data-lucide="message-square" style="width: 14px; height: 14px;"></i>
             </button>
-            <button class="lead-action-btn" title="Mais opções">
+            <button class="lead-action-btn btn-lead-more-actions" title="Mais opções" data-lead-id="${lead.id}">
               <i data-lucide="more-vertical" style="width: 14px; height: 14px;"></i>
             </button>
           </div>
@@ -195,10 +207,29 @@ export function renderLeadsTable(leads) {
     });
   });
 
+  // 3-dots more actions buttons
+  tbody.querySelectorAll('.btn-lead-more-actions').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const leadId = btn.getAttribute('data-lead-id');
+      const lead = zapChatData.leads.list.find(l => l.id === leadId);
+      if (lead) {
+        toggleLeadActionDropdown(lead, btn);
+      }
+    });
+  });
+
   // Open chat row buttons
   tbody.querySelectorAll('.btn-open-lead-chat-row').forEach(btn => {
-    btn.addEventListener('click', () => {
-      switchView('conversas');
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const leadId = btn.getAttribute('data-lead-id');
+      const lead = zapChatData.leads.list.find(l => l.id === leadId);
+      if (lead) {
+        openChatForLead(lead);
+      } else {
+        switchView('conversas');
+      }
     });
   });
 
@@ -297,7 +328,7 @@ export function renderSelectedLeadPanel(lead) {
   const openChatBtn = panel.querySelector('#btn-open-lead-chat');
   if (openChatBtn) {
     openChatBtn.addEventListener('click', () => {
-      switchView('conversas');
+      openChatForLead(lead);
     });
   }
 
@@ -690,3 +721,343 @@ function setupAssignAgentModal() {
   }
 }
 
+function getStatusKey(status) {
+  const map = {
+    'Novo': 'novo',
+    'Em atendimento': 'atendimento',
+    'Qualificado': 'qualificado',
+    'Fechado': 'fechado',
+    'Perdido': 'perdido'
+  };
+  return map[status] || 'novo';
+}
+
+export function closeLeadActionDropdown() {
+  const existingDropdown = document.getElementById('lead-active-dropdown');
+  if (existingDropdown) {
+    existingDropdown.remove();
+  }
+  document.querySelectorAll('.btn-lead-more-actions.menu-open').forEach(b => {
+    b.classList.remove('menu-open');
+  });
+}
+
+export function toggleLeadActionDropdown(lead, btn) {
+  const existingDropdown = document.getElementById('lead-active-dropdown');
+  const wasThisOpen = existingDropdown && existingDropdown.parentElement === btn.parentElement;
+
+  closeLeadActionDropdown();
+
+  if (wasThisOpen) return;
+
+  btn.classList.add('menu-open');
+
+  const menu = document.createElement('div');
+  menu.className = 'lead-actions-dropdown-menu';
+  menu.id = 'lead-active-dropdown';
+
+  menu.innerHTML = `
+    <button type="button" class="lead-dropdown-item btn-action-view-lead">
+      <i data-lucide="eye"></i>
+      <span>Ver Detalhes</span>
+    </button>
+    <button type="button" class="lead-dropdown-item btn-action-chat-lead">
+      <i data-lucide="message-square"></i>
+      <span>Abrir Conversa</span>
+    </button>
+    <button type="button" class="lead-dropdown-item btn-action-assign-lead">
+      <i data-lucide="user-check"></i>
+      <span>Atribuir Agente</span>
+    </button>
+    <button type="button" class="lead-dropdown-item btn-action-edit-lead">
+      <i data-lucide="edit-3"></i>
+      <span>Editar Lead</span>
+    </button>
+    <div class="lead-dropdown-divider"></div>
+    <div class="lead-status-submenu-header">Alterar Status</div>
+    <div class="lead-status-options-grid">
+      <button type="button" class="btn-status-option ${lead.status === 'Novo' ? 'active' : ''}" data-status="Novo" data-key="novo">Novo</button>
+      <button type="button" class="btn-status-option ${lead.status === 'Em atendimento' ? 'active' : ''}" data-status="Em atendimento" data-key="atendimento">Em atend.</button>
+      <button type="button" class="btn-status-option ${lead.status === 'Qualificado' ? 'active' : ''}" data-status="Qualificado" data-key="qualificado">Qualificado</button>
+      <button type="button" class="btn-status-option ${lead.status === 'Fechado' ? 'active' : ''}" data-status="Fechado" data-key="fechado">Fechado</button>
+    </div>
+    <div class="lead-dropdown-divider"></div>
+    <button type="button" class="lead-dropdown-item btn-action-copy-phone">
+      <i data-lucide="phone"></i>
+      <span>Copiar Telefone</span>
+    </button>
+    <button type="button" class="lead-dropdown-item btn-action-copy-email">
+      <i data-lucide="mail"></i>
+      <span>Copiar E-mail</span>
+    </button>
+    <div class="lead-dropdown-divider"></div>
+    <button type="button" class="lead-dropdown-item item-danger btn-action-delete-lead">
+      <i data-lucide="trash-2"></i>
+      <span>Excluir Lead</span>
+    </button>
+  `;
+
+  // Stop row click propagation when interacting with dropdown
+  menu.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
+  // Action handlers
+  menu.querySelector('.btn-action-view-lead').addEventListener('click', (e) => {
+    e.stopPropagation();
+    selectedLead = lead;
+    renderLeadsTable(currentDisplayedLeads);
+    renderSelectedLeadPanel(lead);
+    closeLeadActionDropdown();
+  });
+
+  menu.querySelector('.btn-action-chat-lead').addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeLeadActionDropdown();
+    openChatForLead(lead);
+  });
+
+  menu.querySelector('.btn-action-assign-lead').addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeLeadActionDropdown();
+    openAssignAgentModal(lead);
+  });
+
+  menu.querySelector('.btn-action-edit-lead').addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeLeadActionDropdown();
+    openEditLeadModal(lead);
+  });
+
+  menu.querySelectorAll('.btn-status-option').forEach(statusBtn => {
+    statusBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const newStatus = statusBtn.getAttribute('data-status');
+      const newKey = statusBtn.getAttribute('data-key');
+      changeLeadStatus(lead, newStatus, newKey);
+      closeLeadActionDropdown();
+    });
+  });
+
+  menu.querySelector('.btn-action-copy-phone').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (lead.phone) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(lead.phone);
+      }
+      showToast(`Telefone copiado: ${lead.phone}`);
+    }
+    closeLeadActionDropdown();
+  });
+
+  menu.querySelector('.btn-action-copy-email').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (lead.email) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(lead.email);
+      }
+      showToast(`E-mail copiado: ${lead.email}`);
+    }
+    closeLeadActionDropdown();
+  });
+
+  menu.querySelector('.btn-action-delete-lead').addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeLeadActionDropdown();
+    openDeleteLeadModal(lead);
+  });
+
+  // Append dropdown to row action wrapper
+  btn.parentElement.appendChild(menu);
+
+  // Position detection: if close to bottom of viewport, flip upwards
+  const rect = btn.getBoundingClientRect();
+  const spaceBelow = window.innerHeight - rect.bottom;
+  if (spaceBelow < 290) {
+    menu.classList.add('open-upwards');
+  }
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+export function changeLeadStatus(lead, newStatus, newKey) {
+  if (!lead) return;
+  lead.status = newStatus;
+  lead.statusKey = newKey || getStatusKey(newStatus);
+
+  if (selectedLead?.id === lead.id) {
+    selectedLead = lead;
+    renderSelectedLeadPanel(lead);
+  }
+
+  renderLeadsTable(currentDisplayedLeads);
+  showToast(`Status de "${lead.name}" alterado para ${newStatus}!`);
+}
+
+export function openEditLeadModal(lead) {
+  if (!lead) return;
+  const idInput = document.getElementById('edit-lead-id');
+  const nameInput = document.getElementById('edit-lead-name');
+  const phoneInput = document.getElementById('edit-lead-phone');
+  const emailInput = document.getElementById('edit-lead-email');
+  const channelSelect = document.getElementById('edit-lead-channel');
+  const statusSelect = document.getElementById('edit-lead-status');
+  const interestInput = document.getElementById('edit-lead-interest');
+  const notesInput = document.getElementById('edit-lead-notes');
+
+  if (idInput) idInput.value = lead.id;
+  if (nameInput) nameInput.value = lead.name || '';
+  if (phoneInput) phoneInput.value = lead.phone || '';
+  if (emailInput) emailInput.value = lead.email || '';
+  if (channelSelect) channelSelect.value = lead.channel || 'WhatsApp';
+  if (statusSelect) statusSelect.value = lead.status || 'Novo';
+  if (interestInput) interestInput.value = lead.primaryInterest || lead.interests?.[0] || '';
+  if (notesInput) notesInput.value = lead.notes || '';
+
+  openModal('modal-edit-lead');
+}
+
+function setupEditLeadModal() {
+  const form = document.getElementById('form-edit-lead');
+  if (!form) return;
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const leadId = document.getElementById('edit-lead-id')?.value;
+    const lead = zapChatData.leads.list.find(l => l.id === leadId);
+    if (!lead) return;
+
+    const newName = document.getElementById('edit-lead-name')?.value.trim() || lead.name;
+    const newPhone = document.getElementById('edit-lead-phone')?.value.trim() || lead.phone;
+    const newEmail = document.getElementById('edit-lead-email')?.value.trim() || lead.email;
+    const newChannel = document.getElementById('edit-lead-channel')?.value || lead.channel;
+    const newStatus = document.getElementById('edit-lead-status')?.value || lead.status;
+    const newInterest = document.getElementById('edit-lead-interest')?.value.trim() || lead.primaryInterest;
+    const newNotes = document.getElementById('edit-lead-notes')?.value.trim() || '';
+
+    lead.name = newName;
+    lead.phone = newPhone;
+    lead.email = newEmail;
+    lead.channel = newChannel;
+    lead.status = newStatus;
+    lead.statusKey = getStatusKey(newStatus);
+    lead.primaryInterest = newInterest;
+    if (lead.interests && lead.interests.length > 0) {
+      lead.interests[0] = newInterest;
+    } else {
+      lead.interests = [newInterest];
+    }
+    lead.notes = newNotes;
+
+    // Recalculate initials
+    const words = newName.split(' ').filter(Boolean);
+    lead.initials = words.length > 1
+      ? (words[0][0] + words[words.length - 1][0]).toUpperCase()
+      : (words[0] ? words[0].slice(0, 2).toUpperCase() : 'LE');
+
+    if (selectedLead?.id === lead.id) {
+      selectedLead = lead;
+    }
+
+    renderLeadsTable(currentDisplayedLeads);
+    if (selectedLead?.id === lead.id) {
+      renderSelectedLeadPanel(lead);
+    }
+
+    closeAllModals();
+    showToast(`Lead "${lead.name}" atualizado com sucesso!`);
+  });
+}
+
+export function openDeleteLeadModal(lead) {
+  if (!lead) return;
+  leadToDelete = lead;
+  const nameEl = document.getElementById('delete-lead-name');
+  if (nameEl) {
+    nameEl.textContent = lead.name;
+  }
+  openModal('modal-delete-lead');
+}
+
+function setupDeleteLeadModal() {
+  const confirmBtn = document.getElementById('btn-confirm-delete-lead');
+  if (!confirmBtn) return;
+
+  confirmBtn.addEventListener('click', () => {
+    if (!leadToDelete) return;
+
+    const index = zapChatData.leads.list.findIndex(l => l.id === leadToDelete.id);
+    if (index !== -1) {
+      zapChatData.leads.list.splice(index, 1);
+    }
+    checkedLeadIds.delete(leadToDelete.id);
+
+    currentDisplayedLeads = currentDisplayedLeads.filter(l => l.id !== leadToDelete.id);
+
+    if (selectedLead?.id === leadToDelete.id) {
+      selectedLead = currentDisplayedLeads[0] || null;
+    }
+
+    renderLeadsTable(currentDisplayedLeads);
+    if (selectedLead) {
+      renderSelectedLeadPanel(selectedLead);
+    } else {
+      const panel = document.getElementById('lead-detail-panel');
+      if (panel) panel.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--text-muted);">Nenhum lead selecionado</div>';
+    }
+
+    const deletedName = leadToDelete.name;
+    leadToDelete = null;
+    closeAllModals();
+    showToast(`Lead "${deletedName}" removido com sucesso!`);
+  });
+}
+
+export function openChatForLead(lead) {
+  if (!lead) return;
+
+  let existingThread = zapChatData.conversas.threads.find(
+    t => t.id === lead.id || t.name === lead.name || t.phone === lead.phone
+  );
+
+  if (!existingThread) {
+    existingThread = {
+      id: lead.id,
+      name: lead.name,
+      channel: lead.channel || 'WhatsApp',
+      time: 'Agora',
+      unread: 0,
+      active: true,
+      img: lead.agentImg || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+      snippet: `Iniciando atendimento com ${lead.name}...`,
+      customerSince: 'Lead recente',
+      customerId: `ID: ${lead.id.slice(0, 6)}`,
+      phone: lead.phone || '',
+      email: lead.email || '',
+      origin: lead.channel || 'WhatsApp',
+      originTime: 'Agora • Hoje',
+      assignedAgent: lead.agentName || 'Pedro',
+      attendingStatus: 'IA atendendo',
+      isAiAttending: true,
+      tags: lead.tags || ['Lead'],
+      status: lead.status || 'Novo',
+      aiSummary: [
+        `Origem: ${lead.channel || 'WhatsApp'}`,
+        `Interesse: ${lead.primaryInterest || 'Geral'}`,
+        `Lead cadastrado via lista de leads`
+      ],
+      messages: [
+        {
+          sender: 'system',
+          text: `Conversa com ${lead.name} aberta a partir da aba de Leads.`,
+          time: 'Agora'
+        }
+      ]
+    };
+    zapChatData.conversas.threads.unshift(existingThread);
+  }
+
+  switchView('conversas');
+  openChatThread(existingThread.id);
+  showToast(`Conversa de "${lead.name}" aberta!`);
+}

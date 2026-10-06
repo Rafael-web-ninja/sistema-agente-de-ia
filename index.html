@@ -867,10 +867,11 @@
 
                       <div class="form-group" style="margin-top: 14px;">
                         <label class="form-label" for="input-agent-segment">Segmento do negócio</label>
-                        <div class="segment-input-wrap">
+                        <div class="segment-input-wrap" id="segment-input-wrap">
                           <i data-lucide="search" class="segment-search-icon"></i>
-                          <input type="text" id="input-agent-segment" class="form-input segment-input" value="Clínica / Saúde" placeholder="Selecione ou busque o segmento">
-                          <i data-lucide="chevron-down" class="segment-chevron-icon"></i>
+                          <input type="text" id="input-agent-segment" class="form-input segment-input" value="Clínica / Saúde" placeholder="Selecione ou busque o segmento" autocomplete="off">
+                          <i data-lucide="chevron-down" class="segment-chevron-icon" id="segment-chevron-icon"></i>
+                          <div class="segment-dropdown-menu" id="segment-dropdown-menu"></div>
                         </div>
                       </div>
 
@@ -1982,6 +1983,21 @@
 
               <!-- Input bar -->
               <div class="chat-input-container-simplified">
+                <!-- Reply Preview Bar -->
+                <div class="chat-reply-preview-bar" id="chat-reply-preview-bar" style="display: none;">
+                  <div class="reply-bar-accent"></div>
+                  <div class="reply-bar-body">
+                    <div class="reply-bar-header">
+                      <i data-lucide="corner-up-left" style="width: 13px; height: 13px; color: var(--primary);"></i>
+                      <span class="reply-bar-author" id="reply-preview-author">Respondendo a Juliana Santos</span>
+                    </div>
+                    <div class="reply-bar-snippet" id="reply-preview-text">Mensagem selecionada</div>
+                  </div>
+                  <button type="button" class="reply-bar-cancel-btn" id="btn-cancel-reply" title="Cancelar resposta" aria-label="Cancelar resposta">
+                    <i data-lucide="x" style="width: 15px; height: 15px;"></i>
+                  </button>
+                </div>
+
                 <div class="chat-input-strip" id="chat-input-strip">
                   <input type="text" id="chat-input-textarea" class="chat-input-field" placeholder="A IA está respondendo. Você pode assumir o atendimento para enviar mensagens.">
                   <div class="chat-input-actions">
@@ -2859,6 +2875,105 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- 2.2 Modal Editar Lead -->
+  <div class="modal-backdrop" id="modal-edit-lead">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 34px; height: 34px; border-radius: var(--radius-sm); background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="edit-3" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 16px;">Editar Lead</h3>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">Atualize os dados e status do lead</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar">✕</button>
+      </div>
+      <form id="form-edit-lead">
+        <input type="hidden" id="edit-lead-id">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label">Nome Completo</label>
+          <input type="text" id="edit-lead-name" class="form-input" placeholder="Nome do lead" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div class="form-group">
+            <label class="form-label">Telefone / WhatsApp</label>
+            <input type="text" id="edit-lead-phone" class="form-input" placeholder="+55 11 98888-7777" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-mail</label>
+            <input type="email" id="edit-lead-email" class="form-input" placeholder="lead@email.com" required>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div class="form-group">
+            <label class="form-label">Canal de Origem</label>
+            <select id="edit-lead-channel" class="form-select">
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Instagram">Instagram</option>
+              <option value="Site">Site</option>
+              <option value="Facebook">Facebook</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select id="edit-lead-status" class="form-select">
+              <option value="Novo">Novo</option>
+              <option value="Em atendimento">Em atendimento</option>
+              <option value="Qualificado">Qualificado</option>
+              <option value="Fechado">Fechado</option>
+              <option value="Perdido">Perdido</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label">Interesse Principal</label>
+          <input type="text" id="edit-lead-interest" class="form-input" placeholder="Ex: Plano Pro, Integração CRM">
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">Observações / Notas</label>
+          <textarea id="edit-lead-notes" class="form-input" rows="3" placeholder="Contexto ou preferências do lead..."></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+            <span>Salvar Alterações</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2.3 Modal Excluir Lead -->
+  <div class="modal-backdrop" id="modal-delete-lead">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: var(--status-danger); display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="trash-2" style="width: 20px; height: 20px;"></i>
+          <span>Excluir Lead</span>
+        </h3>
+        <button type="button" class="modal-close" aria-label="Fechar">✕</button>
+      </div>
+      <div style="padding: 14px 0 20px 0;">
+        <p style="font-size: 13.5px; color: var(--text-main); margin-bottom: 8px;">
+          Tem certeza de que deseja excluir o lead <strong id="delete-lead-name">Rafael Carvalho</strong>?
+        </p>
+        <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.45; margin: 0;">
+          Esta ação removerá o contato da lista de leads e desvinculará o histórico associado.
+        </p>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-light); padding-top: 14px;">
+        <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-delete-lead">
+          <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+          <span>Excluir Lead</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -4152,7 +4267,7 @@
           </div>
           <div>
             <h3 class="modal-title" id="segment-rules-modal-title">Boas Práticas: Clínica / Saúde</h3>
-            <p class="modal-subtitle" style="font-size:12px; color:var(--text-muted); margin:0;">Regras de conduta e segurança ativadas automaticamente</p>
+            <p class="modal-subtitle" id="segment-rules-modal-subtitle" style="font-size:12px; color:var(--text-muted); margin:0;">Regras de conduta e segurança ativadas automaticamente</p>
           </div>
         </div>
         <button type="button" class="modal-close" aria-label="Fechar">&times;</button>

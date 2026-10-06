@@ -758,6 +758,76 @@
   flex-shrink: 0;
 }
 
+/* Compact Attendance Status Tags in Thread List */
+.thread-status-row {
+  display: flex;
+  align-items: center;
+  margin: 3px 0 4px 0;
+  line-height: 1;
+}
+
+.thread-attendance-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4.5px;
+  font-size: 10.5px;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  padding: 1.5px 7px;
+  border-radius: var(--radius-pill);
+  line-height: 1.25;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.thread-attendance-tag i,
+.thread-attendance-tag svg {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+}
+
+/* 1. IA atendendo: Subtle emerald green */
+.thread-attendance-tag.tag-ai {
+  background-color: rgba(0, 168, 104, 0.08);
+  border-color: rgba(0, 168, 104, 0.22);
+  color: #007A4B;
+}
+
+[data-theme="dark"] .thread-attendance-tag.tag-ai {
+  background-color: rgba(0, 168, 104, 0.16);
+  border-color: rgba(0, 168, 104, 0.32);
+  color: #34D399;
+}
+
+/* 2. Humano atendendo: Subtle blue / indigo */
+.thread-attendance-tag.tag-human {
+  background-color: rgba(37, 99, 235, 0.08);
+  border-color: rgba(37, 99, 235, 0.22);
+  color: #1D4ED8;
+}
+
+[data-theme="dark"] .thread-attendance-tag.tag-human {
+  background-color: rgba(59, 130, 246, 0.16);
+  border-color: rgba(59, 130, 246, 0.32);
+  color: #60A5FA;
+}
+
+/* 3. Aguardando humano: Subtle warm amber */
+.thread-attendance-tag.tag-waiting {
+  background-color: rgba(245, 158, 11, 0.09);
+  border-color: rgba(245, 158, 11, 0.26);
+  color: #B45309;
+}
+
+[data-theme="dark"] .thread-attendance-tag.tag-waiting {
+  background-color: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.32);
+  color: #FBBF24;
+}
+
 .thread-bottom-row {
   display: flex;
   align-items: center;
@@ -941,6 +1011,21 @@
   display: inline-block;
   box-shadow: 0 0 6px var(--primary);
   animation: pulseDot 2s infinite ease-in-out;
+}
+
+.chat-status-ia-tag.status-ai .sparkle-dot {
+  background-color: #00A868;
+  box-shadow: 0 0 6px #00A868;
+}
+
+.chat-status-ia-tag.status-human .sparkle-dot {
+  background-color: #2563EB;
+  box-shadow: 0 0 6px #2563EB;
+}
+
+.chat-status-ia-tag.status-waiting .sparkle-dot {
+  background-color: #F59E0B;
+  box-shadow: 0 0 6px #F59E0B;
 }
 
 @keyframes pulseDot {
@@ -1129,12 +1214,14 @@
 }
 
 .message-bubble {
-  padding: 12px 16px;
+  padding: 10px 14px;
+  padding-right: 28px;
   border-radius: var(--radius-md);
   font-size: 13.5px;
   line-height: 1.45;
   position: relative;
   box-shadow: var(--shadow-sm);
+  word-break: break-word;
 }
 
 .message-row.user .message-bubble {
@@ -1155,6 +1242,312 @@
   background: rgba(0, 168, 104, 0.15);
   color: #D1FAE5;
   border-color: rgba(0, 168, 104, 0.3);
+}
+
+/* Agent (Human operator outgoing message) */
+.message-row.agent {
+  align-self: flex-end;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.message-row.agent .message-bubble {
+  background: #EAF8F1;
+  color: #064E3B;
+  border: 1px solid #BEEBD4;
+  border-bottom-right-radius: 4px;
+}
+
+[data-theme="dark"] .message-row.agent .message-bubble {
+  background: rgba(0, 168, 104, 0.15);
+  color: #D1FAE5;
+  border-color: rgba(0, 168, 104, 0.3);
+}
+
+.agent-avatar-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+
+/* Message Chevron Button (Dropdown Trigger) */
+.message-chevron-btn {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  color: #8696a0;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 5;
+  padding: 0;
+}
+
+[data-theme="dark"] .message-chevron-btn {
+  background: rgba(30, 41, 59, 0.85);
+  color: #94a3b8;
+}
+
+.message-bubble:hover .message-chevron-btn,
+.message-chevron-btn.menu-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.message-chevron-btn:hover {
+  background: #ffffff;
+  color: #111b21;
+  transform: scale(1.08);
+}
+
+[data-theme="dark"] .message-chevron-btn:hover {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+@media (hover: none) {
+  .message-chevron-btn {
+    opacity: 0.65;
+    visibility: visible;
+  }
+}
+
+/* Message Action Dropdown Menu (Matches User Screenshot!) */
+.message-dropdown-menu {
+  position: absolute;
+  top: 26px;
+  right: 4px;
+  min-width: 140px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 6px 0;
+  z-index: 100;
+  animation: fadeInMsgDropdown 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] .message-dropdown-menu {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes fadeInMsgDropdown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.message-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  user-select: none;
+}
+
+[data-theme="dark"] .message-dropdown-item {
+  color: #f3f4f6;
+}
+
+.message-dropdown-item:hover {
+  background: #f4f5f7;
+}
+
+[data-theme="dark"] .message-dropdown-item:hover {
+  background: #334155;
+}
+
+/* Quoted message block inside bubble */
+.quoted-message-box {
+  display: flex;
+  background: rgba(0, 0, 0, 0.05);
+  border-left: 3.5px solid var(--primary);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  user-select: none;
+}
+
+.quoted-message-box:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .quoted-message-box {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .quoted-message-box:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.message-row.bot .quoted-message-box,
+.message-row.agent .quoted-message-box {
+  background: rgba(6, 78, 59, 0.08);
+}
+
+.message-row.bot .quoted-message-box:hover,
+.message-row.agent .quoted-message-box:hover {
+  background: rgba(6, 78, 59, 0.13);
+}
+
+[data-theme="dark"] .message-row.bot .quoted-message-box,
+[data-theme="dark"] .message-row.agent .quoted-message-box {
+  background: rgba(0, 168, 104, 0.2);
+}
+
+.quoted-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.quoted-author {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.quoted-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+/* Quoted Message Jump Highlight */
+@keyframes highlightOriginalMsg {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(0, 168, 104, 0.5);
+  }
+  30% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 6px rgba(0, 168, 104, 0.25);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(0, 168, 104, 0);
+  }
+}
+
+.message-highlight-pulse .message-bubble {
+  animation: highlightOriginalMsg 1.2s ease;
+  border-color: var(--primary) !important;
+}
+
+/* Reply Preview Bar Above Input Field */
+.chat-reply-preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  animation: slideDownReply 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+@keyframes slideDownReply {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reply-preview-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reply-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reply-preview-author {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.reply-preview-snippet {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reply-preview-close-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.reply-preview-close-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
 }
 
 .message-meta {
@@ -1188,6 +1581,26 @@
 [data-theme="dark"] .ai-attending-strip {
   background: rgba(0, 168, 104, 0.1);
   border-color: rgba(0, 168, 104, 0.25);
+}
+
+.ai-attending-strip.status-waiting {
+  background: #FFFBEB;
+  border-color: #FDE68A;
+}
+
+[data-theme="dark"] .ai-attending-strip.status-waiting {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.ai-attending-strip.status-human {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+}
+
+[data-theme="dark"] .ai-attending-strip.status-human {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.25);
 }
 
 .ai-strip-left {
@@ -1546,11 +1959,81 @@
   font-size: 11px;
   font-weight: 600;
   width: fit-content;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
 }
 
 [data-theme="dark"] .attendance-status-badge {
   background: rgba(0, 168, 104, 0.2);
   color: #34D399;
+}
+
+/* Discreet Attendance Status Badges in Right Column Card */
+.attendance-status-badge.status-ai {
+  background: rgba(0, 168, 104, 0.09);
+  border-color: rgba(0, 168, 104, 0.22);
+  color: #007A4B;
+}
+
+[data-theme="dark"] .attendance-status-badge.status-ai {
+  background: rgba(0, 168, 104, 0.18);
+  border-color: rgba(0, 168, 104, 0.32);
+  color: #34D399;
+}
+
+.attendance-status-badge.status-human {
+  background: rgba(37, 99, 235, 0.08);
+  border-color: rgba(37, 99, 235, 0.22);
+  color: #1D4ED8;
+}
+
+[data-theme="dark"] .attendance-status-badge.status-human {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.32);
+  color: #60A5FA;
+}
+
+.attendance-status-badge.status-waiting {
+  background: rgba(245, 158, 11, 0.09);
+  border-color: rgba(245, 158, 11, 0.26);
+  color: #B45309;
+}
+
+[data-theme="dark"] .attendance-status-badge.status-waiting {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.32);
+  color: #FBBF24;
+}
+
+/* Agent avatar icons in right column */
+.agent-icon-avatar.agent-avatar-ai {
+  background: rgba(0, 168, 104, 0.1) !important;
+  color: #00A868 !important;
+}
+
+.agent-icon-avatar.agent-avatar-human {
+  background: rgba(37, 99, 235, 0.1) !important;
+  color: #2563EB !important;
+}
+
+.agent-icon-avatar.agent-avatar-waiting {
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: #D97706 !important;
+}
+
+[data-theme="dark"] .agent-icon-avatar.agent-avatar-ai {
+  background: rgba(0, 168, 104, 0.2) !important;
+  color: #34D399 !important;
+}
+
+[data-theme="dark"] .agent-icon-avatar.agent-avatar-human {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #60A5FA !important;
+}
+
+[data-theme="dark"] .agent-icon-avatar.agent-avatar-waiting {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #FBBF24 !important;
 }
 
 /* Resumo da IA Card */

@@ -3,6 +3,215 @@ import { showToast } from './settings.js';
 import { switchView, openModal, closeAllModals } from './navigation.js';
 
 let activeThreadId = zapChatData.conversas.threads[0]?.id || null;
+let activeReply = null; // { index, sender, senderName, text }
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+export function getAttendanceStatus(thread) {
+  if (!thread) {
+    return {
+      key: 'ai',
+      label: 'IA atendendo',
+      icon: 'bot',
+      badgeClass: 'tag-ai',
+      cardClass: 'status-ai'
+    };
+  }
+
+  // 1. Aguardando humano
+  if (
+    thread.attendanceState === 'waiting_human' ||
+    thread.attendanceState === 'waiting' ||
+    thread.attendingStatus === 'Aguardando humano' ||
+    (thread.attendingStatus && thread.attendingStatus.toLowerCase().includes('aguardando'))
+  ) {
+    return {
+      key: 'waiting',
+      label: 'Aguardando humano',
+      icon: 'clock',
+      badgeClass: 'tag-waiting',
+      cardClass: 'status-waiting'
+    };
+  }
+
+  // 2. Humano atendendo
+  if (
+    thread.attendanceState === 'human' ||
+    thread.isAiAttending === false ||
+    thread.attendingStatus === 'Humano atendendo' ||
+    (thread.attendingStatus && (thread.attendingStatus.toLowerCase().includes('humano') || !thread.isAiAttending))
+  ) {
+    return {
+      key: 'human',
+      label: 'Humano atendendo',
+      icon: 'user',
+      badgeClass: 'tag-human',
+      cardClass: 'status-human'
+    };
+  }
+
+  // 3. IA atendendo (default)
+  return {
+    key: 'ai',
+    label: 'IA atendendo',
+    icon: 'bot',
+    badgeClass: 'tag-ai',
+    cardClass: 'status-ai'
+  };
+}
+
+function closeMessageActionDropdown() {
+  const openMenu = document.getElementById('message-active-dropdown');
+  if (openMenu) {
+    openMenu.remove();
+  }
+  document.querySelectorAll('.message-chevron-btn.menu-open').forEach(btn => {
+    btn.classList.remove('menu-open');
+  });
+}
+
+function toggleMessageActionDropdown(thread, msgIndex, triggerBtn) {
+  const existingDropdown = document.getElementById('message-active-dropdown');
+  const wasThisOpen = existingDropdown && existingDropdown.parentElement === triggerBtn.closest('.message-bubble');
+
+  closeMessageActionDropdown();
+
+  if (wasThisOpen) return;
+
+  const bubble = triggerBtn.closest('.message-bubble');
+  if (!bubble) return;
+
+  triggerBtn.classList.add('menu-open');
+
+  const menu = document.createElement('div');
+  menu.className = 'message-dropdown-menu';
+  menu.id = 'message-active-dropdown';
+  menu.innerHTML = `
+    <button type="button" class="message-dropdown-item btn-reply-msg">
+      <span>Responder</span>
+    </button>
+  `;
+
+  menu.querySelector('.btn-reply-msg').addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeMessageActionDropdown();
+    startReplyToMessage(thread, msgIndex);
+  });
+
+  bubble.appendChild(menu);
+
+  // Position adjustment if near bottom of messages container
+  const scrollContainer = document.getElementById('chat-messages-scroll');
+  if (scrollContainer) {
+    const bubbleRect = bubble.getBoundingClientRect();
+    const scrollRect = scrollContainer.getBoundingClientRect();
+    if (bubbleRect.bottom + 55 > scrollRect.bottom) {
+      menu.style.top = 'auto';
+      menu.style.bottom = '28px';
+    }
+  }
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function startReplyToMessage(thread, msgIndex) {
+  const msg = thread.messages[msgIndex];
+  if (!msg || thread.isBlocked) return;
+
+  let senderName = thread.name || 'Cliente';
+  if (msg.sender === 'bot') {
+    senderName = `${thread.assignedAgent || 'Pedro'} (IA)`;
+  } else if (msg.sender === 'agent') {
+    senderName = 'Você';
+  }
+
+  activeReply = {
+    index: msgIndex,
+    sender: msg.sender,
+    senderName: senderName,
+    text: msg.text
+  };
+
+  if (thread.isAiAttending) {
+    assumeAttendance(thread);
+  }
+
+  const replyBar = document.getElementById('chat-reply-preview-bar');
+  const replyAuthor = document.getElementById('reply-preview-author');
+  const replyText = document.getElementById('reply-preview-text');
+  if (replyBar && replyAuthor && replyText) {
+    replyAuthor.textContent = `Respondendo a ${senderName}`;
+    replyText.textContent = msg.text;
+    replyBar.style.display = 'flex';
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  const inputField = document.getElementById('chat-input-textarea');
+  const inputStrip = document.getElementById('chat-input-strip');
+  if (inputField) {
+    inputField.placeholder = `Responder a ${senderName}...`;
+    inputField.focus();
+  }
+  if (inputStrip) {
+    inputStrip.classList.add('active-input');
+  }
+}
+
+function cancelReply() {
+  activeReply = null;
+  const replyBar = document.getElementById('chat-reply-preview-bar');
+  if (replyBar) {
+    replyBar.style.display = 'none';
+  }
+  const thread = zapChatData.conversas.threads.find(t => t.id === activeThreadId);
+  const inputField = document.getElementById('chat-input-textarea');
+  if (inputField && thread) {
+    const attStatus = getAttendanceStatus(thread);
+    if (attStatus.key === 'ai') {
+      inputField.placeholder = "A IA está respondendo. Você pode assumir o atendimento para enviar mensagens.";
+    } else if (attStatus.key === 'waiting') {
+      inputField.placeholder = "Aguardando atendimento humano. Clique em 'Assumir' para responder.";
+    } else {
+      inputField.placeholder = "Digite sua mensagem... (Pressione Enter para enviar)";
+    }
+  }
+}
+
+function returnToAiAttendance(thread) {
+  thread.isAiAttending = true;
+  thread.attendanceState = 'ai';
+  thread.attendingStatus = 'IA atendendo';
+  thread.assignedAgent = 'Pedro';
+  cancelReply();
+  renderActiveChat();
+  renderThreadList();
+  showToast('Controle devolvido para a IA Pedro com sucesso!');
+}
+
+export function openChatThread(threadId) {
+  const thread = zapChatData.conversas.threads.find(t => t.id === threadId);
+  if (thread) {
+    activeThreadId = threadId;
+    thread.unread = 0;
+    cancelReply();
+    closeMessageActionDropdown();
+    renderThreadList();
+    renderActiveChat();
+
+    const layout = document.querySelector('.conversas-simplified-layout');
+    if (layout) {
+      layout.classList.add('in-active-chat');
+    }
+  }
+}
 
 export function initChatView() {
   renderThreadList();
@@ -11,6 +220,12 @@ export function initChatView() {
   setupThreadFilters();
   setupTransferModal();
   setupContactModals();
+
+  window.addEventListener('zapchat:open-thread', (e) => {
+    if (e.detail?.threadId) {
+      openChatThread(e.detail.threadId);
+    }
+  });
 
   document.getElementById('btn-close-chat-profile')?.addEventListener('click', () => {
     const layout = document.querySelector('.conversas-simplified-layout');
@@ -367,6 +582,7 @@ export function renderThreadList() {
 
   container.innerHTML = threads.map(thread => {
     const isActive = thread.id === activeThreadId;
+    const attStatus = getAttendanceStatus(thread);
 
     return `
       <div class="chat-thread-item ${isActive ? 'active' : ''}" data-thread-id="${thread.id}">
@@ -382,6 +598,12 @@ export function renderThreadList() {
               ${thread.isBlocked ? '<span style="font-size: 9px; font-weight: 700; background: rgba(239, 68, 68, 0.15); color: #EF4444; padding: 1px 5px; border-radius: 4px;">BLOQUEADO</span>' : ''}
             </div>
             <span class="thread-time">${thread.time}</span>
+          </div>
+          <div class="thread-status-row">
+            <span class="thread-attendance-tag ${attStatus.badgeClass}">
+              <i data-lucide="${attStatus.icon}"></i>
+              <span>${attStatus.label}</span>
+            </span>
           </div>
           <div class="thread-bottom-row">
             <span class="thread-snippet">${thread.snippet}</span>
@@ -399,6 +621,8 @@ export function renderThreadList() {
       if (thread) {
         activeThreadId = threadId;
         thread.unread = 0; // Mark as read
+        cancelReply();
+        closeMessageActionDropdown();
         renderThreadList();
         renderActiveChat();
 
@@ -444,6 +668,9 @@ export function renderActiveChat() {
   // 1. Header
   const header = document.getElementById('chat-arena-header');
   if (header) {
+    const attStatus = getAttendanceStatus(thread);
+    const isHumanAttending = attStatus.key === 'human';
+
     header.innerHTML = `
       <div class="chat-contact-banner">
         <button class="mobile-chat-back-btn" id="mobile-chat-back-btn" title="Voltar para conversas" aria-label="Voltar para conversas">
@@ -458,18 +685,25 @@ export function renderActiveChat() {
             <span class="chat-contact-name">${thread.name}</span>
             ${getChannelBadgeHtml(thread.channel)}
           </div>
-          <div class="chat-status-ia-tag">
+          <div class="chat-status-ia-tag ${attStatus.cardClass}">
             <span class="sparkle-dot"></span>
-            <span>${thread.attendingStatus || 'IA atendendo'}</span>
+            <span>${attStatus.label}</span>
           </div>
         </div>
       </div>
 
       <div class="chat-header-actions">
-        <button class="btn btn-primary btn-sm chat-action-btn" id="btn-header-assume">
-          <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
-          <span>Assumir</span>
-        </button>
+        ${isHumanAttending ? `
+          <button class="btn btn-secondary btn-sm chat-action-btn" id="btn-header-assume">
+            <i data-lucide="bot" style="width: 14px; height: 14px;"></i>
+            <span>Devolver IA</span>
+          </button>
+        ` : `
+          <button class="btn btn-primary btn-sm chat-action-btn" id="btn-header-assume">
+            <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
+            <span>Assumir</span>
+          </button>
+        `}
         <button class="btn btn-secondary btn-sm chat-action-btn" id="btn-header-transfer">
           <i data-lucide="corner-up-right" style="width: 14px; height: 14px;"></i>
           <span>Transferir</span>
@@ -503,7 +737,11 @@ export function renderActiveChat() {
     });
 
     header.querySelector('#btn-header-assume')?.addEventListener('click', () => {
-      assumeAttendance(thread);
+      if (isHumanAttending) {
+        returnToAiAttendance(thread);
+      } else {
+        assumeAttendance(thread);
+      }
     });
 
     header.querySelector('#btn-header-transfer')?.addEventListener('click', () => {
@@ -528,36 +766,105 @@ export function renderActiveChat() {
         <span>Hoje</span>
       </div>
 
-      ${thread.messages.map(msg => {
+      ${thread.messages.map((msg, index) => {
         if (msg.sender === 'system') {
           return `
-            <div class="message-row system">
+            <div class="message-row system" data-msg-idx="${index}">
               <div class="system-event-bubble">
                 <i data-lucide="corner-up-right" style="width: 13px; height: 13px;"></i>
-                <span>${msg.text}</span>
+                <span>${escapeHtml(msg.text)}</span>
               </div>
             </div>
           `;
         }
         const isBot = msg.sender === 'bot';
+        const isAgent = msg.sender === 'agent';
+        const isOutgoing = isBot || isAgent;
+        const rowClass = isOutgoing ? (isBot ? 'bot' : 'agent') : 'user';
+
         return `
-          <div class="message-row ${isBot ? 'bot' : 'user'}">
-            <div class="message-bubble">
-              <div style="white-space: pre-line;">${msg.text}</div>
+          <div class="message-row ${rowClass}" data-msg-idx="${index}" id="msg-row-${index}">
+            <div class="message-bubble" data-msg-idx="${index}">
+              ${msg.replyTo ? `
+                <div class="quoted-message-box" data-reply-target-idx="${msg.replyTo.index ?? ''}" title="Clique para ver a mensagem original">
+                  <div class="quoted-content">
+                    <span class="quoted-author">${escapeHtml(msg.replyTo.senderName || (msg.replyTo.sender === 'user' ? (thread.name || 'Cliente') : 'Você'))}</span>
+                    <span class="quoted-text">${escapeHtml(msg.replyTo.text)}</span>
+                  </div>
+                </div>
+              ` : ''}
+              <div class="message-bubble-text" style="white-space: pre-line;">${escapeHtml(msg.text)}</div>
               <div class="message-meta">
                 <span>${msg.time}</span>
-                ${isBot ? '<span class="check-read-icon">✓✓</span>' : ''}
+                ${isOutgoing ? '<span class="check-read-icon">✓✓</span>' : ''}
               </div>
+
+              <!-- Chevron trigger for message options (Matches User Screenshot) -->
+              <button type="button" class="message-chevron-btn" data-msg-idx="${index}" title="Mais opções" aria-label="Mais opções da mensagem">
+                <i data-lucide="chevron-down" style="width: 13px; height: 13px;"></i>
+              </button>
             </div>
             ${isBot ? `
               <div class="bot-sparkle-avatar" title="Resposta da IA">
                 <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i>
               </div>
-            ` : ''}
+            ` : (isAgent ? `
+              <div class="agent-avatar-badge" title="Você (Atendente)">
+                <i data-lucide="user" style="width: 14px; height: 14px;"></i>
+              </div>
+            ` : '')}
           </div>
         `;
       }).join('')}
     `;
+
+    // Event listeners on messages
+    messagesScroll.querySelectorAll('.message-chevron-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.getAttribute('data-msg-idx'), 10);
+        toggleMessageActionDropdown(thread, idx, btn);
+      });
+    });
+
+    messagesScroll.querySelectorAll('.message-bubble').forEach(bubble => {
+      // Right click context menu
+      bubble.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        const chevronBtn = bubble.querySelector('.message-chevron-btn');
+        if (chevronBtn) {
+          const idx = parseInt(chevronBtn.getAttribute('data-msg-idx'), 10);
+          toggleMessageActionDropdown(thread, idx, chevronBtn);
+        }
+      });
+
+      // Double click to reply
+      bubble.addEventListener('dblclick', (e) => {
+        const row = bubble.closest('.message-row');
+        if (row && row.hasAttribute('data-msg-idx')) {
+          const idx = parseInt(row.getAttribute('data-msg-idx'), 10);
+          startReplyToMessage(thread, idx);
+        }
+      });
+    });
+
+    // Quoted box click to jump to original message
+    messagesScroll.querySelectorAll('.quoted-message-box').forEach(box => {
+      box.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetIdx = box.getAttribute('data-reply-target-idx');
+        if (targetIdx !== '' && targetIdx !== null && targetIdx !== undefined) {
+          const targetRow = messagesScroll.querySelector(`.message-row[data-msg-idx="${targetIdx}"]`);
+          if (targetRow) {
+            targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetRow.classList.add('message-highlight-pulse');
+            setTimeout(() => {
+              targetRow.classList.remove('message-highlight-pulse');
+            }, 1400);
+          }
+        }
+      });
+    });
 
     setTimeout(() => {
       messagesScroll.scrollTop = messagesScroll.scrollHeight;
@@ -567,14 +874,16 @@ export function renderActiveChat() {
   // 3. AI Attending Strip
   const strip = document.getElementById('ai-attending-strip');
   if (strip) {
-    if (thread.isAiAttending) {
+    const attStatus = getAttendanceStatus(thread);
+    strip.className = `ai-attending-strip ${attStatus.cardClass}`;
+    if (attStatus.key === 'ai') {
       strip.style.display = 'flex';
       strip.innerHTML = `
         <div class="ai-strip-left">
           <div class="ai-strip-bot-icon">
             <i data-lucide="bot" style="width: 16px; height: 16px;"></i>
           </div>
-          <span class="ai-strip-text"><strong>Pedro</strong> está atendendo esta conversa</span>
+          <span class="ai-strip-text"><strong>${escapeHtml(thread.assignedAgent || 'Pedro')}</strong> está atendendo esta conversa</span>
         </div>
         <button class="btn btn-secondary btn-sm ai-strip-assume-btn" id="btn-strip-assume">
           <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
@@ -584,18 +893,40 @@ export function renderActiveChat() {
       strip.querySelector('#btn-strip-assume')?.addEventListener('click', () => {
         assumeAttendance(thread);
       });
+    } else if (attStatus.key === 'waiting') {
+      strip.style.display = 'flex';
+      strip.innerHTML = `
+        <div class="ai-strip-left">
+          <div class="ai-strip-bot-icon" style="background-color: rgba(245, 158, 11, 0.15); color: #B45309;">
+            <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+          </div>
+          <span class="ai-strip-text">Conversa encaminhada para <strong>${escapeHtml(thread.assignedAgent || 'humano')}</strong> (Aguardando atendimento)</span>
+        </div>
+        <button class="btn btn-primary btn-sm" style="font-size: 12px;" id="btn-strip-assume">
+          <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
+          Assumir atendimento
+        </button>
+      `;
+      strip.querySelector('#btn-strip-assume')?.addEventListener('click', () => {
+        assumeAttendance(thread);
+      });
     } else {
+      strip.style.display = 'flex';
       strip.innerHTML = `
         <div class="ai-strip-left">
           <div class="ai-strip-bot-icon" style="background-color: var(--primary); color: white;">
             <i data-lucide="user" style="width: 16px; height: 16px;"></i>
           </div>
-          <span class="ai-strip-text"><strong>Você</strong> está atendendo esta conversa</span>
+          <span class="ai-strip-text"><strong>${escapeHtml(thread.assignedAgent || 'Você')}</strong> está atendendo esta conversa</span>
         </div>
-        <button class="btn btn-secondary btn-sm" style="font-size: 12px;" onclick="alert('Devolvendo controle para a IA...');">
+        <button class="btn btn-secondary btn-sm" style="font-size: 12px;" id="btn-strip-return-ai">
+          <i data-lucide="bot" style="width: 13px; height: 13px;"></i>
           Devolver para IA
         </button>
       `;
+      strip.querySelector('#btn-strip-return-ai')?.addEventListener('click', () => {
+        returnToAiAttendance(thread);
+      });
     }
   }
 
@@ -615,7 +946,14 @@ export function renderActiveChat() {
       inputField.disabled = false;
       inputStrip.style.opacity = '1';
       if (sendBtn) sendBtn.disabled = false;
-      if (thread.isAiAttending) {
+      const attStatus = getAttendanceStatus(thread);
+      if (activeReply) {
+        inputField.placeholder = `Responder a ${activeReply.senderName}...`;
+        inputStrip.classList.add('active-input');
+      } else if (attStatus.key === 'waiting') {
+        inputField.placeholder = "Aguardando atendimento humano. Clique em 'Assumir' para responder.";
+        inputStrip.classList.remove('active-input');
+      } else if (attStatus.key === 'ai') {
         inputField.placeholder = "A IA está respondendo. Você pode assumir o atendimento para enviar mensagens.";
         inputStrip.classList.remove('active-input');
       } else {
@@ -633,9 +971,11 @@ export function renderActiveChat() {
 
 function assumeAttendance(thread) {
   thread.isAiAttending = false;
+  thread.attendanceState = 'human';
   thread.attendingStatus = 'Humano atendendo';
   thread.assignedAgent = 'Você (Rafael Mota)';
   renderActiveChat();
+  renderThreadList();
   const inputField = document.getElementById('chat-input-textarea');
   if (inputField) {
     inputField.focus();
@@ -731,24 +1071,28 @@ function renderRightColumnCards(thread) {
   // Card 2: Atendimento
   const cardAtendimento = document.getElementById('chat-attendance-card');
   if (cardAtendimento) {
+    const attStatus = getAttendanceStatus(thread);
+    const agentIcon = attStatus.key === 'human' ? 'user' : (attStatus.key === 'waiting' ? 'clock' : 'bot');
+    const agentAvatarClass = `agent-avatar-${attStatus.key}`;
+
     cardAtendimento.innerHTML = `
       <div class="profile-card-top-title" style="margin-bottom: 10px;">Atendimento</div>
       <div class="attendance-meta-group">
         <div class="attendance-row">
           <span class="attendance-label">Agente</span>
           <div class="attendance-agent-pill">
-            <div class="agent-icon-avatar" style="width: 22px; height: 22px; background: #E9F7F1; color: #00A868; border-radius: 6px;">
-              <i data-lucide="bot" style="width: 14px; height: 14px;"></i>
+            <div class="agent-icon-avatar ${agentAvatarClass}" style="width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+              <i data-lucide="${agentIcon}" style="width: 14px; height: 14px;"></i>
             </div>
-            <span>${thread.assignedAgent || 'Pedro'}</span>
+            <span>${thread.assignedAgent || (attStatus.key === 'ai' ? 'Pedro' : 'Atendente')}</span>
           </div>
         </div>
 
         <div class="attendance-row">
           <span class="attendance-label">Status</span>
-          <div class="attendance-status-badge">
-            <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i>
-            <span>${thread.attendingStatus || 'IA atendendo'}</span>
+          <div class="attendance-status-badge ${attStatus.cardClass}">
+            <i data-lucide="${attStatus.icon}" style="width: 12px; height: 12px;"></i>
+            <span>${attStatus.label}</span>
           </div>
         </div>
       </div>
@@ -773,6 +1117,27 @@ function renderRightColumnCards(thread) {
 function setupChatInputs() {
   const input = document.getElementById('chat-input-textarea');
   const sendBtn = document.getElementById('btn-send-chat-msg');
+  const cancelBtn = document.getElementById('btn-cancel-reply');
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      cancelReply();
+    });
+  }
+
+  // Global listeners for closing message dropdown
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#message-active-dropdown') && !e.target.closest('.message-chevron-btn')) {
+      closeMessageActionDropdown();
+    }
+  });
+
+  const messagesScroll = document.getElementById('chat-messages-scroll');
+  if (messagesScroll) {
+    messagesScroll.addEventListener('scroll', () => {
+      closeMessageActionDropdown();
+    }, { passive: true });
+  }
 
   if (!input || !sendBtn) return;
 
@@ -781,49 +1146,90 @@ function setupChatInputs() {
     if (!text) return;
 
     const thread = zapChatData.conversas.threads.find(t => t.id === activeThreadId);
-    if (!thread) return;
+    if (!thread || thread.isBlocked) return;
 
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-    // Add user message
-    thread.messages.push({
-      sender: 'user',
+    // Add agent message (outgoing from dashboard)
+    const newMsg = {
+      sender: 'agent',
       text: text,
       time: timeStr
-    });
+    };
+
+    if (activeReply) {
+      newMsg.replyTo = {
+        index: activeReply.index,
+        sender: activeReply.sender,
+        senderName: activeReply.senderName,
+        text: activeReply.text
+      };
+    }
+
+    thread.messages.push(newMsg);
     thread.snippet = text;
     thread.time = timeStr;
 
     input.value = '';
+    cancelReply();
     renderActiveChat();
     renderThreadList();
 
-    // Trigger auto reply
-    setTimeout(() => {
-      const replies = [
-        'Perfeito! Registrei sua solicitação no sistema. Algo mais em que posso ajudar?',
-        'Entendi perfeitamente. Estou consultando os detalhes e já te respondo com a melhor solução!',
-        'Excelente! Um link exclusivo com as condições especiais foi gerado para você.',
-        'Obrigado pelo retorno! Se desejar falar com um especialista humano, posso transferir agora.'
-      ];
-      const randomReply = replies[Math.floor(Math.random() * replies.length)];
+    // Trigger auto reply if thread has AI attending OR simulate client response
+    if (thread.isAiAttending) {
+      setTimeout(() => {
+        const replies = [
+          'Perfeito! Registrei sua solicitação no sistema. Algo mais em que posso ajudar?',
+          'Entendi perfeitamente. Estou consultando os detalhes e já te respondo com a melhor solução!',
+          'Excelente! Um link exclusivo com as condições especiais foi gerado para você.',
+          'Obrigado pelo retorno! Se desejar falar com um especialista humano, posso transferir agora.'
+        ];
+        const randomReply = replies[Math.floor(Math.random() * replies.length)];
 
-      thread.messages.push({
-        sender: 'bot',
-        text: randomReply,
-        time: timeStr
-      });
-      thread.snippet = randomReply;
-      renderActiveChat();
-      renderThreadList();
-    }, 1100);
+        thread.messages.push({
+          sender: 'bot',
+          text: randomReply,
+          time: timeStr
+        });
+        thread.snippet = randomReply;
+        renderActiveChat();
+        renderThreadList();
+      }, 1100);
+    } else {
+      setTimeout(() => {
+        const clientReplies = [
+          'Perfeito, muito obrigado pelas informações!',
+          'Entendi perfeitamente, vou verificar isso agora.',
+          'Excelente atendimento, agradeço pelo retorno rápido!',
+          'Combinado! Se eu precisar de mais alguma coisa, te aviso por aqui.'
+        ];
+        const randomReply = clientReplies[Math.floor(Math.random() * clientReplies.length)];
+
+        const replyTime = new Date();
+        const replyTimeStr = `${String(replyTime.getHours()).padStart(2, '0')}:${String(replyTime.getMinutes()).padStart(2, '0')}`;
+
+        thread.messages.push({
+          sender: 'user',
+          text: randomReply,
+          time: replyTimeStr
+        });
+        thread.snippet = randomReply;
+        thread.time = replyTimeStr;
+        renderActiveChat();
+        renderThreadList();
+      }, 1500);
+    }
   };
 
   sendBtn.addEventListener('click', sendMessage);
 
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Escape') {
+      if (activeReply) {
+        cancelReply();
+      }
+    } else if (e.key === 'Enter') {
       e.preventDefault();
       sendMessage();
     }
@@ -1389,13 +1795,12 @@ function setupTransferModal() {
       currentTransferThread.assignedAgent = destObj.name;
       if (destObj.type === 'ai') {
         currentTransferThread.isAiAttending = true;
+        currentTransferThread.attendanceState = 'ai';
         currentTransferThread.attendingStatus = 'IA atendendo';
-      } else if (destObj.type === 'human') {
-        currentTransferThread.isAiAttending = false;
-        currentTransferThread.attendingStatus = `${destObj.name} atendendo`;
       } else {
         currentTransferThread.isAiAttending = false;
-        currentTransferThread.attendingStatus = `Fila ${destObj.department || 'Geral'}`;
+        currentTransferThread.attendanceState = 'waiting_human';
+        currentTransferThread.attendingStatus = 'Aguardando humano';
       }
 
       // 4. Update snippet in thread list
@@ -1659,9 +2064,15 @@ function exportChatTranscript(thread) {
       let senderName = 'Desconhecido';
       if (msg.sender === 'user') senderName = thread.name;
       else if (msg.sender === 'bot') senderName = `${thread.assignedAgent || 'IA'} (ZapChat)`;
+      else if (msg.sender === 'agent') senderName = 'Você (Atendente)';
       else if (msg.sender === 'system') senderName = '[EVENTO DO SISTEMA]';
 
-      content += `[${msg.time || '00:00'}] ${senderName}:\n${msg.text}\n\n`;
+      let replyQuoteText = '';
+      if (msg.replyTo) {
+        replyQuoteText = ` [Em resposta a ${msg.replyTo.senderName}: "${msg.replyTo.text.replace(/\n/g, ' ')}"]\n`;
+      }
+
+      content += `[${msg.time || '00:00'}] ${senderName}:${replyQuoteText}\n${msg.text}\n\n`;
     });
   } else {
     content += `Nenhuma mensagem registrada nesta conversa.\n\n`;

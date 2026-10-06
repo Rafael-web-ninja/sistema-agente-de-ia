@@ -71,6 +71,10 @@ export function openEditAgent(agentId = 'pedro') {
   // Default to perfil tab
   switchAgentInternalTab('perfil');
 
+  // Load and apply agent segment settings
+  const agentSegment = agent?.segment || 'Clínica / Saúde';
+  applySegmentConfiguration(agentSegment, !SEGMENT_CONFIGS[agentSegment], null, false);
+
   if (window.lucide) {
     window.lucide.createIcons();
   }
@@ -116,6 +120,884 @@ function setupInternalTabs() {
       switchAgentInternalTab(tabId);
     });
   });
+}
+
+// ========================================================
+// SEGMENTOS DE NEGÓCIO: CONFIGURAÇÕES ESPECÍFICAS E GERAIS
+// ========================================================
+export const SEGMENT_CONFIGS = {
+  'Clínica / Saúde': {
+    name: 'Clínica / Saúde',
+    icon: 'activity',
+    category: 'Saúde & Bem-estar',
+    rolePlaceholder: 'Atendente virtual da Clínica Médica',
+    primaryObjective: 'agendamentos',
+    secondaryActions: ['duvidas', 'contatos', 'qualificar', 'transferir'],
+    style: {
+      tone: 'natural',
+      length: 'medias',
+      conversation: 'natural',
+      emojis: 'moderado'
+    },
+    clientFields: ['nome', 'telefone', 'melhor-horario', 'tipo-atendimento'],
+    bannerText: 'Boas práticas de Saúde & Clínicas aplicadas automaticamente',
+    rulesTitle: 'Boas Práticas: Clínica / Saúde',
+    rulesSubtitle: 'Regras de conduta, biossegurança e privacidade médica',
+    rules: [
+      {
+        title: 'Sigilo & Privacidade Médica',
+        desc: 'O agente nunca divulga diagnósticos ou dados clínicos sensíveis a terceiros (em conformidade com a LGPD e CFM).'
+      },
+      {
+        title: 'Triagem de Urgência',
+        desc: 'Casos graves de emergência ou dor aguda são imediatamente orientados a procurar o pronto-atendimento hospitalar.'
+      },
+      {
+        title: 'Confirmação de Agendamentos',
+        desc: 'Confirmação de especialidade, médico responsável, convênio aceito e lembretes com antecedência.'
+      },
+      {
+        title: 'Transparência de Valores',
+        desc: 'Informação clara sobre formas de pagamento e recibos para reembolso do plano de saúde.'
+      }
+    ]
+  },
+  'Advocacia / Jurídico': {
+    name: 'Advocacia / Jurídico',
+    icon: 'scale',
+    category: 'Serviços Jurídicos',
+    rolePlaceholder: 'Assistente virtual do Escritório de Advocacia',
+    primaryObjective: 'atendimento',
+    secondaryActions: ['duvidas', 'contatos', 'qualificar', 'transferir'],
+    style: {
+      tone: 'profissional',
+      length: 'medias',
+      conversation: 'consultiva',
+      emojis: 'nao-usar'
+    },
+    clientFields: ['nome', 'telefone', 'email', 'tipo-atendimento'],
+    bannerText: 'Boas práticas do setor Jurídico aplicadas automaticamente',
+    rulesTitle: 'Boas Práticas: Advocacia / Jurídico',
+    rulesSubtitle: 'Diretrizes éticas e de conformidade com o Código de Ética da OAB',
+    rules: [
+      {
+        title: 'Sigilo Profissional Absoluto',
+        desc: 'Proteção irrestrita de dados e detalhes de casos em conformidade com o Estatuto da OAB e LGPD.'
+      },
+      {
+        title: 'Vedação à Consulta Gratuita Indevida',
+        desc: 'O agente orienta sobre áreas de atuação e triagem, agendando consulta formal sem emitir pareceres jurídicos definitivos.'
+      },
+      {
+        title: 'Coleta Prévia de Dados Processuais',
+        desc: 'Identificação de número de processo ou área do direito (Trabalhista, Cível, Família, Tributário) para direcionamento ao advogado certo.'
+      },
+      {
+        title: 'Comunicação Sóbria e Formal',
+        desc: 'Postura respeitosa, sem termos sensacionalistas e em estrito cumprimento às normas de publicidade da OAB.'
+      }
+    ]
+  },
+  'Imobiliária / Corretores': {
+    name: 'Imobiliária / Corretores',
+    icon: 'home',
+    category: 'Mercado Imobiliário',
+    rolePlaceholder: 'Corretor digital e atendimento imobiliário',
+    primaryObjective: 'oportunidades',
+    secondaryActions: ['duvidas', 'contatos', 'qualificar', 'servicos', 'transferir'],
+    style: {
+      tone: 'profissional',
+      length: 'medias',
+      conversation: 'consultiva',
+      emojis: 'moderado'
+    },
+    clientFields: ['nome', 'telefone', 'email', 'melhor-horario'],
+    bannerText: 'Boas práticas do setor Imobiliário aplicadas automaticamente',
+    rulesTitle: 'Boas Práticas: Imobiliária / Corretores',
+    rulesSubtitle: 'Regras de qualificação de leads e agendamento de visitas',
+    rules: [
+      {
+        title: 'Qualificação de Perfil & Orçamento',
+        desc: 'Identificação do interesse (compra ou locação), faixa de valor e bairros de preferência.'
+      },
+      {
+        title: 'Agendamento Ágil de Visitas',
+        desc: 'Facilitação de datas e horários para visitas presenciais ou tours virtuais com o corretor responsável.'
+      },
+      {
+        title: 'Envio Estruturado de Fichas de Imóveis',
+        desc: 'Apresentação de links, fotos e detalhes de condomínio/IPTU de forma organizada no WhatsApp.'
+      },
+      {
+        title: 'Transferência Rápida para o Corretor',
+        desc: 'Notificação imediata ao corretor parceiro quando o cliente demonstrar intenção firme de visita ou proposta.'
+      }
+    ]
+  },
+  'Academia / Fitness': {
+    name: 'Academia / Fitness',
+    icon: 'dumbbell',
+    category: 'Fitness & Bem-estar',
+    rolePlaceholder: 'Consultor de matrículas e suporte da Academia',
+    primaryObjective: 'vendas',
+    secondaryActions: ['duvidas', 'contatos', 'qualificar', 'servicos'],
+    style: {
+      tone: 'descontraido',
+      length: 'curtas',
+      conversation: 'direta',
+      emojis: 'a-vontade'
+    },
+    clientFields: ['nome', 'telefone', 'melhor-horario'],
+    bannerText: 'Boas práticas de Academias e Fitness aplicadas automaticamente',
+    rulesTitle: 'Boas Práticas: Academia / Fitness',
+    rulesSubtitle: 'Estratégias de conversão para aulas experimentais e planos',
+    rules: [
+      {
+        title: 'Incentivo à Aula Experimental',
+        desc: 'Foco em convidar o interessado para conhecer a estrutura e realizar uma aula experimental gratuita.'
+      },
+      {
+        title: 'Apresentação Transparente de Planos',
+        desc: 'Explicação clara sobre planos mensais, anuais, horários de pico e taxas de matrícula.'
+      },
+      {
+        title: 'Tom Enérgico e Motivador',
+        desc: 'Comunicação calorosa, incentivando o bem-estar e hábitos saudáveis.'
+      },
+      {
+        title: 'Recuperação de Mensalistas',
+        desc: 'Fluxo para tirar dúvidas de renovação, cancelamento e horários de funcionamento em feriados.'
+      }
+    ]
+  },
+  'Odontologia / Dentistas': {
+    name: 'Odontologia / Dentistas',
+    icon: 'smile',
+    category: 'Saúde Bucal',
+    rolePlaceholder: 'Atendente virtual da Clínica Odontológica',
+    primaryObjective: 'agendamentos',
+    secondaryActions: ['duvidas', 'contatos', 'qualificar', 'transferir'],
+    style: {
+      tone: 'natural',
+      length: 'medias',
+      conversation: 'natural',
+      emojis: 'moderado'
+    },
+    clientFields: ['nome', 'telefone', 'melhor-horario', 'tipo-atendimento'],
+    bannerText: 'Boas práticas de Odontologia aplicadas automaticamente',
+    rulesTitle: 'Boas Práticas: Odontologia',
+    rulesSubtitle: 'Normas de biossegurança, acolhimento e confirmação de consultas',
+    rules: [
+      {
+        title: 'Acolhimento de Urgências Odontológicas',
+        desc: 'Identificação rápida de dores agudas ou traumas para encaixe imediato com o cirurgião-dentista.'
+      },
+      {
+        title: 'Triagem de Especialidades',
+        desc: 'Diferenciação de procedimentos (Ortodontia, Implantes, Clareamento, Endodontia, Limpeza).'
+      },
+      {
+        title: 'Orientações Pré e Pós-Consulta',
+        desc: 'Lembretes de jejum, repouso ou documentação necessária antes de procedimentos clínicos.'
+      },
+      {
+        title: 'Conformidade com o CRO/CFO',
+        desc: 'Cumprimento das normas de publicidade odontológica e sigilo de prontuários.'
+      }
+    ]
+  },
+  'Estética & Beleza': {
+    name: 'Estética & Beleza',
+    icon: 'sparkles',
+    category: 'Beleza & Estética',
+    rolePlaceholder: 'Atendente e consultora da Clínica de Estética',
+    primaryObjective: 'agendamentos',
+    secondaryActions: ['duvidas', 'contatos', 'qualificar', 'servicos'],
+    style: {
+      tone: 'natural',
+      length: 'curtas',
+      conversation: 'consultiva',
+      emojis: 'moderado'
+    },
+    clientFields: ['nome', 'telefone', 'melhor-horario', 'tipo-atendimento'],
+    bannerText: 'Boas práticas de Estética e Beleza aplicadas automaticamente',
+    rulesTitle: 'Boas Práticas: Estética & Beleza',
+    rulesSubtitle: 'Atendimento consultivo e agendamento de avaliações',
+    rules: [
+      {
+        title: 'Avaliação Personalizada',
+        desc: 'Foco no agendamento de avaliação inicial para indicação do protocolo de tratamento mais adequado.'
+      },
+      {
+        title: 'Orientações Pré-Procedimento',
+        desc: 'Envio de cuidados prévios (como exposição solar e uso de dermocosméticos antes de lasers ou peelings).'
+      },
+      {
+        title: 'Política de Cancelamento e Reagendamento',
+        desc: 'Informação gentil sobre antecedência mínima para reagendamentos sem cobrança de taxa de reserva.'
+      },
+      {
+        title: 'Pós-Venda e Acompanhamento',
+        desc: 'Mensagens pós-procedimento para checar o bem-estar e a satisfação da cliente.'
+      }
+    ]
+  },
+  'E-commerce / Varejo': {
+    name: 'E-commerce / Varejo',
+    icon: 'shopping-bag',
+    category: 'Comércio & Varejo',
+    rolePlaceholder: 'Assistente de vendas e rastreio da Loja Virtual',
+    primaryObjective: 'vendas',
+    secondaryActions: ['duvidas', 'contatos', 'servicos', 'transferir'],
+    style: {
+      tone: 'natural',
+      length: 'curtas',
+      conversation: 'direta',
+      emojis: 'moderado'
+    },
+    clientFields: ['nome', 'telefone', 'email'],
+    bannerText: 'Boas práticas de E-commerce aplicadas automaticamente',
+    rulesTitle: 'Boas Práticas: E-commerce / Varejo',
+    rulesSubtitle: 'Conversão de carrinho, rastreamento e suporte a pedidos',
+    rules: [
+      {
+        title: 'Agilidade em Dúvidas de Produtos',
+        desc: 'Respostas rápidas sobre tamanhos, especificações, prazos de entrega e frete.'
+      },
+      {
+        title: 'Recuperação de Vendas e Boletos',
+        desc: 'Lembretes não invasivos com link direto para pagamento via PIX ou cartão.'
+      },
+      {
+        title: 'Status e Rastreio de Pedidos',
+        desc: 'Facilidade para o cliente consultar o código de rastreio e previsão de entrega.'
+      },
+      {
+        title: 'Trocas e Devoluções Descomplicadas',
+        desc: 'Direcionamento claro sobre políticas de troca dentro do Código de Defesa do Consumidor.'
+      }
+    ]
+  },
+  'Educação / Cursos': {
+    name: 'Educação / Cursos',
+    icon: 'graduation-cap',
+    category: 'Educação & Treinamentos',
+    rolePlaceholder: 'Consultor educacional e suporte ao aluno',
+    primaryObjective: 'vendas',
+    secondaryActions: ['duvidas', 'contatos', 'qualificar', 'servicos'],
+    style: {
+      tone: 'natural',
+      length: 'medias',
+      conversation: 'consultiva',
+      emojis: 'moderado'
+    },
+    clientFields: ['nome', 'telefone', 'email', 'melhor-horario'],
+    bannerText: 'Boas práticas de Educação aplicadas automaticamente',
+    rulesTitle: 'Boas Práticas: Educação / Cursos',
+    rulesSubtitle: 'Orientação pedagógica e conversão de matrículas',
+    rules: [
+      {
+        title: 'Ementa e Metodologia Claras',
+        desc: 'Apresentação detalhada da grade curricular, certificações e corpo docente.'
+      },
+      {
+        title: 'Qualificação de Nível do Aluno',
+        desc: 'Identificação de objetivos de carreira ou testes de nivelamento para cursos de idiomas/tecnologia.'
+      },
+      {
+        title: 'Condições de Bolsas e Parcelamento',
+        desc: 'Informação transparente sobre opções de pagamento, bolsas de estudo e início das aulas.'
+      },
+      {
+        title: 'Canal de Dúvidas Acadêmicas',
+        desc: 'Direcionamento de alunos matriculados para a secretaria acadêmica ou portal do aluno.'
+      }
+    ]
+  },
+  'Restaurante / Gastronomia': {
+    name: 'Restaurante / Gastronomia',
+    icon: 'utensils',
+    category: 'Alimentação & Bares',
+    rolePlaceholder: 'Atendente de pedidos e reservas do Restaurante',
+    primaryObjective: 'atendimento',
+    secondaryActions: ['duvidas', 'contatos', 'servicos'],
+    style: {
+      tone: 'descontraido',
+      length: 'curtas',
+      conversation: 'direta',
+      emojis: 'a-vontade'
+    },
+    clientFields: ['nome', 'telefone', 'melhor-horario'],
+    bannerText: 'Boas práticas de Gastronomia aplicadas automaticamente',
+    rulesTitle: 'Boas Práticas: Restaurante / Gastronomia',
+    rulesSubtitle: 'Cardápio digital, reservas e controle de pedidos',
+    rules: [
+      {
+        title: 'Cardápio e Preços Atualizados',
+        desc: 'Envio imediato do cardápio digital ou link de delivery com opções do dia.'
+      },
+      {
+        title: 'Confirmação Rápida de Reservas',
+        desc: 'Registro de número de pessoas, data, horário e restrições alimentares.'
+      },
+      {
+        title: 'Alergênicos e Observações',
+        desc: 'Atenção especial a perguntas sobre pratos vegetarianos, sem glúten ou lactose.'
+      },
+      {
+        title: 'Tempo de Espera e Taxa de Entrega',
+        desc: 'Informação clara do tempo estimado de entrega para evitar reclamações.'
+      }
+    ]
+  },
+  'Tecnologia & SaaS': {
+    name: 'Tecnologia & SaaS',
+    icon: 'cpu',
+    category: 'Softwares & Startups',
+    rolePlaceholder: 'Especialista em produto e suporte técnico',
+    primaryObjective: 'oportunidades',
+    secondaryActions: ['duvidas', 'contatos', 'qualificar', 'transferir'],
+    style: {
+      tone: 'natural',
+      length: 'medias',
+      conversation: 'consultiva',
+      emojis: 'moderado'
+    },
+    clientFields: ['nome', 'telefone', 'email', 'tipo-atendimento'],
+    bannerText: 'Boas práticas de Tecnologia & SaaS aplicadas automaticamente',
+    rulesTitle: 'Boas Práticas: Tecnologia & SaaS',
+    rulesSubtitle: 'Qualificação técnica, demonstrações e suporte eficiente',
+    rules: [
+      {
+        title: 'Agendamento de Demonstração (Demo)',
+        desc: 'Qualificação do tamanho da equipe e agendamento de demonstração personalizada com especialista.'
+      },
+      {
+        title: 'Compatibilidade e Integrações',
+        desc: 'Respostas claras sobre APIs, requisitos de sistema e migração de dados.'
+      },
+      {
+        title: 'Período de Teste Gratuito',
+        desc: 'Orientações de ativação de trial sem atrito e envio de links de documentação.'
+      },
+      {
+        title: 'Escalonamento de Bugs Críticos',
+        desc: 'Transferência imediata para o time de suporte N2 quando houver relatos de indisponibilidade.'
+      }
+    ]
+  },
+  'Concessionária / Veículos': {
+    name: 'Concessionária / Veículos',
+    icon: 'car',
+    category: 'Automotivo',
+    rolePlaceholder: 'Consultor de vendas de veículos e test drive',
+    primaryObjective: 'oportunidades',
+    secondaryActions: ['duvidas', 'contatos', 'qualificar', 'transferir'],
+    style: {
+      tone: 'profissional',
+      length: 'medias',
+      conversation: 'consultiva',
+      emojis: 'moderado'
+    },
+    clientFields: ['nome', 'telefone', 'email', 'melhor-horario'],
+    bannerText: 'Boas práticas Automotivas aplicadas automaticamente',
+    rulesTitle: 'Boas Práticas: Concessionária / Veículos',
+    rulesSubtitle: 'Agendamento de test-drive e simulação de financiamento',
+    rules: [
+      {
+        title: 'Agendamento de Test Drive',
+        desc: 'Confirmação do modelo desejado, disponibilidade de data e documentação (CNH).'
+      },
+      {
+        title: 'Simulação Preliminar de Financiamento',
+        desc: 'Coleta de dados para estimativa de entrada e parcelas sem compromisso.'
+      },
+      {
+        title: 'Avaliação de Veículo Usado na Troca',
+        desc: 'Solicitação de ano, modelo, quilometragem e fotos para pré-avaliação da equipe.'
+      },
+      {
+        title: 'Direcionamento ao Vendedor Responsável',
+        desc: 'Conexão rápida com o consultor de salão quando o cliente tiver interesse imediato.'
+      }
+    ]
+  },
+  'Pet Shop / Veterinária': {
+    name: 'Pet Shop / Veterinária',
+    icon: 'heart',
+    category: 'Pets & Veterinária',
+    rolePlaceholder: 'Atendente da Clínica Veterinária e Pet Shop',
+    primaryObjective: 'agendamentos',
+    secondaryActions: ['duvidas', 'contatos', 'qualificar', 'transferir'],
+    style: {
+      tone: 'natural',
+      length: 'curtas',
+      conversation: 'natural',
+      emojis: 'a-vontade'
+    },
+    clientFields: ['nome', 'telefone', 'melhor-horario', 'tipo-atendimento'],
+    bannerText: 'Boas práticas Veterinárias e Pet aplicadas automaticamente',
+    rulesTitle: 'Boas Práticas: Pet Shop / Veterinária',
+    rulesSubtitle: 'Bem-estar animal, agendamento de consultas e banho/tosa',
+    rules: [
+      {
+        title: 'Triagem de Saúde Animal',
+        desc: 'Identificação de sintomas de urgência (intoxicação, vômitos severos) para atendimento emergencial imediato.'
+      },
+      {
+        title: 'Agendamento de Banho, Tosa e Vacinas',
+        desc: 'Controle de porte do pet, raça e horários disponíveis na agenda estética.'
+      },
+      {
+        title: 'Lembretes de Carteira de Vacinação',
+        desc: 'Notificações antecipadas de reforço anual de vacinas (V10, Antirrábica).'
+      },
+      {
+        title: 'Comunicação Carinhosa com Tutores',
+        desc: 'Empatia e atenção constante aos cuidados e preocupações dos tutores de pets.'
+      }
+    ]
+  }
+};
+
+export const GENERAL_SEGMENT_CONFIG = {
+  name: 'Geral / Personalizado',
+  icon: 'settings',
+  category: 'Geral',
+  rolePlaceholder: 'Atendente virtual inteligente',
+  primaryObjective: 'atendimento',
+  secondaryActions: ['duvidas', 'contatos', 'qualificar', 'transferir'],
+  style: {
+    tone: 'natural',
+    length: 'medias',
+    conversation: 'natural',
+    emojis: 'moderado'
+  },
+  clientFields: ['nome', 'telefone', 'email'],
+  bannerText: 'Boas práticas gerais aplicadas automaticamente',
+  rulesTitle: 'Boas Práticas Gerais de Atendimento',
+  rulesSubtitle: 'Diretrizes padrão de excelência, clareza e segurança',
+  rules: [
+    {
+      title: 'Atendimento Ágil e Cortês',
+      desc: 'Responda prontamente mantendo clareza, empatia e profissionalismo em todas as mensagens.'
+    },
+    {
+      title: 'Privacidade e LGPD',
+      desc: 'Trate os dados dos clientes com confidencialidade e solicite apenas informações necessárias para o atendimento.'
+    },
+    {
+      title: 'Identificação Precisa de Necessidades',
+      desc: 'Responda com base na base de conhecimento e certifique-se de solucionar a dúvida antes de concluir o contato.'
+    },
+    {
+      title: 'Transição Suave para Humanos',
+      desc: 'Em situações complexas, negociações sensíveis ou solicitações fora do escopo, ofereça encaminhamento imediato para a equipe humana.'
+    }
+  ]
+};
+
+export function applySegmentConfiguration(segmentName, isCustom = false, updateLiveSummary = null, showToastNotification = true) {
+  const cleanName = (segmentName || '').trim();
+  const isKnown = !isCustom && Boolean(SEGMENT_CONFIGS[cleanName]);
+  const config = isKnown ? SEGMENT_CONFIGS[cleanName] : GENERAL_SEGMENT_CONFIG;
+
+  const segmentInput = document.getElementById('input-agent-segment');
+  if (segmentInput && segmentInput.value !== cleanName) {
+    segmentInput.value = cleanName;
+  }
+  if (segmentInput) {
+    segmentInput.setAttribute('data-selected-segment', cleanName);
+  }
+
+  // Suggestion Chips
+  const segmentChips = document.querySelectorAll('.segment-chip[data-segment]');
+  segmentChips.forEach(chip => {
+    const chipSegment = chip.getAttribute('data-segment');
+    if (chipSegment === cleanName) {
+      chip.classList.add('active');
+    } else {
+      chip.classList.remove('active');
+    }
+  });
+
+  // Banner
+  const bannerTextEl = document.querySelector('.segment-rules-banner-left span');
+  if (bannerTextEl) {
+    bannerTextEl.textContent = isKnown
+      ? config.bannerText
+      : `Boas práticas gerais aplicadas para "${cleanName}"`;
+  }
+
+  // Rules Modal
+  const titleModal = document.getElementById('segment-rules-modal-title');
+  if (titleModal) {
+    titleModal.textContent = isKnown
+      ? config.rulesTitle
+      : `Boas Práticas Gerais: ${cleanName}`;
+  }
+
+  const subtitleModal = document.getElementById('segment-rules-modal-subtitle');
+  if (subtitleModal) {
+    subtitleModal.textContent = isKnown
+      ? config.rulesSubtitle
+      : 'Regras gerais de conduta, segurança e atendimento excelente';
+  }
+
+  const modalBody = document.getElementById('segment-rules-modal-body');
+  if (modalBody && config.rules) {
+    modalBody.innerHTML = `
+      <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px;">
+        ${config.rules.map(rule => `
+          <li style="display:flex; gap:10px; align-items:flex-start; font-size:13px; color:var(--text-secondary);">
+            <i data-lucide="check" style="width:16px;height:16px;color:#00A868;flex-shrink:0;margin-top:2px;"></i>
+            <span><strong>${rule.title}:</strong> ${rule.desc}</span>
+          </li>
+        `).join('')}
+      </ul>
+    `;
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  // Role input placeholder
+  const roleInput = document.getElementById('input-agent-role');
+  if (roleInput) {
+    roleInput.placeholder = isKnown
+      ? `Ex: ${config.rolePlaceholder}`
+      : `Ex: Atendente virtual especialista em ${cleanName}`;
+  }
+
+  // Objective Principal
+  if (config.primaryObjective) {
+    document.querySelectorAll('#objective-primary-options .btn-objective-item').forEach(btn => {
+      const obj = btn.getAttribute('data-objective');
+      btn.classList.toggle('active', obj === config.primaryObjective);
+    });
+  }
+
+  // Objective Secondary
+  if (config.secondaryActions) {
+    document.querySelectorAll('#objective-secondary-options .btn-objective-subitem').forEach(btn => {
+      const act = btn.getAttribute('data-action');
+      const shouldBeActive = config.secondaryActions.includes(act);
+      btn.classList.toggle('active', shouldBeActive);
+      const checkIcon = btn.querySelector('.subitem-check');
+      if (checkIcon) {
+        checkIcon.setAttribute('data-lucide', shouldBeActive ? 'check-square' : 'square');
+      }
+    });
+  }
+
+  // Style Options
+  if (config.style) {
+    document.querySelectorAll('[data-style-group="tom-de-voz"] .btn-style-option').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-value') === config.style.tone);
+    });
+    document.querySelectorAll('[data-style-group="tamanho-respostas"] .btn-style-option').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-value') === config.style.length);
+    });
+    document.querySelectorAll('[data-style-group="forma-conversar"] .btn-style-option').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-value') === config.style.conversation);
+    });
+    document.querySelectorAll('[data-style-group="emojis"] .btn-style-option').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-value') === config.style.emojis);
+    });
+  }
+
+  // Client Data Chips
+  if (config.clientFields) {
+    document.querySelectorAll('#client-data-chips-container .btn-data-chip[data-field]').forEach(chip => {
+      const field = chip.getAttribute('data-field');
+      const isActive = config.clientFields.includes(field);
+      chip.classList.toggle('active', isActive);
+      const checkIcon = chip.querySelector('.chip-check-icon');
+      if (checkIcon) {
+        checkIcon.setAttribute('data-lucide', isActive ? 'check-square' : 'square');
+      }
+    });
+  }
+
+  // Re-run summary
+  if (typeof updateLiveSummary === 'function') {
+    updateLiveSummary();
+  }
+
+  if (window.lucide) window.lucide.createIcons();
+
+  if (showToastNotification) {
+    if (isKnown) {
+      showToast(`Segmento alterado para ${config.name}! Boas práticas específicas aplicadas.`);
+    } else {
+      showToast(`Segmento personalizado "${cleanName}" selecionado! Configurações gerais aplicadas.`);
+    }
+  }
+}
+
+export function setupSegmentCombobox(updateLiveSummary) {
+  const wrap = document.getElementById('segment-input-wrap');
+  const segmentInput = document.getElementById('input-agent-segment');
+  const menu = document.getElementById('segment-dropdown-menu');
+  const chevron = document.getElementById('segment-chevron-icon');
+  const segmentChips = document.querySelectorAll('.segment-chip[data-segment]');
+
+  if (!wrap || !segmentInput || !menu) return;
+
+  let highlightedIndex = -1;
+
+  function normalize(str) {
+    return String(str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function openDropdown() {
+    wrap.classList.add('open');
+    menu.classList.add('show');
+    const card = wrap.closest('.agent-profile-card');
+    if (card) card.style.zIndex = '50';
+    const topGrid = wrap.closest('.agent-profile-top-grid');
+    if (topGrid) topGrid.style.zIndex = '50';
+    highlightedIndex = -1;
+    renderOptions(segmentInput.value.trim());
+  }
+
+  function closeDropdown() {
+    wrap.classList.remove('open');
+    menu.classList.remove('show');
+    const card = wrap.closest('.agent-profile-card');
+    if (card) card.style.removeProperty('z-index');
+    const topGrid = wrap.closest('.agent-profile-top-grid');
+    if (topGrid) topGrid.style.removeProperty('z-index');
+    highlightedIndex = -1;
+  }
+
+  function renderOptions(searchText) {
+    const rawSearch = searchText ? searchText.trim() : '';
+    const normSearch = normalize(rawSearch);
+    const knownKeys = Object.keys(SEGMENT_CONFIGS);
+
+    // If search text matches the currently selected segment completely, show all segments
+    const currentSelected = segmentInput.getAttribute('data-selected-segment') || segmentInput.value.trim();
+    const isShowingAll = !normSearch || normSearch === normalize(currentSelected);
+
+    const filtered = knownKeys.filter(k => {
+      if (isShowingAll) return true;
+      const config = SEGMENT_CONFIGS[k];
+      return normalize(k).includes(normSearch) || normalize(config.category).includes(normSearch);
+    });
+
+    const hasExactMatch = knownKeys.some(k => normalize(k) === normSearch);
+    const currentVal = segmentInput.value.trim();
+
+    let html = '';
+
+    if (filtered.length > 0) {
+      html += `
+        <div class="segment-dropdown-header">
+          <span>${isShowingAll ? 'Segmentos recomendados' : 'Resultados da busca'}</span>
+          <span>${filtered.length}</span>
+        </div>
+      `;
+
+      filtered.forEach(key => {
+        const item = SEGMENT_CONFIGS[key];
+        const isSelected = key.toLowerCase() === currentVal.toLowerCase();
+        html += `
+          <button type="button" class="segment-dropdown-item ${isSelected ? 'selected' : ''}" data-segment-name="${escapeHtml(key)}">
+            <div class="segment-item-left">
+              <div class="segment-item-icon-wrap">
+                <i data-lucide="${item.icon || 'tag'}"></i>
+              </div>
+              <div class="segment-item-text-wrap">
+                <div class="segment-item-name">${escapeHtml(item.name)}</div>
+                <div class="segment-item-category">${escapeHtml(item.category)}</div>
+              </div>
+            </div>
+            ${isSelected ? '<i data-lucide="check" class="segment-item-check"></i>' : ''}
+          </button>
+        `;
+      });
+    } else {
+      html += `
+        <div class="segment-dropdown-empty">
+          Nenhum segmento padrão encontrado para "<strong>${escapeHtml(rawSearch)}</strong>"
+        </div>
+      `;
+    }
+
+    // Always offer custom option if the user typed text that is not an exact match to a known segment!
+    if (rawSearch && !hasExactMatch) {
+      html += `
+        <button type="button" class="segment-dropdown-item custom-segment-option" data-custom-segment="${escapeHtml(rawSearch)}">
+          <div class="segment-item-left">
+            <div class="segment-item-icon-wrap custom-icon">
+              <i data-lucide="sparkles"></i>
+            </div>
+            <div class="segment-item-text-wrap">
+              <div class="segment-item-name">Usar "<strong>${escapeHtml(rawSearch)}</strong>" como segmento personalizado</div>
+              <div class="segment-item-category">Aplica configurações gerais de atendimento</div>
+            </div>
+          </div>
+          <span class="segment-badge-custom">Personalizado</span>
+        </button>
+      `;
+    }
+
+    menu.innerHTML = html;
+
+    // Attach click events
+    menu.querySelectorAll('.segment-dropdown-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (item.classList.contains('custom-segment-option')) {
+          const customVal = item.getAttribute('data-custom-segment');
+          selectSegment(customVal, true);
+        } else {
+          const segName = item.getAttribute('data-segment-name');
+          selectSegment(segName, false);
+        }
+      });
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  function selectSegment(val, isCustom) {
+    segmentInput.value = val;
+    segmentInput.setAttribute('data-selected-segment', val);
+    applySegmentConfiguration(val, isCustom, updateLiveSummary, true);
+    closeDropdown();
+  }
+
+  function updateHighlighted() {
+    const items = menu.querySelectorAll('.segment-dropdown-item');
+    items.forEach((item, index) => {
+      item.classList.toggle('highlighted', index === highlightedIndex);
+      if (index === highlightedIndex) {
+        item.scrollIntoView({ block: 'nearest' });
+      }
+    });
+  }
+
+  // Input events
+  segmentInput.addEventListener('focus', () => {
+    openDropdown();
+  });
+
+  segmentInput.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!wrap.classList.contains('open')) {
+      openDropdown();
+    }
+  });
+
+  segmentInput.addEventListener('input', () => {
+    if (!wrap.classList.contains('open')) {
+      wrap.classList.add('open');
+      menu.classList.add('show');
+    }
+    highlightedIndex = -1;
+    renderOptions(segmentInput.value);
+  });
+
+  segmentInput.addEventListener('keydown', (e) => {
+    if (!wrap.classList.contains('open')) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+        e.preventDefault();
+        openDropdown();
+        return;
+      }
+    }
+
+    const items = menu.querySelectorAll('.segment-dropdown-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (items.length === 0) return;
+      highlightedIndex = (highlightedIndex + 1) % items.length;
+      updateHighlighted();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (items.length === 0) return;
+      highlightedIndex = (highlightedIndex - 1 + items.length) % items.length;
+      updateHighlighted();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (highlightedIndex >= 0 && items[highlightedIndex]) {
+        items[highlightedIndex].click();
+      } else {
+        const typed = segmentInput.value.trim();
+        if (typed) {
+          const knownKey = Object.keys(SEGMENT_CONFIGS).find(k => normalize(k) === normalize(typed));
+          if (knownKey) {
+            selectSegment(knownKey, false);
+          } else {
+            selectSegment(typed, true);
+          }
+        }
+      }
+    } else if (e.key === 'Escape') {
+      closeDropdown();
+    }
+  });
+
+  // Chevron toggle
+  if (chevron) {
+    chevron.style.cursor = 'pointer';
+    chevron.style.pointerEvents = 'auto';
+    chevron.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (wrap.classList.contains('open')) {
+        closeDropdown();
+      } else {
+        segmentInput.focus();
+        openDropdown();
+      }
+    });
+  }
+
+  // Quick suggestion chips click
+  segmentChips.forEach(chip => {
+    chip.addEventListener('click', (e) => {
+      e.preventDefault();
+      const val = chip.getAttribute('data-segment');
+      selectSegment(val, false);
+    });
+  });
+
+  // Close when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) {
+      closeDropdown();
+    }
+  });
+
+  // Rules modal trigger & close handlers
+  const btnViewRules = document.getElementById('btn-view-segment-rules');
+  const modalRules = document.getElementById('modal-segment-rules');
+  if (btnViewRules && modalRules) {
+    btnViewRules.addEventListener('click', (e) => {
+      e.preventDefault();
+      modalRules.classList.add('open', 'active');
+    });
+  }
+
+  // Initial apply for default value on load
+  const initialVal = segmentInput.value.trim() || 'Clínica / Saúde';
+  segmentInput.setAttribute('data-selected-segment', initialVal);
+  applySegmentConfiguration(initialVal, !SEGMENT_CONFIGS[initialVal], updateLiveSummary, false);
 }
 
 /**
@@ -181,31 +1063,9 @@ function setupBehaviorConfiguration() {
     nameInputEl.addEventListener('input', updateLiveSummary);
   }
 
-  // 2. Segment Suggestions Chips & Input
-  const segmentChips = document.querySelectorAll('.segment-chip[data-segment]');
-  const segmentInput = document.getElementById('input-agent-segment');
-  segmentChips.forEach(chip => {
-    chip.addEventListener('click', (e) => {
-      e.preventDefault();
-      segmentChips.forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      const val = chip.getAttribute('data-segment');
-      if (segmentInput) segmentInput.value = val;
-      const titleModal = document.getElementById('segment-rules-modal-title');
-      if (titleModal) titleModal.textContent = `Boas Práticas: ${val}`;
-      showToast(`Segmento alterado para ${val}! Boas práticas aplicadas.`);
-    });
-  });
+  // 2. Searchable Segment Combobox with Free Custom Creation & Quick Suggestions
+  setupSegmentCombobox(updateLiveSummary);
 
-  // Segment Rules Modal Trigger
-  const btnViewRules = document.getElementById('btn-view-segment-rules');
-  const modalRules = document.getElementById('modal-segment-rules');
-  if (btnViewRules && modalRules) {
-    btnViewRules.addEventListener('click', (e) => {
-      e.preventDefault();
-      modalRules.classList.add('open');
-    });
-  }
 
   // 3. Objective Primary Buttons (Single select)
   const primaryBtns = document.querySelectorAll('#objective-primary-options .btn-objective-item');
@@ -384,14 +1244,17 @@ function setupSaveAction() {
       e.preventDefault();
       const inputName = document.getElementById('input-agent-name');
       const inputRole = document.getElementById('input-agent-role');
+      const inputSegment = document.getElementById('input-agent-segment');
       const newName = inputName ? inputName.value.trim() : '';
       const newRole = inputRole ? inputRole.value.trim() : '';
+      const newSegment = inputSegment ? inputSegment.value.trim() : '';
 
       // Update data item in zapChatData
       const agent = zapChatData.agentes.list.find(a => a.id === currentAgentId);
       if (agent) {
         if (newName) agent.name = newName;
         if (newRole) agent.role = newRole;
+        if (newSegment) agent.segment = newSegment;
       }
 
       // Save agent schedule preferences

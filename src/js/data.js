@@ -455,6 +455,7 @@ export const zapChatData = {
         assignedAgent: 'Pedro',
         attendingStatus: 'IA atendendo',
         isAiAttending: true,
+        attendanceState: 'ai',
         tags: ['Interessado - Pro', 'Lead quente'],
         status: 'Em atendimento',
         aiSummary: [
@@ -504,6 +505,7 @@ export const zapChatData = {
         assignedAgent: 'Pedro',
         attendingStatus: 'IA atendendo',
         isAiAttending: true,
+        attendanceState: 'ai',
         tags: ['CRM', 'RD Station'],
         status: 'Em atendimento',
         aiSummary: [
@@ -512,7 +514,17 @@ export const zapChatData = {
         ],
         messages: [
           { sender: 'user', text: 'Bom dia! Vocês integram com o RD Station?', time: '10:35' },
-          { sender: 'bot', text: 'Olá Rodrigo! Sim, integramos nativamente com o RD Station para envio de leads e eventos de conversão.', time: '10:35' }
+          {
+            sender: 'bot',
+            text: 'Olá Rodrigo! Sim, integramos nativamente com o RD Station para envio de leads e eventos de conversão.',
+            time: '10:35',
+            replyTo: {
+              index: 0,
+              sender: 'user',
+              senderName: 'Rodrigo Almeida',
+              text: 'Bom dia! Vocês integram com o RD Station?'
+            }
+          }
         ]
       },
       {
@@ -533,6 +545,7 @@ export const zapChatData = {
         assignedAgent: 'Pedro',
         attendingStatus: 'IA atendendo',
         isAiAttending: true,
+        attendanceState: 'ai',
         tags: ['Setup', 'Prazo'],
         status: 'Em atendimento',
         aiSummary: ['Dúvida sobre prazo de ativação do agente no WhatsApp.'],
@@ -557,6 +570,9 @@ export const zapChatData = {
         origin: 'WhatsApp Business',
         originTime: '10:15 • Hoje',
         assignedAgent: 'Pedro',
+        attendingStatus: 'IA atendendo',
+        isAiAttending: true,
+        attendanceState: 'ai',
         tags: ['Pós-venda', 'Rastreio'],
         status: 'Resolvido',
         aiSummary: [
@@ -584,6 +600,9 @@ export const zapChatData = {
         origin: 'Widget do Site',
         originTime: '09:50 • Hoje',
         assignedAgent: 'Suporte IA',
+        attendingStatus: 'IA atendendo',
+        isAiAttending: true,
+        attendanceState: 'ai',
         tags: ['Setup', 'Ajuda Técnica'],
         status: 'Em andamento',
         aiSummary: ['Dúvidas no upload do documento da base de conhecimento.'],
@@ -607,7 +626,10 @@ export const zapChatData = {
         email: 'beatriz.lima@email.com',
         origin: 'Instagram',
         originTime: '09:40 • Hoje',
-        assignedAgent: 'Atendente Loja',
+        assignedAgent: 'Lucas Ferreira',
+        attendingStatus: 'Humano atendendo',
+        isAiAttending: false,
+        attendanceState: 'human',
         tags: ['Promoção', 'Cupom'],
         status: 'Resolvido',
         aiSummary: ['Cupom BEMVINDO10 enviado e utilizado.'],
@@ -632,6 +654,9 @@ export const zapChatData = {
         origin: 'WhatsApp Business',
         originTime: '09:15 • Hoje',
         assignedAgent: 'Juliana Silva',
+        attendingStatus: 'Aguardando humano',
+        isAiAttending: false,
+        attendanceState: 'waiting_human',
         tags: ['Retenção', 'Cancelamento'],
         status: 'Em atendimento',
         aiSummary: ['Cliente solicitou cancelamento. Transmitido para equipe de retenção com proposta especial.'],
@@ -656,6 +681,9 @@ export const zapChatData = {
         origin: 'Widget do site',
         originTime: 'Ontem às 17:40',
         assignedAgent: 'Pedro',
+        attendingStatus: 'IA atendendo',
+        isAiAttending: true,
+        attendanceState: 'ai',
         tags: ['Suporte', 'Resolvido'],
         status: 'Resolvido',
         aiSummary: ['Problema com redefinição de senha solucionado.'],
