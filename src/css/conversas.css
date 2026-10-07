@@ -12,6 +12,15 @@
   min-height: 480px;
   margin-bottom: 0;
   position: relative;
+  transition: grid-template-columns 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.conversas-simplified-layout.chat-profile-closed {
+  grid-template-columns: 310px 1fr !important;
+}
+
+.conversas-simplified-layout.chat-profile-closed .chat-profile-column {
+  display: none !important;
 }
 
 .mobile-chat-back-btn {
@@ -957,6 +966,12 @@
   white-space: nowrap;
 }
 
+.chat-channel-badge svg {
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .chat-channel-badge.whatsapp {
   background-color: #EAF8F1;
   color: #00A868;
@@ -1127,12 +1142,35 @@
   border-color: var(--primary-border);
 }
 
+.chat-header-actions .btn-action-round.active {
+  background: rgba(0, 168, 104, 0.12);
+  color: var(--primary);
+  border-color: rgba(0, 168, 104, 0.35);
+}
+
+.chat-header-actions .btn-action-round.active:hover {
+  background: rgba(0, 168, 104, 0.2);
+  color: var(--primary-hover);
+  border-color: var(--primary);
+}
+
 /* Dark mode tweaks for chat header actions */
 [data-theme="dark"] .chat-header-actions .btn-secondary,
 [data-theme="dark"] .chat-header-actions .btn-action-round {
   background: rgba(255, 255, 255, 0.05);
   border-color: var(--border);
   color: var(--text-secondary);
+}
+
+[data-theme="dark"] .chat-header-actions .btn-action-round.active {
+  background: rgba(0, 168, 104, 0.2);
+  color: #34D399;
+  border-color: rgba(0, 168, 104, 0.45);
+}
+
+[data-theme="dark"] .chat-header-actions .btn-action-round.active:hover {
+  background: rgba(0, 168, 104, 0.28);
+  color: #6EE7B7;
 }
 
 [data-theme="dark"] .chat-header-actions .btn-secondary:hover,

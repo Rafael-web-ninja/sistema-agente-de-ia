@@ -10,7 +10,41 @@ import { initSuporteView, renderTickets } from './suporte.js';
 import { initEditAgentView, openEditAgent, openTestAiModal } from './editar-agente.js';
 import { initNotifications } from './notifications.js';
 
+export function renderInstagramIcons(root = document) {
+  if (!root || !root.querySelectorAll) return;
+  const elements = root.querySelectorAll('i[data-lucide="instagram"], [data-lucide="instagram"]');
+  elements.forEach(el => {
+    const width = el.style.width || el.getAttribute('width') || '16px';
+    const height = el.style.height || el.getAttribute('height') || '16px';
+    const color = el.style.color || 'currentColor';
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('width', width.replace('px', ''));
+    svg.setAttribute('height', height.replace('px', ''));
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', color);
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    if (el.className) svg.className.baseVal = el.className;
+    svg.innerHTML = '<rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>';
+    el.replaceWith(svg);
+  });
+}
+
+function setupLucideInstagramSupport() {
+  if (typeof window !== 'undefined' && window.lucide && !window.lucide._instagramPatched) {
+    const origCreateIcons = window.lucide.createIcons.bind(window.lucide);
+    window.lucide.createIcons = function(options) {
+      renderInstagramIcons(options?.root || document);
+      return origCreateIcons(options);
+    };
+    window.lucide._instagramPatched = true;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  setupLucideInstagramSupport();
   initTheme();
   initNavigation();
   initDashboard();

@@ -213,6 +213,49 @@ export function openChatThread(threadId) {
   }
 }
 
+let isChatProfileOpen = (typeof window !== 'undefined' ? window.innerWidth > 1360 : true);
+
+export function applyChatProfileState() {
+  const layout = document.querySelector('.conversas-simplified-layout');
+  const btn = document.getElementById('btn-toggle-chat-profile');
+  if (!layout) return;
+
+  const isWide = window.innerWidth > 1360;
+  if (isWide) {
+    if (isChatProfileOpen) {
+      layout.classList.remove('chat-profile-closed');
+      layout.classList.remove('chat-profile-open');
+    } else {
+      layout.classList.add('chat-profile-closed');
+      layout.classList.remove('chat-profile-open');
+    }
+  } else {
+    layout.classList.remove('chat-profile-closed');
+    if (isChatProfileOpen) {
+      layout.classList.add('chat-profile-open');
+    } else {
+      layout.classList.remove('chat-profile-open');
+    }
+  }
+
+  if (btn) {
+    btn.classList.toggle('active', isChatProfileOpen);
+    btn.title = isChatProfileOpen ? 'Ocultar detalhes do contato' : 'Ver detalhes do contato';
+    btn.setAttribute('aria-label', isChatProfileOpen ? 'Ocultar detalhes do contato' : 'Ver detalhes do contato');
+    btn.setAttribute('aria-expanded', isChatProfileOpen ? 'true' : 'false');
+  }
+}
+
+export function toggleChatProfile() {
+  isChatProfileOpen = !isChatProfileOpen;
+  applyChatProfileState();
+}
+
+export function closeChatProfile() {
+  isChatProfileOpen = false;
+  applyChatProfileState();
+}
+
 export function initChatView() {
   renderThreadList();
   renderActiveChat();
@@ -228,11 +271,23 @@ export function initChatView() {
   });
 
   document.getElementById('btn-close-chat-profile')?.addEventListener('click', () => {
-    const layout = document.querySelector('.conversas-simplified-layout');
-    if (layout) {
-      layout.classList.remove('chat-profile-open');
+    closeChatProfile();
+  });
+
+  window.addEventListener('resize', () => {
+    applyChatProfileState();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const layout = document.querySelector('.conversas-simplified-layout');
+      if (layout && layout.classList.contains('chat-profile-open')) {
+        closeChatProfile();
+      }
     }
   });
+
+  applyChatProfileState();
 }
 
 export function getChannelBadgeHtml(channel) {
@@ -247,14 +302,14 @@ export function getChannelBadgeHtml(channel) {
   if (channel === 'Instagram') {
     return `
       <span class="chat-channel-badge instagram">
-        <i data-lucide="instagram" style="width: 12px; height: 12px;"></i>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
         <span>Instagram</span>
       </span>
     `;
   }
   return `
     <span class="chat-channel-badge widget">
-      <i data-lucide="message-square" style="width: 12px; height: 12px;"></i>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <span>Widget</span>
     </span>
   `;
@@ -713,7 +768,7 @@ export function renderActiveChat() {
           <span>Encerrar</span>
         </button>
         <div class="chat-header-divider"></div>
-        <button class="btn-action-round chat-icon-btn" id="btn-toggle-chat-profile" title="Ver detalhes do contato" aria-label="Ver detalhes do contato">
+        <button class="btn-action-round chat-icon-btn ${isChatProfileOpen ? 'active' : ''}" id="btn-toggle-chat-profile" title="${isChatProfileOpen ? 'Ocultar detalhes do contato' : 'Ver detalhes do contato'}" aria-label="${isChatProfileOpen ? 'Ocultar detalhes do contato' : 'Ver detalhes do contato'}" aria-expanded="${isChatProfileOpen ? 'true' : 'false'}">
           <i data-lucide="info" style="width: 15px; height: 15px;"></i>
         </button>
       </div>
@@ -721,10 +776,7 @@ export function renderActiveChat() {
 
     // Toggle contact profile drawer handler
     header.querySelector('#btn-toggle-chat-profile')?.addEventListener('click', () => {
-      const layout = document.querySelector('.conversas-simplified-layout');
-      if (layout) {
-        layout.classList.toggle('chat-profile-open');
-      }
+      toggleChatProfile();
     });
 
     // Mobile back button handler
@@ -732,7 +784,7 @@ export function renderActiveChat() {
       const layout = document.querySelector('.conversas-simplified-layout');
       if (layout) {
         layout.classList.remove('in-active-chat');
-        layout.classList.remove('chat-profile-open');
+        closeChatProfile();
       }
     });
 
@@ -1013,10 +1065,6 @@ function renderRightColumnCards(thread) {
             <button type="button" class="contact-dropdown-item" id="btn-action-manage-tags">
               <i data-lucide="tag"></i>
               <span>Gerenciar etiquetas</span>
-            </button>
-            <button type="button" class="contact-dropdown-item" id="btn-action-view-crm">
-              <i data-lucide="external-link"></i>
-              <span>Ver cadastro no CRM</span>
             </button>
             <button type="button" class="contact-dropdown-item" id="btn-action-export-chat">
               <i data-lucide="download"></i>
@@ -1601,9 +1649,12 @@ export function openTransferModal(thread) {
 
   if (channelEl) {
     channelEl.className = `transfer-channel-pill ${(thread.channel || 'whatsapp').toLowerCase()}`;
-  }
-  if (channelLabelEl) {
-    channelLabelEl.textContent = thread.channel || 'WhatsApp';
+    const iconSvg = thread.channel === 'Instagram'
+      ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>'
+      : (thread.channel === 'Widget'
+        ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
+        : '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2z"/></svg>');
+    channelEl.innerHTML = `${iconSvg}<span id="transfer-contact-channel-label">${thread.channel || 'WhatsApp'}</span>`;
   }
 
   // 2. Reset Filter, Search and Inputs
@@ -1873,14 +1924,7 @@ function setupContactActions(thread) {
     openManageTagsModal(thread);
   });
 
-  // 5. Ver cadastro no CRM
-  document.getElementById('btn-action-view-crm')?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    dropdown?.classList.remove('show');
-    viewInCRM(thread);
-  });
-
-  // 6. Exportar histórico (.txt)
+  // 5. Exportar histórico (.txt)
   document.getElementById('btn-action-export-chat')?.addEventListener('click', (e) => {
     e.stopPropagation();
     dropdown?.classList.remove('show');
@@ -2002,41 +2046,6 @@ function renderManageTagsList(thread) {
       }
     });
   });
-}
-
-function viewInCRM(thread) {
-  // Check if lead already exists in zapChatData.leads.list
-  let lead = zapChatData.leads.list.find(l => 
-    l.id === thread.id || 
-    (l.email && thread.email && l.email.toLowerCase() === thread.email.toLowerCase()) ||
-    (l.phone && thread.phone && l.phone.replace(/\D/g, '') === thread.phone.replace(/\D/g, ''))
-  );
-
-  if (!lead) {
-    const nameParts = (thread.name || 'Contato').split(' ');
-    const initials = nameParts.length > 1 ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase() : nameParts[0].substring(0, 2).toUpperCase();
-    lead = {
-      id: thread.id,
-      name: thread.name,
-      initials: initials,
-      phone: thread.phone || '+55 11 98888-0000',
-      email: thread.email || 'contato@zapchat.com',
-      channel: thread.channel || 'WhatsApp',
-      status: thread.status || 'Novo',
-      statusKey: 'novo',
-      score: 85,
-      scoreLevel: 'Alto',
-      agentName: thread.assignedAgent || 'Pedro',
-      agentImg: thread.img,
-      lastContact: 'Agora',
-      tags: thread.tags || ['Conversa']
-    };
-    zapChatData.leads.list.unshift(lead);
-  }
-
-  // Switch to leads view
-  switchView('leads');
-  showToast(`Exibindo cadastro de ${thread.name} no CRM de Leads.`);
 }
 
 function exportChatTranscript(thread) {

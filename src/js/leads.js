@@ -97,6 +97,7 @@ let currentAssignFilter = 'all';
 let currentAssignSearch = '';
 let selectedAgentForAssign = null;
 let currentLeadForAssign = null;
+let currentLeadForView = null;
 let leadToDelete = null;
 
 export function initLeadsView() {
@@ -108,6 +109,7 @@ export function initLeadsView() {
   setupAssignAgentModal();
   setupEditLeadModal();
   setupDeleteLeadModal();
+  setupViewLeadModal();
 
   // Close dropdown on outside click
   document.addEventListener('click', (e) => {
@@ -241,13 +243,15 @@ export function renderSelectedLeadPanel(lead) {
   const panel = document.getElementById('lead-detail-panel');
   if (!panel || !lead) return;
 
+  panel.style.display = 'flex';
+
   panel.innerHTML = `
     <div class="lead-panel-top-bar">
       <span class="lead-panel-top-title">Lead selecionado</span>
       <button class="lead-panel-close-btn" id="btn-close-lead-panel" title="Fechar painel">✕</button>
     </div>
 
-    <div class="lead-panel-profile">
+    <div class="lead-panel-profile" id="lead-panel-profile-clickable" style="cursor: pointer;" title="Clique para ver ficha completa">
       <div class="lead-panel-avatar-lg">${lead.initials}</div>
       <div class="lead-panel-name-block">
         <div class="lead-panel-name-row">
@@ -256,13 +260,13 @@ export function renderSelectedLeadPanel(lead) {
         </div>
         <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-top: 2px;">
           <span>${lead.phone}</span>
-          <button class="btn-copy-mini" title="Copiar telefone" onclick="navigator.clipboard && navigator.clipboard.writeText('${lead.phone}')">
+          <button class="btn-copy-mini" title="Copiar telefone" onclick="event.stopPropagation(); navigator.clipboard && navigator.clipboard.writeText('${lead.phone}')">
             <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
           </button>
         </div>
         <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
           <span>${lead.email}</span>
-          <button class="btn-copy-mini" title="Copiar e-mail" onclick="navigator.clipboard && navigator.clipboard.writeText('${lead.email}')">
+          <button class="btn-copy-mini" title="Copiar e-mail" onclick="event.stopPropagation(); navigator.clipboard && navigator.clipboard.writeText('${lead.email}')">
             <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
           </button>
         </div>
@@ -309,6 +313,10 @@ export function renderSelectedLeadPanel(lead) {
         <i data-lucide="message-square" style="width: 15px; height: 15px;"></i>
         Abrir conversa
       </button>
+      <button class="btn btn-secondary" id="btn-view-lead-details-panel">
+        <i data-lucide="eye" style="width: 15px; height: 15px;"></i>
+        Ver detalhes completos
+      </button>
       <button class="btn btn-secondary" id="btn-assign-agent">
         <i data-lucide="user-plus" style="width: 15px; height: 15px;"></i>
         Atribuir agente
@@ -321,6 +329,22 @@ export function renderSelectedLeadPanel(lead) {
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
       panel.style.display = 'none';
+    });
+  }
+
+  // Profile click opens full details
+  const profileEl = panel.querySelector('#lead-panel-profile-clickable');
+  if (profileEl) {
+    profileEl.addEventListener('click', () => {
+      openViewLeadModal(lead);
+    });
+  }
+
+  // View details button
+  const viewDetailsBtn = panel.querySelector('#btn-view-lead-details-panel');
+  if (viewDetailsBtn) {
+    viewDetailsBtn.addEventListener('click', () => {
+      openViewLeadModal(lead);
     });
   }
 
@@ -774,14 +798,6 @@ export function toggleLeadActionDropdown(lead, btn) {
       <span>Editar Lead</span>
     </button>
     <div class="lead-dropdown-divider"></div>
-    <div class="lead-status-submenu-header">Alterar Status</div>
-    <div class="lead-status-options-grid">
-      <button type="button" class="btn-status-option ${lead.status === 'Novo' ? 'active' : ''}" data-status="Novo" data-key="novo">Novo</button>
-      <button type="button" class="btn-status-option ${lead.status === 'Em atendimento' ? 'active' : ''}" data-status="Em atendimento" data-key="atendimento">Em atend.</button>
-      <button type="button" class="btn-status-option ${lead.status === 'Qualificado' ? 'active' : ''}" data-status="Qualificado" data-key="qualificado">Qualificado</button>
-      <button type="button" class="btn-status-option ${lead.status === 'Fechado' ? 'active' : ''}" data-status="Fechado" data-key="fechado">Fechado</button>
-    </div>
-    <div class="lead-dropdown-divider"></div>
     <button type="button" class="lead-dropdown-item btn-action-copy-phone">
       <i data-lucide="phone"></i>
       <span>Copiar Telefone</span>
@@ -809,6 +825,7 @@ export function toggleLeadActionDropdown(lead, btn) {
     renderLeadsTable(currentDisplayedLeads);
     renderSelectedLeadPanel(lead);
     closeLeadActionDropdown();
+    openViewLeadModal(lead);
   });
 
   menu.querySelector('.btn-action-chat-lead').addEventListener('click', (e) => {
@@ -827,16 +844,6 @@ export function toggleLeadActionDropdown(lead, btn) {
     e.stopPropagation();
     closeLeadActionDropdown();
     openEditLeadModal(lead);
-  });
-
-  menu.querySelectorAll('.btn-status-option').forEach(statusBtn => {
-    statusBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const newStatus = statusBtn.getAttribute('data-status');
-      const newKey = statusBtn.getAttribute('data-key');
-      changeLeadStatus(lead, newStatus, newKey);
-      closeLeadActionDropdown();
-    });
   });
 
   menu.querySelector('.btn-action-copy-phone').addEventListener('click', (e) => {
@@ -870,10 +877,11 @@ export function toggleLeadActionDropdown(lead, btn) {
   // Append dropdown to row action wrapper
   btn.parentElement.appendChild(menu);
 
-  // Position detection: if close to bottom of viewport, flip upwards
+  // Position detection: only flip upwards if really near the bottom and plenty of room above
   const rect = btn.getBoundingClientRect();
   const spaceBelow = window.innerHeight - rect.bottom;
-  if (spaceBelow < 290) {
+  const spaceAbove = rect.top;
+  if (spaceBelow < 250 && spaceAbove > 320) {
     menu.classList.add('open-upwards');
   }
 
@@ -1011,6 +1019,181 @@ function setupDeleteLeadModal() {
     closeAllModals();
     showToast(`Lead "${deletedName}" removido com sucesso!`);
   });
+}
+
+export function openViewLeadModal(lead) {
+  if (!lead) return;
+  currentLeadForView = lead;
+
+  const modal = document.getElementById('modal-view-lead');
+  if (!modal) return;
+
+  // Avatar & Basic info
+  const avatarEl = document.getElementById('view-lead-avatar');
+  if (avatarEl) avatarEl.textContent = lead.initials || lead.name?.slice(0, 2).toUpperCase() || 'LD';
+
+  const nameEl = document.getElementById('view-lead-name');
+  if (nameEl) nameEl.textContent = lead.name;
+
+  const statusPillEl = document.getElementById('view-lead-status-pill');
+  if (statusPillEl) {
+    statusPillEl.textContent = lead.status;
+    statusPillEl.className = `lead-status-pill ${lead.statusKey || getStatusKey(lead.status)}`;
+  }
+
+  const channelBadgeEl = document.getElementById('view-lead-channel-badge');
+  if (channelBadgeEl) {
+    channelBadgeEl.innerHTML = getChannelBadge(lead.channel);
+  }
+
+  const scoreBadgeEl = document.getElementById('view-lead-score-badge');
+  if (scoreBadgeEl) {
+    scoreBadgeEl.innerHTML = `<i data-lucide="award" style="width: 13px; height: 13px;"></i> Score: ${lead.score || 72} (${lead.scoreLevel || 'Médio'})`;
+  }
+
+  // Contact Info
+  const phoneEl = document.getElementById('view-lead-phone');
+  if (phoneEl) phoneEl.textContent = lead.phone || 'Não informado';
+
+  const emailEl = document.getElementById('view-lead-email');
+  if (emailEl) emailEl.textContent = lead.email || 'Não informado';
+
+  const channelTextEl = document.getElementById('view-lead-channel-text');
+  if (channelTextEl) channelTextEl.textContent = lead.channel || 'WhatsApp';
+
+  const lastContactEl = document.getElementById('view-lead-last-contact');
+  if (lastContactEl) lastContactEl.textContent = lead.lastContact || 'Recente';
+
+  // Agent & Qualification
+  const agentImgEl = document.getElementById('view-lead-agent-img');
+  if (agentImgEl) {
+    agentImgEl.src = lead.agentImg || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80';
+    agentImgEl.alt = lead.agentName || 'Agente';
+  }
+
+  const agentNameEl = document.getElementById('view-lead-agent-name');
+  if (agentNameEl) agentNameEl.textContent = lead.agentName || 'Juliana Santos';
+
+  const interestEl = document.getElementById('view-lead-interest');
+  if (interestEl) interestEl.textContent = lead.primaryInterest || lead.interests?.[0] || 'Plano Pro';
+
+  const nextActionTextEl = document.getElementById('view-lead-next-action-text');
+  if (nextActionTextEl) nextActionTextEl.textContent = lead.nextAction?.text || 'Follow-up por WhatsApp';
+
+  const nextActionTimeEl = document.getElementById('view-lead-next-action-time');
+  if (nextActionTimeEl) nextActionTimeEl.textContent = lead.nextAction?.time || 'Hoje às 14:00';
+
+  // Status buttons inside modal
+  const statusButtonsContainer = document.getElementById('view-lead-status-buttons');
+  if (statusButtonsContainer) {
+    statusButtonsContainer.querySelectorAll('.btn-status-tab').forEach(btn => {
+      const status = btn.getAttribute('data-status');
+      btn.classList.toggle('active', status === lead.status);
+    });
+  }
+
+  // Notes
+  const notesEl = document.getElementById('view-lead-notes');
+  if (notesEl) {
+    notesEl.textContent = lead.notes || 'Nenhuma observação cadastrada no momento.';
+  }
+
+  if (window.lucide) window.lucide.createIcons();
+  openModal('modal-view-lead');
+}
+
+function setupViewLeadModal() {
+  const modal = document.getElementById('modal-view-lead');
+  if (!modal) return;
+
+  // Open Chat from modal
+  const openChatBtn = document.getElementById('btn-view-lead-open-chat');
+  if (openChatBtn) {
+    openChatBtn.addEventListener('click', () => {
+      if (!currentLeadForView) return;
+      const targetLead = currentLeadForView;
+      closeAllModals();
+      openChatForLead(targetLead);
+    });
+  }
+
+  // Assign Agent from modal
+  const assignAgentBtn = document.getElementById('btn-view-lead-assign-agent');
+  if (assignAgentBtn) {
+    assignAgentBtn.addEventListener('click', () => {
+      if (!currentLeadForView) return;
+      const targetLead = currentLeadForView;
+      closeAllModals();
+      openAssignAgentModal(targetLead);
+    });
+  }
+
+  // Edit Lead from modal
+  const editLeadBtn = document.getElementById('btn-view-lead-edit');
+  if (editLeadBtn) {
+    editLeadBtn.addEventListener('click', () => {
+      if (!currentLeadForView) return;
+      const targetLead = currentLeadForView;
+      closeAllModals();
+      openEditLeadModal(targetLead);
+    });
+  }
+
+  // Delete Lead from modal
+  const deleteLeadBtn = document.getElementById('btn-view-lead-delete');
+  if (deleteLeadBtn) {
+    deleteLeadBtn.addEventListener('click', () => {
+      if (!currentLeadForView) return;
+      const targetLead = currentLeadForView;
+      closeAllModals();
+      openDeleteLeadModal(targetLead);
+    });
+  }
+
+  // Copy phone
+  const copyPhoneBtn = document.getElementById('btn-view-lead-copy-phone');
+  if (copyPhoneBtn) {
+    copyPhoneBtn.addEventListener('click', () => {
+      if (currentLeadForView?.phone && navigator.clipboard) {
+        navigator.clipboard.writeText(currentLeadForView.phone);
+        showToast(`Telefone copiado: ${currentLeadForView.phone}`);
+      }
+    });
+  }
+
+  // Copy email
+  const copyEmailBtn = document.getElementById('btn-view-lead-copy-email');
+  if (copyEmailBtn) {
+    copyEmailBtn.addEventListener('click', () => {
+      if (currentLeadForView?.email && navigator.clipboard) {
+        navigator.clipboard.writeText(currentLeadForView.email);
+        showToast(`E-mail copiado: ${currentLeadForView.email}`);
+      }
+    });
+  }
+
+  // Status options inside modal
+  const statusButtonsContainer = document.getElementById('view-lead-status-buttons');
+  if (statusButtonsContainer) {
+    statusButtonsContainer.querySelectorAll('.btn-status-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!currentLeadForView) return;
+        const newStatus = btn.getAttribute('data-status');
+        const newKey = btn.getAttribute('data-key');
+        changeLeadStatus(currentLeadForView, newStatus, newKey);
+
+        statusButtonsContainer.querySelectorAll('.btn-status-tab').forEach(b => {
+          b.classList.toggle('active', b === btn);
+        });
+
+        const statusPillEl = document.getElementById('view-lead-status-pill');
+        if (statusPillEl) {
+          statusPillEl.textContent = newStatus;
+          statusPillEl.className = `lead-status-pill ${newKey}`;
+        }
+      });
+    });
+  }
 }
 
 export function openChatForLead(lead) {
