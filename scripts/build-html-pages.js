@@ -155,14 +155,14 @@ function getChannelBadgeHtml(channel) {
   if (channel === 'Instagram') {
     return `
       <span class="chat-channel-badge instagram">
-        <i data-lucide="instagram" style="width: 12px; height: 12px;"></i>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
         <span>Instagram</span>
       </span>
     `;
   }
   return `
     <span class="chat-channel-badge widget">
-      <i data-lucide="message-square" style="width: 12px; height: 12px;"></i>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <span>Widget</span>
     </span>
   `;
@@ -1452,10 +1452,6 @@ const profileCardHtml = `
           <i data-lucide="tag"></i>
           <span>Gerenciar etiquetas</span>
         </button>
-        <button type="button" class="contact-dropdown-item" id="btn-action-view-crm">
-          <i data-lucide="external-link"></i>
-          <span>Ver cadastro no CRM</span>
-        </button>
         <button type="button" class="contact-dropdown-item" id="btn-action-export-chat">
           <i data-lucide="download"></i>
           <span>Exportar conversa (.txt)</span>
@@ -1595,16 +1591,41 @@ const conversasScript = `
       });
     });
 
-    // Toggle contact profile drawer
+    // Toggle contact profile drawer / sidebar
     const toggleProfileBtn = document.getElementById('btn-toggle-chat-profile');
     const closeProfileBtn = document.getElementById('btn-close-chat-profile');
     const layout = document.querySelector('.conversas-simplified-layout');
+    let isProfileOpen = typeof window !== 'undefined' ? window.innerWidth > 1360 : true;
+
+    function updateProfileState() {
+      if (!layout) return;
+      const isWide = window.innerWidth > 1360;
+      if (isWide) {
+        layout.classList.toggle('chat-profile-closed', !isProfileOpen);
+        layout.classList.remove('chat-profile-open');
+      } else {
+        layout.classList.remove('chat-profile-closed');
+        layout.classList.toggle('chat-profile-open', isProfileOpen);
+      }
+      if (toggleProfileBtn) {
+        toggleProfileBtn.classList.toggle('active', isProfileOpen);
+        toggleProfileBtn.title = isProfileOpen ? 'Ocultar detalhes do contato' : 'Ver detalhes do contato';
+      }
+    }
+
     if (toggleProfileBtn && layout) {
-      toggleProfileBtn.addEventListener('click', () => layout.classList.toggle('chat-profile-open'));
+      toggleProfileBtn.addEventListener('click', () => {
+        isProfileOpen = !isProfileOpen;
+        updateProfileState();
+      });
     }
     if (closeProfileBtn && layout) {
-      closeProfileBtn.addEventListener('click', () => layout.classList.remove('chat-profile-open'));
+      closeProfileBtn.addEventListener('click', () => {
+        isProfileOpen = false;
+        updateProfileState();
+      });
     }
+    updateProfileState();
 
     // Filter State
     const filterState = {
@@ -2049,13 +2070,7 @@ const conversasScript = `
       }
     });
 
-    // 5. View in CRM
-    document.getElementById('btn-action-view-crm')?.addEventListener('click', () => {
-      contactDropdown?.classList.remove('show');
-      window.location.href = 'leads.html';
-    });
-
-    // 6. Export chat .txt
+    // 5. Export chat .txt
     document.getElementById('btn-action-export-chat')?.addEventListener('click', () => {
       contactDropdown?.classList.remove('show');
       const t = getCurrentThread();
@@ -2442,6 +2457,9 @@ const leadsRowsHtml = leadsList.map((lead, idx) => {
           <a href="conversas.html" class="lead-action-btn" title="Abrir conversa" style="text-decoration:none;">
             <i data-lucide="message-square" style="width: 14px; height: 14px;"></i>
           </a>
+          <button type="button" class="lead-action-btn btn-view-lead-modal-row" title="Ver detalhes" data-lead-id="${lead.id}">
+            <i data-lucide="eye" style="width: 14px; height: 14px;"></i>
+          </button>
         </div>
       </td>
     </tr>
@@ -2456,7 +2474,7 @@ const leadDetailHtml = `
     <button class="lead-panel-close-btn" id="btn-close-lead-panel" title="Fechar painel">✕</button>
   </div>
 
-  <div class="lead-panel-profile">
+  <div class="lead-panel-profile" id="lead-panel-profile-clickable" style="cursor: pointer;" title="Clique para ver ficha completa">
     <div class="lead-panel-avatar-lg">${activeLead.initials}</div>
     <div class="lead-panel-name-block">
       <div class="lead-panel-name-row">
@@ -2518,6 +2536,10 @@ const leadDetailHtml = `
       <i data-lucide="message-square" style="width: 15px; height: 15px;"></i>
       Abrir conversa
     </a>
+    <button class="btn btn-secondary" id="btn-view-lead-details-panel">
+      <i data-lucide="eye" style="width: 15px; height: 15px;"></i>
+      Ver detalhes completos
+    </button>
     <button class="btn btn-secondary" id="btn-assign-agent">
       <i data-lucide="user-plus" style="width: 15px; height: 15px;"></i>
       Atribuir agente
@@ -2542,6 +2564,41 @@ const leadsScript = `
     let selectedAgent = availableAgents[0];
     const rows = document.querySelectorAll('#leads-table-body tr');
 
+    function openLeadDetailsModal(lead) {
+      if (!lead) return;
+      const modal = document.getElementById('modal-view-lead');
+      if (!modal) return;
+
+      const av = document.getElementById('view-lead-avatar');
+      if (av) av.textContent = lead.initials;
+      const nm = document.getElementById('view-lead-name');
+      if (nm) nm.textContent = lead.name;
+      const st = document.getElementById('view-lead-status-pill');
+      if (st) {
+        st.textContent = lead.status;
+        st.className = 'lead-status-pill ' + (lead.statusKey || 'novo');
+      }
+      const ph = document.getElementById('view-lead-phone');
+      if (ph) ph.textContent = lead.phone;
+      const em = document.getElementById('view-lead-email');
+      if (em) em.textContent = lead.email;
+      const ch = document.getElementById('view-lead-channel-text');
+      if (ch) ch.textContent = lead.channel;
+      const lc = document.getElementById('view-lead-last-contact');
+      if (lc) lc.textContent = lead.lastContact;
+      const ag = document.getElementById('view-lead-agent-name');
+      if (ag) ag.textContent = lead.agentName;
+      const agImg = document.getElementById('view-lead-agent-img');
+      if (agImg) agImg.src = lead.agentImg;
+      const it = document.getElementById('view-lead-interest');
+      if (it) it.textContent = lead.primaryInterest || 'Plano Pro';
+      const nt = document.getElementById('view-lead-notes');
+      if (nt) nt.textContent = lead.notes || 'Nenhuma observação cadastrada no momento.';
+
+      modal.classList.add('open');
+      if (window.lucide) window.lucide.createIcons();
+    }
+
     rows.forEach(row => {
       row.addEventListener('click', () => {
         const id = row.getAttribute('data-lead-id');
@@ -2564,6 +2621,29 @@ const leadsScript = `
         }
       });
     });
+
+    document.querySelectorAll('.btn-view-lead-modal-row').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-lead-id');
+        const l = leadsData.find(x => x.id === id);
+        if (l) openLeadDetailsModal(l);
+      });
+    });
+
+    const btnPanelDetails = document.getElementById('btn-view-lead-details-panel');
+    if (btnPanelDetails) {
+      btnPanelDetails.addEventListener('click', () => {
+        openLeadDetailsModal(currentSelectedLead);
+      });
+    }
+
+    const clickableProfile = document.getElementById('lead-panel-profile-clickable');
+    if (clickableProfile) {
+      clickableProfile.addEventListener('click', () => {
+        openLeadDetailsModal(currentSelectedLead);
+      });
+    }
 
     const closeBtn = document.getElementById('btn-close-lead-panel');
     if (closeBtn) {

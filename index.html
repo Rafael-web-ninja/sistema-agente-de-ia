@@ -1429,7 +1429,7 @@
                       <div class="agent-channel-card">
                         <div class="agent-channel-card-left">
                           <div class="agent-channel-icon-wrap" style="background:#FDE8E8; color:#E1306C;">
-                            <i data-lucide="instagram" style="width:20px;height:20px;"></i>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
                           </div>
                           <div>
                             <div class="agent-channel-title">Instagram Direct</div>
@@ -1853,7 +1853,7 @@
                         <span>WhatsApp</span>
                       </button>
                       <button type="button" class="chat-filter-chip" data-filter-type="channel" data-filter-val="Instagram">
-                        <i data-lucide="instagram" style="width: 12px; height: 12px; color: #E1306C;"></i>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#E1306C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
                         <span>Instagram</span>
                       </button>
                       <button type="button" class="chat-filter-chip" data-filter-type="channel" data-filter-val="Widget">
@@ -2758,6 +2758,165 @@
           <button type="submit" class="btn btn-primary">Criar agente</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- 2.0 Modal Ver Detalhes do Lead -->
+  <div class="modal-backdrop" id="modal-view-lead">
+    <div class="modal-dialog modal-view-lead-dialog">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="view-lead-header-icon">
+            <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 16px;">Detalhes do Lead</h3>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">Ficha cadastral completa, histórico e ações rápidas</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="modal-body view-lead-modal-body">
+        <!-- Lead Top Profile Banner -->
+        <div class="view-lead-banner">
+          <div class="view-lead-avatar" id="view-lead-avatar">AM</div>
+          <div class="view-lead-header-info">
+            <div class="view-lead-name-row">
+              <h3 id="view-lead-name" class="view-lead-name">Amanda Moreira</h3>
+              <span id="view-lead-status-pill" class="lead-status-pill atendimento">Em atendimento</span>
+            </div>
+            <div class="view-lead-badges-row">
+              <span id="view-lead-channel-badge" class="view-lead-channel-badge">
+                <i data-lucide="instagram" style="width: 13px; height: 13px;"></i> Instagram
+              </span>
+              <span id="view-lead-score-badge" class="view-lead-score-badge">
+                <i data-lucide="award" style="width: 13px; height: 13px;"></i> Score: 58 (Médio)
+              </span>
+            </div>
+          </div>
+          <div class="view-lead-header-actions">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-view-lead-open-chat">
+              <i data-lucide="message-square" style="width: 14px; height: 14px;"></i>
+              <span>Abrir conversa</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-view-lead-assign-agent">
+              <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
+              <span>Atribuir agente</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-view-lead-edit">
+              <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i>
+              <span>Editar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Detail Cards Grid -->
+        <div class="view-lead-cards-grid">
+          <!-- Card 1: Contato & Identificação -->
+          <div class="view-lead-card">
+            <div class="view-lead-card-header">
+              <i data-lucide="user" style="width: 15px; height: 15px; color: var(--primary);"></i>
+              <span>Dados de Contato</span>
+            </div>
+            <div class="view-lead-info-list">
+              <div class="view-lead-info-item">
+                <span class="info-label">Telefone / WhatsApp</span>
+                <div class="info-value-with-copy">
+                  <span id="view-lead-phone">+55 11 97654-3210</span>
+                  <button type="button" class="btn-copy-mini" id="btn-view-lead-copy-phone" title="Copiar telefone">
+                    <i data-lucide="copy" style="width: 13px; height: 13px;"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="view-lead-info-item">
+                <span class="info-label">E-mail</span>
+                <div class="info-value-with-copy">
+                  <span id="view-lead-email">amanda.moreira@email.com</span>
+                  <button type="button" class="btn-copy-mini" id="btn-view-lead-copy-email" title="Copiar e-mail">
+                    <i data-lucide="copy" style="width: 13px; height: 13px;"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="view-lead-info-item">
+                <span class="info-label">Canal de Origem</span>
+                <span id="view-lead-channel-text" class="info-value">Instagram</span>
+              </div>
+              <div class="view-lead-info-item">
+                <span class="info-label">Último Contato</span>
+                <span id="view-lead-last-contact" class="info-value">15 min atrás</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Atendimento & Qualificação -->
+          <div class="view-lead-card">
+            <div class="view-lead-card-header">
+              <i data-lucide="briefcase" style="width: 15px; height: 15px; color: var(--primary);"></i>
+              <span>Atendimento & Qualificação</span>
+            </div>
+            <div class="view-lead-info-list">
+              <div class="view-lead-info-item">
+                <span class="info-label">Responsável Atual</span>
+                <div class="info-value-agent" id="view-lead-agent-box">
+                  <img id="view-lead-agent-img" src="" alt="Agente" class="view-lead-agent-img">
+                  <span id="view-lead-agent-name" class="info-value">Felipe Costa</span>
+                </div>
+              </div>
+              <div class="view-lead-info-item">
+                <span class="info-label">Interesse Principal</span>
+                <span id="view-lead-interest" class="info-value">Plano Business</span>
+              </div>
+              <div class="view-lead-info-item">
+                <span class="info-label">Próxima Ação</span>
+                <div class="view-lead-next-action-box">
+                  <span id="view-lead-next-action-text" class="next-action-text">Enviar demonstração gravada</span>
+                  <span id="view-lead-next-action-time" class="next-action-time">Amanhã às 10:00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Alterar Status Rápido -->
+        <div class="view-lead-card view-lead-status-section">
+          <div class="view-lead-card-header">
+            <i data-lucide="activity" style="width: 15px; height: 15px; color: var(--primary);"></i>
+            <span>Alterar Status do Lead</span>
+          </div>
+          <div class="view-lead-status-buttons" id="view-lead-status-buttons">
+            <button type="button" class="btn-status-tab" data-status="Novo" data-key="novo">
+              <span class="status-dot novo"></span> Novo
+            </button>
+            <button type="button" class="btn-status-tab" data-status="Em atendimento" data-key="atendimento">
+              <span class="status-dot atendimento"></span> Em atend.
+            </button>
+            <button type="button" class="btn-status-tab" data-status="Qualificado" data-key="qualificado">
+              <span class="status-dot qualificado"></span> Qualificado
+            </button>
+            <button type="button" class="btn-status-tab" data-status="Fechado" data-key="fechado">
+              <span class="status-dot fechado"></span> Fechado
+            </button>
+          </div>
+        </div>
+
+        <!-- Card 4: Observações / Contexto -->
+        <div class="view-lead-card view-lead-notes-section">
+          <div class="view-lead-card-header">
+            <i data-lucide="file-text" style="width: 15px; height: 15px; color: var(--primary);"></i>
+            <span>Observações & Contexto</span>
+          </div>
+          <p id="view-lead-notes" class="view-lead-notes-text">Dúvidas sobre volume de disparos simultâneos.</p>
+        </div>
+      </div>
+
+      <div class="modal-footer view-lead-modal-footer">
+        <button type="button" class="btn-action-delete-from-modal" id="btn-view-lead-delete">
+          <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+          <span>Excluir Lead</span>
+        </button>
+        <button type="button" class="btn btn-secondary modal-close">Fechar</button>
+      </div>
     </div>
   </div>
 
