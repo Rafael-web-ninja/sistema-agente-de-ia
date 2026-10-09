@@ -3,3 +3,9 @@ node_modules
 dist
 *.log
 html/
+prints/
+*.png
+scripts/*.png
+scripts/test-*.js
+scripts/capture-*.js
+scripts/debug-*.js

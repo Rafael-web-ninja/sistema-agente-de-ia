@@ -133,10 +133,15 @@
   50% { transform: scale(1.05); }
 }
 
-@keyframes spinSlow {
+@keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+.spin-anim {
+  animation: spin 0.8s linear infinite;
+}
+
 
 /* KPI Cards Grid */
 .kpi-grid {
@@ -361,29 +366,71 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 8px;
+  gap: 6px;
+  padding: 3px 9px;
   border-radius: var(--radius-pill);
   font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: var(--transition);
 }
 
 .badge-dot::before {
   content: '';
-  width: 6px;
-  height: 6px;
+  width: 6.5px;
+  height: 6.5px;
   border-radius: 50%;
   background-color: currentColor;
+  flex-shrink: 0;
+  display: inline-block;
 }
 
 .badge-active {
   background-color: var(--status-active-bg);
   color: var(--status-active);
+  border: 1px solid rgba(0, 168, 104, 0.22);
+}
+
+.badge-dot.badge-active::before {
+  background-color: var(--status-active);
+  box-shadow: 0 0 0 0 rgba(0, 168, 104, 0.6);
+  animation: badgeStatusPulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes badgeStatusPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 168, 104, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 5px rgba(0, 168, 104, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 168, 104, 0);
+  }
 }
 
 .badge-testing {
   background-color: var(--status-warning-bg);
   color: var(--status-warning);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.badge-paused {
+  background-color: var(--status-warning-bg);
+  color: #D97706;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+}
+
+[data-theme="dark"] .badge-paused {
+  background-color: rgba(245, 158, 11, 0.18);
+  color: #FBBF24;
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+[data-theme="dark"] .badge-active {
+  background-color: rgba(0, 168, 104, 0.18);
+  color: #34D399;
+  border-color: rgba(52, 211, 153, 0.3);
 }
 
 .badge-soon {
@@ -517,7 +564,8 @@
   transition: var(--transition);
 }
 
-.modal-backdrop.open {
+.modal-backdrop.open,
+.modal-backdrop.active {
   opacity: 1;
   visibility: visible;
 }
@@ -537,7 +585,8 @@
   transition: var(--transition);
 }
 
-.modal-backdrop.open .modal-dialog {
+.modal-backdrop.open .modal-dialog,
+.modal-backdrop.active .modal-dialog {
   transform: scale(1);
 }
 

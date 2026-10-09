@@ -35,7 +35,7 @@ export function initNavigation() {
       // Don't intercept modals or sub-tabs
       if (navTrigger.hasAttribute('data-modal-target') || navTrigger.hasAttribute('data-settings-tab')) return;
       const targetView = navTrigger.getAttribute('data-nav-target') || navTrigger.getAttribute('data-target');
-      if (targetView && ['dashboard', 'agentes', 'conversas', 'canais', 'leads', 'configuracoes', 'suporte', 'editar-agente'].includes(targetView)) {
+      if (targetView && ['dashboard', 'agentes', 'chatbots', 'chatbot-builder', 'conversas', 'canais', 'leads', 'crm', 'configuracoes', 'suporte', 'editar-agente'].includes(targetView)) {
         e.preventDefault();
         switchView(targetView);
       }
@@ -50,7 +50,14 @@ export function initNavigation() {
 
   function handleHashRoute(rawHash, updateHistory = false) {
     const hash = rawHash.replace('#', '');
-    if (['dashboard', 'agentes', 'conversas', 'canais', 'leads', 'configuracoes', 'suporte', 'editar-agente'].includes(hash)) {
+    if (hash === 'chatbot') {
+      switchView('chatbots', updateHistory);
+    } else if (hash === 'chatbot-builder') {
+      switchView('chatbot-builder', updateHistory);
+      if (window.openFlowBuilder && window.zapChatData?.chatbots?.list?.[0]) {
+        window.openFlowBuilder(window.zapChatData.chatbots.list[0].id);
+      }
+    } else if (['dashboard', 'agentes', 'chatbots', 'conversas', 'canais', 'leads', 'crm', 'configuracoes', 'suporte', 'editar-agente'].includes(hash)) {
       switchView(hash, updateHistory);
     } else if (hash === 'planos' || hash === 'faturamento') {
       openSettingsTab('faturamento');
@@ -118,7 +125,8 @@ export function switchView(viewId, updateHistory = true) {
   // Update Nav Items
   document.querySelectorAll('.nav-item').forEach(item => {
     const link = item.querySelector('.nav-link');
-    if (link && link.getAttribute('data-target') === viewId) {
+    const target = link ? link.getAttribute('data-target') : '';
+    if (target === viewId || (viewId === 'chatbot-builder' && target === 'chatbots')) {
       item.classList.add('active');
     } else {
       item.classList.remove('active');
@@ -127,7 +135,8 @@ export function switchView(viewId, updateHistory = true) {
 
   // Update Mobile Bottom Nav Items
   document.querySelectorAll('.mobile-nav-item').forEach(item => {
-    if (item.getAttribute('data-target') === viewId) {
+    const target = item.getAttribute('data-target');
+    if (target === viewId || (viewId === 'chatbot-builder' && target === 'chatbots')) {
       item.classList.add('active');
     } else {
       item.classList.remove('active');
@@ -204,12 +213,14 @@ export function openModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
     modal.classList.add('open');
+    modal.classList.add('active');
   }
 }
 
 export function closeAllModals() {
   document.querySelectorAll('.modal-backdrop').forEach(modal => {
     modal.classList.remove('open');
+    modal.classList.remove('active');
   });
 }
 

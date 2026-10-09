@@ -240,9 +240,13 @@ export function applyChatProfileState() {
 
   if (btn) {
     btn.classList.toggle('active', isChatProfileOpen);
-    btn.title = isChatProfileOpen ? 'Ocultar detalhes do contato' : 'Ver detalhes do contato';
-    btn.setAttribute('aria-label', isChatProfileOpen ? 'Ocultar detalhes do contato' : 'Ver detalhes do contato');
+    const iconName = isChatProfileOpen ? 'panel-right-close' : 'panel-right-open';
+    const tooltipText = isChatProfileOpen ? 'Ocultar painel lateral' : 'Exibir painel lateral';
+    btn.title = tooltipText;
+    btn.setAttribute('aria-label', tooltipText);
     btn.setAttribute('aria-expanded', isChatProfileOpen ? 'true' : 'false');
+    btn.innerHTML = `<i data-lucide="${iconName}" style="width: 15px; height: 15px;"></i>`;
+    if (window.lucide) window.lucide.createIcons();
   }
 }
 
@@ -768,8 +772,8 @@ export function renderActiveChat() {
           <span>Encerrar</span>
         </button>
         <div class="chat-header-divider"></div>
-        <button class="btn-action-round chat-icon-btn ${isChatProfileOpen ? 'active' : ''}" id="btn-toggle-chat-profile" title="${isChatProfileOpen ? 'Ocultar detalhes do contato' : 'Ver detalhes do contato'}" aria-label="${isChatProfileOpen ? 'Ocultar detalhes do contato' : 'Ver detalhes do contato'}" aria-expanded="${isChatProfileOpen ? 'true' : 'false'}">
-          <i data-lucide="info" style="width: 15px; height: 15px;"></i>
+        <button class="btn-action-round chat-icon-btn ${isChatProfileOpen ? 'active' : ''}" id="btn-toggle-chat-profile" title="${isChatProfileOpen ? 'Ocultar painel lateral' : 'Exibir painel lateral'}" aria-label="${isChatProfileOpen ? 'Ocultar painel lateral' : 'Exibir painel lateral'}" aria-expanded="${isChatProfileOpen ? 'true' : 'false'}">
+          <i data-lucide="${isChatProfileOpen ? 'panel-right-close' : 'panel-right-open'}" style="width: 15px; height: 15px;"></i>
         </button>
       </div>
     `;

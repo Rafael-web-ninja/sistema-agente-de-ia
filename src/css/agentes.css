@@ -444,6 +444,7 @@
 }
 
 .badge-paused {
-  background-color: var(--status-gray-bg);
-  color: var(--status-gray);
+  background-color: var(--status-warning-bg);
+  color: #D97706;
+  border: 1px solid rgba(245, 158, 11, 0.28);
 }

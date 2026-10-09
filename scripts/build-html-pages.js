@@ -1019,7 +1019,10 @@ const editAgentPageScript = `
     // Modal close listeners for new modals
     document.querySelectorAll('.modal-close').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('active'));
+        document.querySelectorAll('.modal-backdrop').forEach(m => {
+          m.classList.remove('active');
+          m.classList.remove('open');
+        });
       });
     });
 
@@ -1081,11 +1084,159 @@ const editAgentPageScript = `
         if (editBtn) {
           e.preventDefault();
           const card = editBtn.closest('.knowledge-item-card');
-          const nameEl = card ? card.querySelector('.knowledge-item-name') : null;
-          if (nameEl) {
-            const val = prompt('Editar nome / título:', nameEl.textContent);
-            if (val && val.trim()) nameEl.textContent = val.trim();
+          if (card) {
+            window._editingCard = card;
+            const nameEl = card.querySelector('.knowledge-item-name');
+            const metaEl = card.querySelector('.knowledge-item-meta');
+            const badge = card.querySelector('.badge-dot');
+            const modal = document.getElementById('modal-edit-knowledge');
+            if (modal) {
+              const name = nameEl ? nameEl.textContent.trim() : '';
+              const meta = metaEl ? metaEl.textContent.trim() : '';
+
+              let type = 'arquivo';
+              if (card.querySelector('.knowledge-item-icon-box.site') || name.startsWith('http')) type = 'site';
+              else if (card.querySelector('.knowledge-item-icon-box.faq') || meta.includes('Perguntas')) type = 'faq';
+              else if (card.querySelector('.knowledge-item-icon-box.texto')) type = 'texto';
+
+              const typeInp = document.getElementById('edit-knowledge-type');
+              if (typeInp) typeInp.value = type;
+
+              document.querySelectorAll('.edit-knowledge-context-block').forEach(b => b.style.display = 'none');
+              const blk = document.getElementById('edit-block-' + type);
+              if (blk) blk.style.display = 'block';
+
+              const titleEl = document.getElementById('modal-edit-knowledge-title');
+              const descEl = document.getElementById('modal-edit-knowledge-desc');
+              const iconEl = document.getElementById('modal-edit-knowledge-icon');
+
+              if (type === 'arquivo') {
+                if (titleEl) titleEl.textContent = 'Editar Arquivo de Conhecimento';
+                if (descEl) descEl.textContent = 'Renomeie ou substitua o arquivo de treinamento do agente';
+                if (iconEl) iconEl.setAttribute('data-lucide', 'file-text');
+                const nInp = document.getElementById('edit-file-name');
+                const lbl = document.getElementById('edit-file-current-label');
+                const mCur = document.getElementById('edit-file-current-meta');
+                if (nInp) nInp.value = name;
+                if (lbl) lbl.textContent = name;
+                if (mCur) mCur.textContent = meta || 'Arquivo carregado';
+              } else if (type === 'site') {
+                if (titleEl) titleEl.textContent = 'Editar Site / URL de Conhecimento';
+                if (descEl) descEl.textContent = 'Altere a URL ou puxe os dados mais recentes da página';
+                if (iconEl) iconEl.setAttribute('data-lucide', 'globe');
+                const urlInp = document.getElementById('edit-site-url');
+                if (urlInp) urlInp.value = name;
+              } else if (type === 'faq') {
+                if (titleEl) titleEl.textContent = 'Editar Pergunta e Resposta';
+                if (descEl) descEl.textContent = 'Altere a dúvida cadastrada e a resposta padrão da IA';
+                if (iconEl) iconEl.setAttribute('data-lucide', 'help-circle');
+                const qInp = document.getElementById('edit-faq-question');
+                const aInp = document.getElementById('edit-faq-answer');
+                if (qInp) qInp.value = name;
+                if (aInp) aInp.value = card.getAttribute('data-faq-answer') || 'O prazo de entrega varia de 3 a 7 dias úteis dependendo da sua localidade.';
+              } else if (type === 'texto') {
+                if (titleEl) titleEl.textContent = 'Editar Texto de Conhecimento';
+                if (descEl) descEl.textContent = 'Modifique o título e as instruções do texto livre';
+                if (iconEl) iconEl.setAttribute('data-lucide', 'align-left');
+                const tInp = document.getElementById('edit-text-title');
+                if (tInp) tInp.value = name;
+              }
+
+              const statusInp = document.getElementById('edit-knowledge-status');
+              if (statusInp) statusInp.value = (badge && badge.classList.contains('badge-active')) ? 'active' : 'paused';
+
+              modal.classList.add('active');
+              modal.classList.add('open');
+              if (window.lucide) window.lucide.createIcons();
+            }
           }
+        }
+      });
+    }
+
+    // Modal site sync button in standalone
+    const btnSync = document.getElementById('btn-sync-site-now');
+    if (btnSync) {
+      btnSync.addEventListener('click', () => {
+        const icon = document.getElementById('icon-sync-site');
+        const text = document.getElementById('text-sync-site');
+        if (icon) icon.classList.add('spin-anim');
+        if (text) text.textContent = 'Sincronizando...';
+        btnSync.disabled = true;
+        setTimeout(() => {
+          if (icon) icon.classList.remove('spin-anim');
+          if (text) text.textContent = 'Puxar dados atualizados';
+          btnSync.disabled = false;
+          const statusEl = document.getElementById('edit-site-sync-status');
+          if (statusEl) statusEl.textContent = 'Sincronizado agora mesmo';
+        }, 800);
+      });
+    }
+
+    // Modal reupload button in standalone
+    const btnReup = document.getElementById('btn-reupload-file');
+    const fInp = document.getElementById('edit-file-hidden-input');
+    if (btnReup && fInp) {
+      btnReup.addEventListener('click', () => fInp.click());
+      fInp.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const nInp = document.getElementById('edit-file-name');
+        const lbl = document.getElementById('edit-file-current-label');
+        const mCur = document.getElementById('edit-file-current-meta');
+        const fdbk = document.getElementById('edit-file-reupload-feedback');
+        if (nInp) nInp.value = file.name;
+        if (lbl) lbl.textContent = file.name;
+        const sz = file.size > 1024 * 1024 ? (file.size / (1024 * 1024)).toFixed(1) + ' MB' : (file.size / 1024).toFixed(0) + ' KB';
+        const fileExt = file.name.split('.').pop() || '';
+        if (mCur) mCur.textContent = 'Arquivo ' + fileExt.toUpperCase() + ' • ' + sz;
+        if (fdbk) {
+          fdbk.textContent = '✓ Novo arquivo selecionado: ' + file.name + ' (' + sz + ') pronto para salvar.';
+          fdbk.style.color = '#00A868';
+        }
+      });
+    }
+
+    const formEditK = document.getElementById('form-edit-knowledge');
+    if (formEditK) {
+      formEditK.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const card = window._editingCard;
+        if (!card) return;
+        const type = document.getElementById('edit-knowledge-type')?.value || 'arquivo';
+        const nameEl = card.querySelector('.knowledge-item-name');
+        const metaEl = card.querySelector('.knowledge-item-meta');
+        const badge = card.querySelector('.badge-dot');
+
+        if (type === 'arquivo') {
+          const fn = document.getElementById('edit-file-name')?.value.trim();
+          const fm = document.getElementById('edit-file-current-meta')?.textContent.trim();
+          if (nameEl && fn) nameEl.textContent = fn;
+          if (metaEl && fm) metaEl.textContent = fm;
+        } else if (type === 'site') {
+          const su = document.getElementById('edit-site-url')?.value.trim();
+          const ss = document.getElementById('edit-site-sync-status')?.textContent.trim() || 'Sincronizado agora mesmo';
+          if (nameEl && su) nameEl.textContent = su;
+          if (metaEl) metaEl.textContent = 'Site / URL • ' + ss;
+        } else if (type === 'faq') {
+          const fq = document.getElementById('edit-faq-question')?.value.trim();
+          const fa = document.getElementById('edit-faq-answer')?.value.trim();
+          if (nameEl && fq) nameEl.textContent = fq;
+          if (fa) card.setAttribute('data-faq-answer', fa);
+        } else if (type === 'texto') {
+          const tt = document.getElementById('edit-text-title')?.value.trim();
+          if (nameEl && tt) nameEl.textContent = tt;
+        }
+
+        const statusVal = document.getElementById('edit-knowledge-status')?.value;
+        if (badge && statusVal) {
+          badge.className = statusVal === 'active' ? 'badge badge-dot badge-active' : 'badge badge-dot badge-gray';
+          badge.textContent = statusVal === 'active' ? 'Ativo' : 'Pausado';
+        }
+        const modal = document.getElementById('modal-edit-knowledge');
+        if (modal) {
+          modal.classList.remove('active');
+          modal.classList.remove('open');
         }
       });
     }
@@ -1392,8 +1543,8 @@ const arenaHeaderHtml = `
       <span>Encerrar</span>
     </button>
     <div class="chat-header-divider"></div>
-    <button class="btn-action-round chat-icon-btn" id="btn-toggle-chat-profile" title="Ver detalhes do contato" aria-label="Ver detalhes do contato">
-      <i data-lucide="info" style="width: 15px; height: 15px;"></i>
+    <button class="btn-action-round chat-icon-btn" id="btn-toggle-chat-profile" title="Ocultar painel lateral" aria-label="Ocultar painel lateral">
+      <i data-lucide="panel-right-close" style="width: 15px; height: 15px;"></i>
     </button>
   </div>
 `;
@@ -1609,7 +1760,12 @@ const conversasScript = `
       }
       if (toggleProfileBtn) {
         toggleProfileBtn.classList.toggle('active', isProfileOpen);
-        toggleProfileBtn.title = isProfileOpen ? 'Ocultar detalhes do contato' : 'Ver detalhes do contato';
+        const iconName = isProfileOpen ? 'panel-right-close' : 'panel-right-open';
+        const tooltip = isProfileOpen ? 'Ocultar painel lateral' : 'Exibir painel lateral';
+        toggleProfileBtn.title = tooltip;
+        toggleProfileBtn.setAttribute('aria-label', tooltip);
+        toggleProfileBtn.innerHTML = '<i data-lucide="' + iconName + '" style="width: 15px; height: 15px;"></i>';
+        if (window.lucide) window.lucide.createIcons();
       }
     }
 

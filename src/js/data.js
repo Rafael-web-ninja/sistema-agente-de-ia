@@ -693,5 +693,365 @@ export const zapChatData = {
         ]
       }
     ]
+  },
+
+  // 9. CRM Pipeline & Opportunities
+  crm: {
+    stages: [
+      { id: 'prospeccao', name: 'Prospecção', color: '#3B82F6', badgeClass: 'stage-prospeccao' },
+      { id: 'qualificacao', name: 'Qualificação', color: '#8B5CF6', badgeClass: 'stage-qualificacao' },
+      { id: 'proposta', name: 'Proposta Enviada', color: '#F59E0B', badgeClass: 'stage-proposta' },
+      { id: 'negociacao', name: 'Negociação', color: '#EC4899', badgeClass: 'stage-negociacao' },
+      { id: 'ganho', name: 'Fechado Ganho', color: '#00A868', badgeClass: 'stage-ganho' }
+    ],
+    deals: [
+      {
+        id: 'deal-1',
+        title: 'Implantação IA Atendimento WhatsApp',
+        contactName: 'Lucas Gomes',
+        company: 'TechVendas Brasil',
+        phone: '+55 11 96543-2109',
+        email: 'lucas.gomes@techvendas.com.br',
+        value: 4800,
+        stage: 'prospeccao',
+        agent: 'Carla Menezes',
+        agentImg: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=80',
+        channel: 'WhatsApp',
+        priority: 'Alta',
+        priorityClass: 'priority-high',
+        daysInStage: '1 dia',
+        expectedClose: '15/10/2026',
+        notes: 'Demonstrou interesse em reduzir fila de espera no WhatsApp com respostas automáticas inteligentes.'
+      },
+      {
+        id: 'deal-2',
+        title: 'Automação de Agendamentos Médicos',
+        contactName: 'Dr. Roberto Silva',
+        company: 'Clínica Santa Clara',
+        phone: '+55 11 98877-6655',
+        email: 'roberto@santaclara.med.br',
+        value: 6500,
+        stage: 'prospeccao',
+        agent: 'Juliana Santos',
+        agentImg: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
+        channel: 'Site',
+        priority: 'Média',
+        priorityClass: 'priority-medium',
+        daysInStage: '2 dias',
+        expectedClose: '20/10/2026',
+        notes: 'Necessidade de integração com sistema de agenda para confirmação de consultas.'
+      },
+      {
+        id: 'deal-3',
+        title: 'Migração CRM + Multi-agente ZapChat',
+        contactName: 'Beatriz Pacheco',
+        company: 'E-commerce Pacheco Shoes',
+        phone: '+55 11 95432-1098',
+        email: 'beatriz@pachecoshoes.com.br',
+        value: 9200,
+        stage: 'qualificacao',
+        agent: 'Rodrigo Almeida',
+        agentImg: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
+        channel: 'Instagram',
+        priority: 'Alta',
+        priorityClass: 'priority-high',
+        daysInStage: '3 dias',
+        expectedClose: '22/10/2026',
+        notes: 'Deseja migrar do Kommo e unificar Direct do Instagram e WhatsApp em um único painel.'
+      },
+      {
+        id: 'deal-4',
+        title: 'Plano Business 5 Conexões WhatsApp',
+        contactName: 'Victor Souza',
+        company: 'Souza Logística Express',
+        phone: '+55 11 94321-0987',
+        email: 'victor@souzalog.com.br',
+        value: 7800,
+        stage: 'qualificacao',
+        agent: 'Juliana Santos',
+        agentImg: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
+        channel: 'WhatsApp',
+        priority: 'Média',
+        priorityClass: 'priority-medium',
+        daysInStage: '1 dia',
+        expectedClose: '18/10/2026',
+        notes: 'Precisa de múltiplos números de filiais atendidos por agentes de triagem distintos.'
+      },
+      {
+        id: 'deal-5',
+        title: 'Licença Corporativa 15 Agentes de IA',
+        contactName: 'Amanda Moreira',
+        company: 'Grupo Moreira Participações',
+        phone: '+55 11 97654-3210',
+        email: 'amanda.moreira@email.com',
+        value: 14500,
+        stage: 'proposta',
+        agent: 'Felipe Costa',
+        agentImg: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
+        channel: 'Instagram',
+        priority: 'Alta',
+        priorityClass: 'priority-high',
+        daysInStage: '4 dias',
+        expectedClose: '14/10/2026',
+        notes: 'Proposta enviada em PDF com tabela comparativa de economia em horas humanas de atendimento.'
+      },
+      {
+        id: 'deal-6',
+        title: 'Integração Personalizada Webhook & ERP',
+        contactName: 'Carlos Mendes',
+        company: 'Mendes Finance & Crédito',
+        phone: '+55 11 93322-1100',
+        email: 'carlos.mendes@mendesfin.com.br',
+        value: 18000,
+        stage: 'proposta',
+        agent: 'Carla Menezes',
+        agentImg: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=80',
+        channel: 'WhatsApp',
+        priority: 'Alta',
+        priorityClass: 'priority-high',
+        daysInStage: '2 dias',
+        expectedClose: '25/10/2026',
+        notes: 'Aguardando validação do departamento de segurança da informação para fechamento.'
+      },
+      {
+        id: 'deal-7',
+        title: 'Contrato Anual - Central Omnichannel',
+        contactName: 'Thais Helena',
+        company: 'Helena Modas & Varejo',
+        phone: '+55 11 93210-9876',
+        email: 'thais@helenamodas.com.br',
+        value: 12400,
+        stage: 'negociacao',
+        agent: 'Felipe Costa',
+        agentImg: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
+        channel: 'Instagram',
+        priority: 'Alta',
+        priorityClass: 'priority-high',
+        daysInStage: '5 dias',
+        expectedClose: '12/10/2026',
+        notes: 'Negociando condição especial de pagamento à vista com 10% de desconto.'
+      },
+      {
+        id: 'deal-8',
+        title: 'Treinamento & IA Customizada Vendas',
+        contactName: 'Marcio Ribeiro',
+        company: 'Construtora Horizonte',
+        phone: '+55 11 92211-0099',
+        email: 'marcio@horizonteconstrutora.com.br',
+        value: 22000,
+        stage: 'negociacao',
+        agent: 'Juliana Santos',
+        agentImg: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
+        channel: 'WhatsApp',
+        priority: 'Média',
+        priorityClass: 'priority-medium',
+        daysInStage: '3 dias',
+        expectedClose: '16/10/2026',
+        notes: 'Ajustando escopo de treinamento da equipe de corretores para uso do painel.'
+      },
+      {
+        id: 'deal-9',
+        title: 'Setup Completo ZapChat Pro + VIP',
+        contactName: 'Fernanda Lima',
+        company: 'Colégio Futuro & Cursos',
+        phone: '+55 11 91100-2233',
+        email: 'fernanda.lima@colegiofuturo.com.br',
+        value: 16500,
+        stage: 'ganho',
+        agent: 'Rodrigo Almeida',
+        agentImg: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
+        channel: 'WhatsApp',
+        priority: 'Alta',
+        priorityClass: 'priority-high',
+        daysInStage: 'Hoje',
+        expectedClose: '07/10/2026',
+        notes: 'Contrato assinado digitalmente! Onboarding agendado para amanhã às 10h.'
+      },
+      {
+        id: 'deal-10',
+        title: 'Expansão de 3 para 8 Robôs de IA',
+        contactName: 'Gabriel Santos',
+        company: 'Agência Santos Digital',
+        phone: '+55 11 97788-9900',
+        email: 'gabriel@santosdigital.com.br',
+        value: 11800,
+        stage: 'ganho',
+        agent: 'Carla Menezes',
+        agentImg: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=80',
+        channel: 'Site',
+        priority: 'Média',
+        priorityClass: 'priority-medium',
+        daysInStage: 'Ontem',
+        expectedClose: '06/10/2026',
+        notes: 'Upgrade realizado com sucesso pelo painel. Faturamento mensal ativado.'
+      }
+    ]
+  },
+
+  // 10. Chatbots & Flow Automation
+  chatbots: {
+    list: [
+      {
+        id: 'bot-1',
+        name: 'Boas-vindas & Triagem Inteligente',
+        description: 'Menu inicial para saudar novos clientes, segmentar por interesse e transferir para Agentes de IA especialistas.',
+        channel: 'WhatsApp',
+        trigger: 'Primeira mensagem recebida',
+        triggerType: 'first_message',
+        status: 'Ativo',
+        executions: 1240,
+        completionRate: '94.2%',
+        integratedAiAgents: ['Juliana Santos (Vendas)', 'Pedro (Suporte)'],
+        stepsCount: 4,
+        updatedAt: 'Hoje às 11:20',
+        flow: {
+          triggerText: 'Qualquer nova mensagem no WhatsApp',
+          initialMessage: 'Olá! Seja muito bem-vindo ao ZapChat. 👋\nComo posso ajudar você hoje?',
+          options: [
+            {
+              id: 'opt-1',
+              number: '1',
+              label: 'Conhecer Planos e Preços',
+              actionType: 'transfer_ai_agent',
+              targetAgent: 'Juliana Santos',
+              targetAgentRole: 'Vendas & Planos',
+              replyMessage: 'Perfeito! Estou transferindo você para a nossa IA especialista em Vendas, a Juliana. Ela vai te mostrar todos os planos e valores!'
+            },
+            {
+              id: 'opt-2',
+              number: '2',
+              label: 'Suporte Técnico e Dúvidas',
+              actionType: 'transfer_ai_agent',
+              targetAgent: 'Pedro',
+              targetAgentRole: 'Suporte Técnico',
+              replyMessage: 'Entendido! O Pedro, nosso Agente de IA de Suporte, já assumiu seu atendimento para tirar todas as dúvidas técnicas.'
+            },
+            {
+              id: 'opt-3',
+              number: '3',
+              label: 'Falar com Atendente Humano',
+              actionType: 'transfer_human',
+              targetAgent: 'Fila de Atendimento Humano',
+              targetAgentRole: 'Humano',
+              replyMessage: 'Um momento, por favor! Já estou notificando nossa equipe humana para prosseguir com seu atendimento.'
+            }
+          ]
+        }
+      },
+      {
+        id: 'bot-2',
+        name: 'Qualificação & Diagnóstico Instagram',
+        description: 'Responde interações no Direct, faz perguntas de pré-qualificação e passa o lead pronto para o Agente de IA fechar.',
+        channel: 'Instagram',
+        trigger: 'Palavra-chave: "preço" ou "orçamento"',
+        triggerType: 'keyword',
+        status: 'Ativo',
+        executions: 860,
+        completionRate: '88.5%',
+        integratedAiAgents: ['Felipe Costa (Qualificação)'],
+        stepsCount: 3,
+        updatedAt: 'Ontem às 16:40',
+        flow: {
+          triggerText: 'Mensagens no Direct contendo palavras-chave',
+          initialMessage: 'Opa, tudo bem? Vi que tem interesse em transformar o atendimento do seu negócio com IA! 🚀\nQual é o seu nicho?',
+          options: [
+            {
+              id: 'opt-2-1',
+              number: '1',
+              label: 'E-commerce / Varejo',
+              actionType: 'transfer_ai_agent',
+              targetAgent: 'Felipe Costa',
+              targetAgentRole: 'Vendas Pro',
+              replyMessage: 'Show de bola! Conectando com o Agente de IA Felipe especializado em automação para e-commerce.'
+            },
+            {
+              id: 'opt-2-2',
+              number: '2',
+              label: 'Serviços / Clínica / Consultório',
+              actionType: 'transfer_ai_agent',
+              targetAgent: 'Carla Menezes',
+              targetAgentRole: 'Triagem de Serviços',
+              replyMessage: 'Excelente! A Carla vai te explicar como automatizar agendamentos e lembretes 24 horas por dia.'
+            }
+          ]
+        }
+      },
+      {
+        id: 'bot-3',
+        name: 'Plantão Noturno & Fora do Horário',
+        description: 'Assume o WhatsApp entre 19:00 e 08:00, responde dúvidas frequentes com IA livre e agenda retorno para a manhã seguinte.',
+        channel: 'WhatsApp',
+        trigger: 'Horário comercial encerrado (19h às 08h)',
+        triggerType: 'schedule',
+        status: 'Ativo',
+        executions: 412,
+        completionRate: '96.0%',
+        integratedAiAgents: ['Pedro (IA 24/7)'],
+        stepsCount: 3,
+        updatedAt: '05/10 às 09:15',
+        flow: {
+          triggerText: 'Mensagem recebida fora do expediente',
+          initialMessage: 'Olá! Nosso time humano encerrou o expediente por hoje, mas nosso Agente de IA Pedro está 100% ativo aqui para te ajudar agora mesmo! 🌙\nO que você deseja fazer?',
+          options: [
+            {
+              id: 'opt-3-1',
+              number: '1',
+              label: 'Tirar dúvidas com o Agente de IA agora',
+              actionType: 'transfer_ai_agent',
+              targetAgent: 'Pedro',
+              targetAgentRole: 'IA Noturna',
+              replyMessage: 'Perfeito! Pode me perguntar qualquer coisa sobre nossa ferramenta ou serviços que respondo na hora.'
+            },
+            {
+              id: 'opt-3-2',
+              number: '2',
+              label: 'Deixar recado para contato amanhã cedo',
+              actionType: 'create_crm_deal',
+              targetAgent: 'Agendamento Matutino',
+              targetAgentRole: 'CRM Automático',
+              replyMessage: 'Combinado! Salvei sua solicitação com prioridade alta e nosso consultor entrará em contato a partir das 08h30.'
+            }
+          ]
+        }
+      },
+      {
+        id: 'bot-4',
+        name: 'Pesquisa de Satisfação NPS',
+        description: 'Dispara pesquisa de 1 a 5 após a finalização de um ticket e coleta feedback textual.',
+        channel: 'WhatsApp',
+        trigger: 'Ticket ou conversa finalizada',
+        triggerType: 'event_closed',
+        status: 'Pausado',
+        executions: 310,
+        completionRate: '79.1%',
+        integratedAiAgents: ['Nenhum (Autônomo)'],
+        stepsCount: 2,
+        updatedAt: '03/10 às 14:00',
+        flow: {
+          triggerText: 'Conversa marcada como resolvida',
+          initialMessage: 'Como você avalia o atendimento que acabou de receber de 1 a 5? Sua nota nos ajuda a melhorar constantemente!',
+          options: [
+            {
+              id: 'opt-4-1',
+              number: '5',
+              label: '⭐⭐⭐⭐⭐ Excelente',
+              actionType: 'simple_reply',
+              targetAgent: 'N/A',
+              targetAgentRole: 'Pesquisa',
+              replyMessage: 'Muito obrigado pela nota máxima! Ficamos muito felizes em ajudar. 🚀'
+            },
+            {
+              id: 'opt-4-2',
+              number: '1',
+              label: '⭐ Precisa Melhorar',
+              actionType: 'transfer_human',
+              targetAgent: 'Gerência de Suporte',
+              targetAgentRole: 'Auditoria',
+              replyMessage: 'Sentimos muito por isso. Nossa gerência de qualidade foi notificada para analisar seu caso com prioridade.'
+            }
+          ]
+        }
+      }
+    ]
   }
 };

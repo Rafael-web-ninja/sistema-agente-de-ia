@@ -17,6 +17,8 @@
   <link rel="stylesheet" href="./src/css/settings.css">
   <link rel="stylesheet" href="./src/css/suporte.css">
   <link rel="stylesheet" href="./src/css/editar-agente.css">
+  <link rel="stylesheet" href="./src/css/crm.css">
+  <link rel="stylesheet" href="./src/css/chatbot.css">
 
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -59,6 +61,12 @@
             </a>
           </li>
           <li class="nav-item">
+            <a href="#chatbots" class="nav-link" data-target="chatbots">
+              <span class="nav-icon"><i data-lucide="git-branch"></i></span>
+              <span>Chatbot</span>
+            </a>
+          </li>
+          <li class="nav-item">
             <a href="#conversas" class="nav-link" data-target="conversas">
               <span class="nav-icon"><i data-lucide="message-square"></i></span>
               <span>Conversas</span>
@@ -75,6 +83,12 @@
             <a href="#leads" class="nav-link" data-target="leads">
               <span class="nav-icon"><i data-lucide="users"></i></span>
               <span>Leads</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#crm" class="nav-link" data-target="crm">
+              <span class="nav-icon"><i data-lucide="kanban"></i></span>
+              <span>CRM</span>
             </a>
           </li>
           <li class="nav-item">
@@ -517,6 +531,306 @@
         </section>
 
         <!-- ==============================================
+             2.1. CHATBOTS & FLUXOS DE ATENDIMENTO
+             ============================================== -->
+        <section class="view-panel" id="view-chatbots">
+          <div class="chatbot-view-container">
+            <!-- Page Header -->
+            <div class="page-header" style="margin-bottom: 20px;">
+              <div class="page-title-group">
+                <h1 class="page-title">Chatbots & Fluxos de Atendimento</h1>
+                <p class="page-subtitle">Crie árvores de decisão, menus inteligentes e integre seus Agentes de IA nos fluxos</p>
+              </div>
+              <div class="header-actions">
+                <button type="button" class="btn btn-primary" id="btn-create-chatbot" data-modal-target="modal-new-chatbot">
+                  <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                  <span>Novo chatbot</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- KPI Row -->
+            <div class="chatbot-kpi-grid">
+              <div class="chatbot-kpi-card">
+                <div class="chatbot-kpi-top">
+                  <span class="chatbot-kpi-label">Chatbots Ativos</span>
+                  <div class="chatbot-kpi-icon green">
+                    <i data-lucide="git-branch" style="width: 18px; height: 18px;"></i>
+                  </div>
+                </div>
+                <div class="chatbot-kpi-value" id="chatbot-kpi-active-val">3</div>
+                <div class="chatbot-kpi-trend trend-up">
+                  <i data-lucide="check" style="width: 13px; height: 13px;"></i>
+                  <span>Automações rodando</span>
+                </div>
+              </div>
+
+              <div class="chatbot-kpi-card">
+                <div class="chatbot-kpi-top">
+                  <span class="chatbot-kpi-label">Disparos Totais</span>
+                  <div class="chatbot-kpi-icon blue">
+                    <i data-lucide="zap" style="width: 18px; height: 18px;"></i>
+                  </div>
+                </div>
+                <div class="chatbot-kpi-value" id="chatbot-kpi-executions-val">2.822</div>
+                <div class="chatbot-kpi-trend trend-up">
+                  <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+                  <span>+15% esta semana</span>
+                </div>
+              </div>
+
+              <div class="chatbot-kpi-card">
+                <div class="chatbot-kpi-top">
+                  <span class="chatbot-kpi-label">Transbordos para IA</span>
+                  <div class="chatbot-kpi-icon purple">
+                    <i data-lucide="sparkles" style="width: 18px; height: 18px;"></i>
+                  </div>
+                </div>
+                <div class="chatbot-kpi-value">84.6%</div>
+                <div class="chatbot-kpi-trend trend-up">
+                  <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+                  <span>Resolvidos por Agentes IA</span>
+                </div>
+              </div>
+
+              <div class="chatbot-kpi-card">
+                <div class="chatbot-kpi-top">
+                  <span class="chatbot-kpi-label">Tempo no Menu</span>
+                  <div class="chatbot-kpi-icon emerald">
+                    <i data-lucide="clock" style="width: 18px; height: 18px;"></i>
+                  </div>
+                </div>
+                <div class="chatbot-kpi-value">14s</div>
+                <div class="chatbot-kpi-trend trend-up">
+                  <i data-lucide="check-check" style="width: 13px; height: 13px;"></i>
+                  <span>Triagem ultra rápida</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter Bar -->
+            <div class="leads-filter-bar-simplified crm-filter-bar">
+              <div class="leads-search-wrap">
+                <i data-lucide="search" class="leads-search-icon"></i>
+                <input type="text" id="chatbot-search-input" placeholder="Buscar chatbot por nome, gatilho ou descrição...">
+              </div>
+
+              <div class="leads-filters-group">
+                <div class="filter-dropdown-item">
+                  <span class="filter-mini-label">Canal:</span>
+                  <select class="filter-mini-select" id="chatbot-filter-channel">
+                    <option value="all">Todos</option>
+                    <option value="WhatsApp">WhatsApp</option>
+                    <option value="Instagram">Instagram</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="filter-chevron-icon"></i>
+                </div>
+
+                <div class="filter-dropdown-item">
+                  <span class="filter-mini-label">Status:</span>
+                  <select class="filter-mini-select" id="chatbot-filter-status">
+                    <option value="all">Todos</option>
+                    <option value="Ativo">Ativo</option>
+                    <option value="Pausado">Pausado</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="filter-chevron-icon"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cards Grid -->
+            <div class="chatbot-grid" id="chatbots-cards-grid">
+              <!-- Rendered dynamically by chatbot.js -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ==============================================
+             2.2. CONSTRUTOR VISUAL DE FLUXO (FLOW BUILDER CANVAS)
+             ============================================== -->
+        <section class="view-panel" id="view-chatbot-builder">
+          <!-- Topbar Studio Header -->
+          <header class="builder-topbar">
+            <div class="builder-topbar-left">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-builder-back">
+                <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i>
+                <span>Voltar</span>
+              </button>
+              <div class="builder-breadcrumb-divider">/</div>
+              <div class="builder-title-group">
+                <span class="builder-title-badge">Chatbot</span>
+                <h2 class="builder-title" id="builder-bot-name">Boas-vindas & Triagem Inteligente</h2>
+              </div>
+              <span class="chatbot-channel-badge whatsapp" id="builder-channel-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="#00A868"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2z"/></svg>
+                <span>WhatsApp</span>
+              </span>
+              <span class="builder-status-badge active" id="builder-status-badge">Ativo</span>
+            </div>
+
+            <div class="builder-topbar-center">
+              <div class="builder-zoom-controls">
+                <button type="button" class="builder-tool-btn" id="btn-zoom-out" title="Diminuir Zoom">
+                  <i data-lucide="minus" style="width: 13px; height: 13px;"></i>
+                </button>
+                <span class="builder-zoom-text" id="builder-zoom-level">100%</span>
+                <button type="button" class="builder-tool-btn" id="btn-zoom-in" title="Aumentar Zoom">
+                  <i data-lucide="plus" style="width: 13px; height: 13px;"></i>
+                </button>
+                <button type="button" class="builder-tool-btn" id="btn-zoom-reset" title="Centralizar Fluxo">
+                  <i data-lucide="crosshair" style="width: 13px; height: 13px;"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="builder-topbar-right">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-builder-preview">
+                <i data-lucide="play" style="width: 14px; height: 14px; color: var(--primary);"></i>
+                <span>Pré-visualização</span>
+              </button>
+              <button type="button" class="btn btn-primary btn-sm" id="btn-builder-save">
+                <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+                <span>Salvar Fluxo</span>
+              </button>
+            </div>
+          </header>
+
+          <!-- Studio Workspace -->
+          <div class="builder-workspace">
+            <!-- Left Drawer (Node Inspector / Configuration) -->
+            <aside class="builder-inspector-drawer" id="builder-inspector">
+              <div class="inspector-header">
+                <div class="inspector-header-title">
+                  <div class="inspector-icon-wrap" id="inspector-icon-wrap">
+                    <i data-lucide="sliders" style="width: 16px; height: 16px;"></i>
+                  </div>
+                  <div>
+                    <h4 class="inspector-title" id="inspector-node-title">Propriedades do Bloco</h4>
+                    <span class="inspector-subtitle" id="inspector-node-type">Configurar parâmetros</span>
+                  </div>
+                </div>
+                <div class="inspector-header-actions">
+                  <button type="button" class="inspector-btn-action" id="btn-inspector-delete" title="Excluir Bloco" style="color:#DC2626;">
+                    <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                  </button>
+                  <button type="button" class="inspector-btn-close" id="btn-inspector-close" title="Fechar Painel">
+                    &times;
+                  </button>
+                </div>
+              </div>
+
+              <div class="inspector-body" id="inspector-body">
+                <!-- Rendered dynamically according to selected node type -->
+              </div>
+
+              <div class="inspector-footer">
+                <button type="button" class="btn btn-primary btn-sm" id="btn-inspector-apply" style="width: 100%;">
+                  <span>Aplicar Alterações</span>
+                </button>
+              </div>
+            </aside>
+
+            <!-- Canvas Viewport -->
+            <div class="builder-canvas-viewport" id="builder-canvas-viewport">
+              <div class="builder-canvas-world" id="builder-canvas-world">
+                <!-- SVG Connections Layer -->
+                <svg class="builder-svg-layer" id="builder-svg-layer">
+                  <g id="builder-connections-group"></g>
+                  <path id="builder-temp-cable" d="" class="temp-cable" style="display:none;"></path>
+                </svg>
+
+                <!-- Nodes Container -->
+                <div class="builder-nodes-container" id="builder-nodes-container">
+                  <!-- Rendered dynamically by flow-builder.js -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Floating Dock (Palette / Toolbox - BotConversa style) -->
+            <aside class="builder-floating-dock" id="builder-dock">
+              <div class="dock-header">
+                <span class="dock-title">Componentes</span>
+                <button type="button" class="dock-toggle-btn" id="btn-dock-toggle" title="Minimizar">
+                  <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+                </button>
+              </div>
+              <div class="dock-items-list">
+                <!-- Draggable Block Types -->
+                <div class="dock-item" draggable="true" data-node-type="ai_agent" title="Assistente de IA conversacional integrado ao fluxo">
+                  <div class="dock-item-icon ai">
+                    <i data-lucide="bot" style="width: 16px; height: 16px;"></i>
+                  </div>
+                  <div class="dock-item-info">
+                    <span class="dock-item-name">Assistente IA</span>
+                    <span class="dock-item-desc">Agente conversacional</span>
+                  </div>
+                  <i data-lucide="grip-vertical" class="dock-item-grip"></i>
+                </div>
+
+                <div class="dock-item" draggable="true" data-node-type="menu" title="Menu de opções interativo com botões">
+                  <div class="dock-item-icon menu">
+                    <i data-lucide="layout-list" style="width: 16px; height: 16px;"></i>
+                  </div>
+                  <div class="dock-item-info">
+                    <span class="dock-item-name">Menu de Opções</span>
+                    <span class="dock-item-desc">Árvore de escolhas</span>
+                  </div>
+                  <i data-lucide="grip-vertical" class="dock-item-grip"></i>
+                </div>
+
+                <div class="dock-item" draggable="true" data-node-type="message" title="Mensagem de texto simples">
+                  <div class="dock-item-icon message">
+                    <i data-lucide="message-square" style="width: 16px; height: 16px;"></i>
+                  </div>
+                  <div class="dock-item-info">
+                    <span class="dock-item-name">Conteúdo / Texto</span>
+                    <span class="dock-item-desc">Mensagem automática</span>
+                  </div>
+                  <i data-lucide="grip-vertical" class="dock-item-grip"></i>
+                </div>
+
+                <div class="dock-item" draggable="true" data-node-type="action" title="Ação no CRM, tag ou notificação">
+                  <div class="dock-item-icon action">
+                    <i data-lucide="zap" style="width: 16px; height: 16px;"></i>
+                  </div>
+                  <div class="dock-item-info">
+                    <span class="dock-item-name">Ação / CRM</span>
+                    <span class="dock-item-desc">Lead, Tag ou Etapa</span>
+                  </div>
+                  <i data-lucide="grip-vertical" class="dock-item-grip"></i>
+                </div>
+
+                <div class="dock-item" draggable="true" data-node-type="human" title="Transbordo para fila humana de atendimento">
+                  <div class="dock-item-icon human">
+                    <i data-lucide="users" style="width: 16px; height: 16px;"></i>
+                  </div>
+                  <div class="dock-item-info">
+                    <span class="dock-item-name">Fila Humana</span>
+                    <span class="dock-item-desc">Transbordo de equipe</span>
+                  </div>
+                  <i data-lucide="grip-vertical" class="dock-item-grip"></i>
+                </div>
+
+                <div class="dock-item" draggable="true" data-node-type="delay" title="Simulação de digitação ou pausa">
+                  <div class="dock-item-icon delay">
+                    <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+                  </div>
+                  <div class="dock-item-info">
+                    <span class="dock-item-name">Atraso Inteligente</span>
+                    <span class="dock-item-desc">Pausa simulada</span>
+                  </div>
+                  <i data-lucide="grip-vertical" class="dock-item-grip"></i>
+                </div>
+              </div>
+              <div class="dock-hint">
+                <i data-lucide="info" style="width: 12px; height: 12px;"></i>
+                <span>Arraste ou clique para inserir</span>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- ==============================================
              3. LEADS (SIMPLIFICADA)
              ============================================== -->
         <section class="view-panel" id="view-leads">
@@ -675,6 +989,151 @@
         </section>
 
         <!-- ==============================================
+             CRM PIPELINE & SALES FUNNEL (KANBAN)
+             ============================================== -->
+        <section class="view-panel" id="view-crm">
+          <div class="crm-view-container">
+            <!-- Standard ZapChat Page Header -->
+            <div class="page-header" style="margin-bottom: 20px;">
+              <div class="page-title-group">
+                <h1 class="page-title">CRM & Funil de Vendas</h1>
+                <p class="page-subtitle">Acompanhe suas oportunidades, valores em negociação e feche mais negócios</p>
+              </div>
+              <div class="header-actions">
+                <button type="button" class="btn btn-secondary" id="btn-crm-export" title="Exportar oportunidades para CSV" onclick="window.showToast ? window.showToast('Exportando oportunidades em CSV...') : null">
+                  <i data-lucide="download" style="width: 15px; height: 15px;"></i>
+                  <span>Exportar CSV</span>
+                </button>
+                <button type="button" class="btn btn-primary" id="btn-crm-new-deal" data-modal-target="modal-new-deal">
+                  <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                  <span>Nova oportunidade</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Standard ZapChat 4-Card KPI Row -->
+            <div class="leads-kpi-row crm-kpi-row">
+              <div class="kpi-card leads-stat-card">
+                <div class="kpi-icon-wrapper green">
+                  <i data-lucide="briefcase" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div class="kpi-info">
+                  <span class="kpi-title-text">Pipeline Ativo</span>
+                  <div class="kpi-value" id="crm-kpi-pipeline-val">R$ 104.900</div>
+                  <div class="kpi-trend trend-up">
+                    <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+                    <span id="crm-kpi-active-deals-count">10 oportunidades ativas</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="kpi-card leads-stat-card">
+                <div class="kpi-icon-wrapper purple">
+                  <i data-lucide="target" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div class="kpi-info">
+                  <span class="kpi-title-text">Taxa de Conversão</span>
+                  <div class="kpi-value" id="crm-kpi-conversion-val">20.0%</div>
+                  <div class="kpi-trend trend-up">
+                    <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+                    <span>+4.2% vs. mês anterior</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="kpi-card leads-stat-card">
+                <div class="kpi-icon-wrapper blue">
+                  <i data-lucide="award" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div class="kpi-info">
+                  <span class="kpi-title-text">Ticket Médio</span>
+                  <div class="kpi-value" id="crm-kpi-ticket-val">R$ 10.490</div>
+                  <div class="kpi-trend trend-up">
+                    <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+                    <span>Por negócio fechado</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="kpi-card leads-stat-card">
+                <div class="kpi-icon-wrapper green">
+                  <i data-lucide="check-circle-2" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div class="kpi-info">
+                  <span class="kpi-title-text">Fechados no Mês</span>
+                  <div class="kpi-value" id="crm-kpi-won-val">R$ 28.300</div>
+                  <div class="kpi-trend trend-up">
+                    <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+                    <span id="crm-kpi-won-deals-count">2 negócios convertidos</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Standard ZapChat Filter Bar -->
+            <div class="leads-filter-bar-simplified crm-filter-bar">
+              <div class="leads-search-wrap">
+                <i data-lucide="search" class="leads-search-icon"></i>
+                <input type="text" id="crm-search-input" placeholder="Buscar por oportunidade, empresa ou contato...">
+              </div>
+
+              <div class="leads-filters-group">
+                <div class="filter-dropdown-item">
+                  <span class="filter-mini-label">Canal:</span>
+                  <select class="filter-mini-select" id="crm-filter-channel">
+                    <option value="all">Todos</option>
+                    <option value="WhatsApp">WhatsApp</option>
+                    <option value="Instagram">Instagram</option>
+                    <option value="Site">Site</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="filter-chevron-icon"></i>
+                </div>
+
+                <div class="filter-dropdown-item">
+                  <span class="filter-mini-label">Responsável:</span>
+                  <select class="filter-mini-select" id="crm-filter-agent">
+                    <option value="all">Todos</option>
+                    <option value="Carla Menezes">Carla Menezes</option>
+                    <option value="Juliana Santos">Juliana Santos</option>
+                    <option value="Rodrigo Almeida">Rodrigo Almeida</option>
+                    <option value="Felipe Costa">Felipe Costa</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="filter-chevron-icon"></i>
+                </div>
+
+                <div class="filter-dropdown-item">
+                  <span class="filter-mini-label">Etapa:</span>
+                  <select class="filter-mini-select" id="crm-filter-stage">
+                    <option value="all">Todas</option>
+                    <option value="prospeccao">Prospecção</option>
+                    <option value="qualificacao">Qualificação</option>
+                    <option value="proposta">Proposta Enviada</option>
+                    <option value="negociacao">Negociação</option>
+                    <option value="ganho">Fechado Ganho</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="filter-chevron-icon"></i>
+                </div>
+
+                <!-- View Mode Switcher -->
+                <div class="crm-view-mode-pill">
+                  <button type="button" class="crm-pill-btn active" id="crm-btn-view-kanban" title="Visualização em Funil Kanban">
+                    <i data-lucide="kanban" style="width: 14px; height: 14px;"></i>
+                    <span>Funil</span>
+                  </button>
+                  <button type="button" class="crm-pill-btn" id="crm-btn-view-list" title="Visualização em Lista / Tabela">
+                    <i data-lucide="list" style="width: 14px; height: 14px;"></i>
+                    <span>Lista</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dynamic Board / List Area -->
+            <div id="crm-content-area"></div>
+          </div>
+        </section>
+
+        <!-- ==============================================
              4. CANAIS (SIMPLIFICADA)
              ============================================== -->
         <section class="view-panel" id="view-canais">
@@ -771,6 +1230,10 @@
                 </div>
               </div>
               <div style="display: flex; gap: 10px; align-items: center;">
+                <button type="button" class="btn btn-outline-status btn-sm is-active" id="btn-header-toggle-agent-status" title="Alternar status do agente">
+                  <i data-lucide="pause-circle" id="header-status-icon" style="width:14px;height:14px;"></i>
+                  <span id="header-status-text">Pausar agente</span>
+                </button>
                 <button type="button" class="btn btn-secondary btn-sm btn-back-to-agents">Cancelar</button>
                 <button type="button" class="btn btn-primary btn-sm btn-save-agent">
                   <i data-lucide="save" style="width:14px;height:14px;"></i> Salvar alterações
@@ -793,7 +1256,14 @@
                   </div>
                   <h3 class="agent-sidebar-name" id="edit-agent-name-display">Pedro</h3>
                   <span class="agent-sidebar-role" id="edit-agent-role-display">Vendedor em Loja Download</span>
-                  <span class="badge badge-dot badge-active" id="edit-agent-status-badge" style="font-size: 11.5px; padding: 4px 10px;">IA ativa</span>
+                  <div class="agent-sidebar-status-wrap">
+                    <button type="button" class="badge badge-dot badge-active agent-sidebar-status-pill is-active" id="edit-agent-status-badge" title="Agente ativo — Clique para alternar status">
+                      IA ativa
+                    </button>
+                    <button type="button" class="agent-sidebar-switcher is-active" id="btn-sidebar-quick-pause" role="switch" aria-checked="true" title="Status: Ativo — Clique para pausar">
+                      <span class="switch-thumb"></span>
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Internal Sub-navigation -->
@@ -885,17 +1355,6 @@
                           <button type="button" class="segment-chip" data-segment="Imobiliária / Corretores">Imobiliária</button>
                           <button type="button" class="segment-chip" data-segment="Academia / Fitness">Academia</button>
                         </div>
-                      </div>
-
-                      <div class="segment-rules-banner">
-                        <div class="segment-rules-banner-left">
-                          <i data-lucide="check-circle-2" class="banner-check-icon"></i>
-                          <span>Boas práticas do segmento aplicadas automaticamente</span>
-                        </div>
-                        <a href="javascript:void(0)" class="segment-rules-link" id="btn-view-segment-rules">
-                          <span>Ver regras</span>
-                          <i data-lucide="arrow-right" style="width:13px;height:13px;"></i>
-                        </a>
                       </div>
                     </div>
 
@@ -1063,6 +1522,98 @@
                     </div>
                   </div>
 
+                  <!-- CARD 3.5: Mensagem de saudação (Full-width) -->
+                  <div class="agent-profile-card">
+                    <div class="profile-card-header" style="justify-content: space-between;">
+                      <div style="display: flex; gap: 12px; align-items: center;">
+                        <div class="profile-card-icon">
+                          <i data-lucide="message-square"></i>
+                        </div>
+                        <div class="profile-card-titles">
+                          <h3 class="profile-card-title">Mensagem de saudação</h3>
+                          <p class="profile-card-subtitle">Defina se o agente deve enviar uma mensagem de boas-vindas ao iniciar o atendimento.</p>
+                        </div>
+                      </div>
+                      <label class="switch-toggle" title="Ativar ou desativar mensagem de saudação">
+                        <input type="checkbox" id="toggle-agent-greeting" checked>
+                        <span class="switch-slider"></span>
+                      </label>
+                    </div>
+
+                    <div class="agent-greeting-content" id="agent-greeting-content">
+                      <!-- Seletor de Modo Simples -->
+                      <div class="greeting-mode-pills" style="margin-bottom: 16px;">
+                        <button type="button" class="greeting-mode-pill active" data-greeting-mode="fixed">
+                          <i data-lucide="message-circle" style="width:14px;height:14px;"></i>
+                          <span>Mensagem padrão</span>
+                        </button>
+                        <button type="button" class="greeting-mode-pill" data-greeting-mode="dynamic">
+                          <i data-lucide="clock" style="width:14px;height:14px;"></i>
+                          <span>Por período (Bom dia / Boa tarde / Boa noite)</span>
+                        </button>
+                      </div>
+
+                      <!-- Modo 1: Mensagem Padrão Única -->
+                      <div class="greeting-box-fixed" id="greeting-box-fixed-perfil">
+                        <div class="form-group" style="margin-bottom: 0;">
+                          <label class="form-label" for="agent-greeting-textarea">Texto da saudação:</label>
+                          <div class="behavior-textarea-container" style="margin-bottom: 0;">
+                            <textarea id="agent-greeting-textarea" class="behavior-textarea" rows="2" placeholder="Ex.: Olá! Seja muito bem-vindo(a). Como posso te ajudar hoje?">Olá! Seja muito bem-vindo(a). Como posso te ajudar hoje?</textarea>
+                            <div class="behavior-counter-bar">
+                              <span id="greeting-char-count">56/500</span>
+                            </div>
+                          </div>
+                          <div class="greeting-tags-bar" style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 11.5px; color: var(--text-muted);">Tags rápidas:</span>
+                            <button type="button" class="btn-tag-insert" data-target="perfil" data-tag="{saudacao}" style="font-size: 11.5px; padding: 2px 8px; border-radius: 4px; border: 1px dashed var(--border-medium); background: var(--bg-hover); color: var(--primary); cursor: pointer;">+ {saudacao}</button>
+                            <button type="button" class="btn-tag-insert" data-target="perfil" data-tag="{nome}" style="font-size: 11.5px; padding: 2px 8px; border-radius: 4px; border: 1px dashed var(--border-medium); background: var(--bg-hover); color: var(--text-main); cursor: pointer;">+ {nome}</button>
+                          </div>
+                          <span style="display: block; margin-top: 6px; font-size: 12px; color: var(--text-muted);">
+                            A tag <code>{saudacao}</code> adapta automaticamente para Bom dia, Boa tarde ou Boa noite conforme o horário.
+                          </span>
+                        </div>
+                      </div>
+
+                      <!-- Modo 2: Dinâmico por Período do Dia -->
+                      <div class="greeting-box-dynamic" id="greeting-box-dynamic-perfil" style="display: none;">
+                        <div class="greeting-periods-list" style="display: flex; flex-direction: column; gap: 10px;">
+                          <!-- Manhã -->
+                          <div class="greeting-period-item">
+                            <label class="form-label" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 12px;">
+                              <span class="greeting-period-badge morning" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; background: rgba(245, 158, 11, 0.12); color: #d97706; font-weight: 600; font-size: 11px;">
+                                <i data-lucide="sun" style="width: 12px; height: 12px;"></i> Manhã (05h às 12h)
+                              </span>
+                            </label>
+                            <input type="text" id="greeting-input-morning" class="form-input" placeholder="Ex.: Bom dia! Seja muito bem-vindo(a). Como posso te ajudar?" value="Bom dia! Seja muito bem-vindo(a). Como posso te ajudar hoje?">
+                          </div>
+
+                          <!-- Tarde -->
+                          <div class="greeting-period-item">
+                            <label class="form-label" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 12px;">
+                              <span class="greeting-period-badge afternoon" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; background: rgba(59, 130, 246, 0.12); color: #2563eb; font-weight: 600; font-size: 11px;">
+                                <i data-lucide="sun-medium" style="width: 12px; height: 12px;"></i> Tarde (12h às 18h)
+                              </span>
+                            </label>
+                            <input type="text" id="greeting-input-afternoon" class="form-input" placeholder="Ex.: Boa tarde! Seja muito bem-vindo(a). Como posso te ajudar?" value="Boa tarde! Seja muito bem-vindo(a). Como posso te ajudar hoje?">
+                          </div>
+
+                          <!-- Noite -->
+                          <div class="greeting-period-item">
+                            <label class="form-label" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 12px;">
+                              <span class="greeting-period-badge night" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; background: rgba(139, 92, 246, 0.12); color: #7c3aed; font-weight: 600; font-size: 11px;">
+                                <i data-lucide="moon" style="width: 12px; height: 12px;"></i> Noite (18h às 05h)
+                              </span>
+                            </label>
+                            <input type="text" id="greeting-input-night" class="form-input" placeholder="Ex.: Boa noite! Seja muito bem-vindo(a). Como posso te ajudar?" value="Boa noite! Seja muito bem-vindo(a). Como posso te ajudar hoje?">
+                          </div>
+                        </div>
+                        <span style="display: block; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
+                          O agente detectará o horário da mensagem do cliente e enviará a saudação apropriada automaticamente.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   <!-- CARD 4: Dados do cliente (Full-width) -->
                   <div class="agent-profile-card">
                     <div class="profile-card-header">
@@ -1081,42 +1632,34 @@
                         <i data-lucide="user" class="chip-field-icon"></i>
                         <span>Nome</span>
                       </button>
-                      <button type="button" class="btn-data-chip active" data-field="telefone">
-                        <i data-lucide="check-square" class="chip-check-icon"></i>
-                        <i data-lucide="phone" class="chip-field-icon"></i>
-                        <span>Telefone</span>
-                      </button>
                       <button type="button" class="btn-data-chip" data-field="email">
                         <i data-lucide="square" class="chip-check-icon"></i>
                         <i data-lucide="mail" class="chip-field-icon"></i>
-                        <span>E-mail</span>
-                      </button>
-                      <button type="button" class="btn-data-chip active" data-field="melhor-horario">
-                        <i data-lucide="check-square" class="chip-check-icon"></i>
-                        <i data-lucide="clock" class="chip-field-icon"></i>
-                        <span>Melhor horário</span>
-                      </button>
-                      <button type="button" class="btn-data-chip active" data-field="tipo-atendimento">
-                        <i data-lucide="check-square" class="chip-check-icon"></i>
-                        <i data-lucide="clipboard-list" class="chip-field-icon"></i>
-                        <span>Tipo de atendimento</span>
+                        <span>E-mail (opcional)</span>
                       </button>
                       <button type="button" class="btn-add-custom-field" id="btn-add-client-field">
                         <i data-lucide="plus" style="width:13px;height:13px;"></i>
                         <span>Adicionar campo</span>
                       </button>
                     </div>
+
+                    <div class="client-data-whatsapp-notice">
+                      <i data-lucide="message-circle"></i>
+                      <div>
+                        <strong>WhatsApp:</strong> O número de telefone já é identificado automaticamente pelo canal, sem necessidade de solicitá-lo novamente ao cliente.
+                      </div>
+                    </div>
                   </div>
 
-                  <!-- CARD 5: Segurança e atendimento humano (Full-width) -->
+                  <!-- CARD 5: Segurança (Full-width) -->
                   <div class="agent-profile-card">
                     <div class="profile-card-header">
                       <div class="profile-card-icon">
                         <i data-lucide="shield"></i>
                       </div>
                       <div class="profile-card-titles">
-                        <h3 class="profile-card-title">Segurança e atendimento humano</h3>
-                        <p class="profile-card-subtitle">Defina como o agente deve agir em situações sensíveis ou quando não souber responder.</p>
+                        <h3 class="profile-card-title">Segurança</h3>
+                        <p class="profile-card-subtitle">Defina como o agente deve agir quando não souber responder.</p>
                       </div>
                     </div>
 
@@ -1134,28 +1677,6 @@
                             <input type="checkbox" id="check-safety-offer-human" checked>
                             <span class="safety-check-box"></span>
                             <span>Oferecer atendimento humano</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      <!-- Coluna 2: Transferir para uma pessoa quando -->
-                      <div class="safety-column">
-                        <span class="safety-column-title">Transferir para uma pessoa quando</span>
-                        <div class="safety-checkbox-list-grid">
-                          <label class="safety-check-item">
-                            <input type="checkbox" id="check-transfer-requested" checked>
-                            <span class="safety-check-box"></span>
-                            <span>Cliente solicitar</span>
-                          </label>
-                          <label class="safety-check-item">
-                            <input type="checkbox" id="check-transfer-sensitive" checked>
-                            <span class="safety-check-box"></span>
-                            <span>Identificar assunto sensível</span>
-                          </label>
-                          <label class="safety-check-item">
-                            <input type="checkbox" id="check-transfer-notfound" checked>
-                            <span class="safety-check-box"></span>
-                            <span>Não encontrar a informação</span>
                           </label>
                         </div>
                       </div>
@@ -1454,8 +1975,53 @@
                   </div>
                 </div>
 
-                <!-- PANE 7: PREFERÊNCIAS DE ATENDIMENTO (SIMPLIFICADA MVP) -->
+                <!-- PANE 7: PREFERÊNCIAS DE ATENDIMENTO / CONFIGURAÇÕES -->
                 <div class="agent-tab-pane" id="agent-tab-pane-configuracoes">
+
+                  <!-- 1. CARD PRINCIPAL DE STATUS DO AGENTE (ATIVAR / PAUSAR) -->
+                  <div class="agent-status-control-card" id="card-agent-status-control">
+                    <div class="agent-status-control-header">
+                      <div class="agent-status-info-cluster">
+                        <div class="agent-status-avatar-icon active" id="agent-status-icon-box">
+                          <i data-lucide="power" id="agent-status-card-icon" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div>
+                          <div class="agent-status-title-badge-row">
+                            <h3 class="agent-status-card-title">Status da IA no Atendimento</h3>
+                            <span class="badge badge-dot badge-active" id="config-agent-status-badge">IA ativa</span>
+                          </div>
+                          <p class="agent-status-card-desc">
+                            Defina se este agente deve responder às mensagens automaticamente ou se o atendimento deve ficar temporariamente pausado.
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div class="agent-status-actions-cluster">
+                        <button type="button" class="btn-status-pill-toggle" id="btn-config-toggle-agent-status">
+                          <i data-lucide="pause-circle" id="btn-config-status-icon" style="width:14px;height:14px;"></i>
+                          <span id="btn-config-status-text">Pausar agente</span>
+                        </button>
+                        <label class="switch-toggle" title="Ativar ou pausar IA">
+                          <input type="checkbox" id="toggle-agent-status-master" checked>
+                          <span class="switch-slider"></span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <!-- Banner Contextual do Impacto do Status -->
+                    <div class="agent-status-callout active" id="agent-status-callout">
+                      <div class="agent-status-callout-icon" id="agent-status-callout-icon">
+                        <i data-lucide="check-circle-2" style="width: 17px; height: 17px;"></i>
+                      </div>
+                      <div class="agent-status-callout-body">
+                        <span class="agent-status-callout-heading" id="agent-status-callout-heading">Agente em operação normal</span>
+                        <p class="agent-status-callout-text" id="agent-status-callout-text">
+                          O agente está ativo e responderá os clientes automaticamente nos canais conectados (WhatsApp, etc.).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div class="agent-config-card">
                     <div class="agent-config-card-header">
                       <div>
@@ -1485,157 +2051,58 @@
                       <label class="switch-toggle"><input type="checkbox" id="toggle-agent-transfer-human" checked><span class="switch-slider"></span></label>
                     </div>
 
-                    <!-- Painel de Configuração de Destino do Transbordo Humano -->
+                    <!-- Painel de Configuração Simplificado de Transbordo Humano -->
                     <div class="agent-transfer-config-box" id="agent-transfer-config-box">
                       
-                      <!-- Header do Painel -->
-                      <div class="transfer-box-header">
-                        <div class="transfer-box-header-title">
-                          <i data-lucide="corner-down-right" style="width: 17px; height: 17px; color: var(--primary);"></i>
-                          <span>Destino do Transbordo Humano</span>
+                      <!-- Destino na Caixa de Entrada Geral -->
+                      <div class="transfer-inbox-destination-card">
+                        <div class="transfer-inbox-destination-icon">
+                          <i data-lucide="inbox"></i>
                         </div>
-                        <span class="transfer-box-badge" id="transfer-destination-summary-badge">
-                          Fila: Comercial & Vendas
+                        <div class="transfer-inbox-destination-info">
+                          <strong>Destino: Caixa de Entrada Geral</strong>
+                          <p>Ao acionar o transbordo humano, a conversa é direcionada automaticamente para a caixa de entrada central para qualquer atendente disponível assumir.</p>
+                        </div>
+                      </div>
+
+                      <!-- Gatilhos de transferência (Centralizados da Segurança) -->
+                      <div class="form-group" style="margin-bottom: 4px;">
+                        <label class="form-label" style="margin-bottom: 8px;">Quando transferir para humano:</label>
+                        <div class="transfer-toggles-row">
+                          <label class="transfer-checkbox-label">
+                            <input type="checkbox" id="check-transfer-requested" checked>
+                            <span>Quando o cliente solicitar atendimento humano</span>
+                          </label>
+                          <label class="transfer-checkbox-label">
+                            <input type="checkbox" id="check-transfer-sensitive" checked>
+                            <span>Ao detectar assunto sensível ou reclamação</span>
+                          </label>
+                          <label class="transfer-checkbox-label">
+                            <input type="checkbox" id="check-transfer-notfound" checked>
+                            <span>Após a IA não conseguir responder a dúvida</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <!-- Mensagem de Transferência -->
+                      <div class="form-group" style="margin-bottom: 4px;">
+                        <label class="form-label" for="transfer-custom-message">
+                          Mensagem de transferência enviada ao cliente:
+                        </label>
+                        <input type="text" id="transfer-custom-message" class="form-input" 
+                          value="Aguarde um instante! Estou transferindo seu atendimento para um de nossos especialistas." 
+                          placeholder="Digite a mensagem de transferência que o cliente receberá...">
+                        <span style="display: block; margin-top: 5px; font-size: 12px; color: var(--text-muted);">
+                          Enviada no WhatsApp antes de passar o controle da conversa para um atendente humano.
                         </span>
                       </div>
 
-                      <p class="transfer-box-subtitle">
-                        Escolha se a conversa deve ser direcionada para um departamento/fila específica ou para pessoas específicas da sua equipe de atendimento.
-                      </p>
-
-                      <!-- Seleção do Modo de Direcionamento (Cards de Opção) -->
-                      <div class="transfer-mode-selector">
-                        <label class="transfer-mode-card active" id="card-mode-dept">
-                          <input type="radio" name="agent_transfer_mode" value="department" checked>
-                          <div class="transfer-mode-icon">
-                            <i data-lucide="folder-kanban"></i>
-                          </div>
-                          <div class="transfer-mode-info">
-                            <strong>Fila / Departamento</strong>
-                            <span>Direcionar para uma fila temática (ex: Comercial, Suporte)</span>
-                          </div>
-                        </label>
-
-                        <label class="transfer-mode-card" id="card-mode-members">
-                          <input type="radio" name="agent_transfer_mode" value="members">
-                          <div class="transfer-mode-icon">
-                            <i data-lucide="users"></i>
-                          </div>
-                          <div class="transfer-mode-info">
-                            <strong>Pessoas da Equipe</strong>
-                            <span>Selecionar um ou mais atendentes específicos</span>
-                          </div>
-                        </label>
-
-                        <label class="transfer-mode-card" id="card-mode-all">
-                          <input type="radio" name="agent_transfer_mode" value="all_team">
-                          <div class="transfer-mode-icon">
-                            <i data-lucide="shuffle"></i>
-                          </div>
-                          <div class="transfer-mode-info">
-                            <strong>Toda a Equipe (Geral)</strong>
-                            <span>Distribuir entre qualquer atendente online disponível</span>
-                          </div>
-                        </label>
-                      </div>
-
-                      <!-- 1. MODO DEPARTAMENTO: Select e preview de atendentes da fila -->
-                      <div class="transfer-subpanel" id="transfer-subpanel-department">
-                        <div class="form-group" style="margin-bottom: 14px;">
-                          <label class="form-label" for="select-transfer-dept">
-                            <i data-lucide="folder" style="width: 14px; height: 14px; color: var(--primary); display: inline-block; vertical-align: middle;"></i>
-                            Selecione o Departamento de Atendimento:
-                          </label>
-                          <select id="select-transfer-dept" class="form-select" style="max-width: 520px;">
-                            <!-- Populated dynamically from team.js departments -->
-                          </select>
-                        </div>
-
-                        <!-- Card de resumo dos atendentes do departamento selecionado -->
-                        <div class="transfer-dept-preview-card" id="transfer-dept-preview-card">
-                          <div class="transfer-dept-preview-header">
-                            <span class="preview-title" id="transfer-dept-preview-title">Atendentes nesta fila</span>
-                            <span class="preview-count" id="transfer-dept-preview-count">2 atendentes</span>
-                          </div>
-                          <div class="transfer-dept-members-chips" id="transfer-dept-members-chips">
-                            <!-- Populated dynamically -->
-                          </div>
-                        </div>
-
-                        <div class="form-group" style="margin-top: 14px; margin-bottom: 0;">
-                          <label class="form-label">Regra de Distribuição na Fila:</label>
-                          <div class="transfer-rule-options">
-                            <label class="transfer-mini-radio">
-                              <input type="radio" name="dept_dist_rule" value="round_robin" checked>
-                              <span><strong>Round-Robin:</strong> Alterna entre os atendentes da fila igualmente</span>
-                            </label>
-                            <label class="transfer-mini-radio">
-                              <input type="radio" name="dept_dist_rule" value="least_busy">
-                              <span><strong>Menor carga:</strong> Direciona para o atendente com menos conversas ativas</span>
-                            </label>
-                            <label class="transfer-mini-radio">
-                              <input type="radio" name="dept_dist_rule" value="broadcast">
-                              <span><strong>Transmissão geral:</strong> Toca simultaneamente para todos os membros da fila</span>
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- 2. MODO PESSOAS DA EQUIPE: Multi-seleção com busca -->
-                      <div class="transfer-subpanel" id="transfer-subpanel-members" style="display: none;">
-                        <div class="transfer-members-toolbar">
-                          <div class="transfer-search-input-wrap">
-                            <i data-lucide="search"></i>
-                            <input type="text" id="transfer-member-search" placeholder="Buscar atendente por nome ou cargo...">
-                          </div>
-                          <div class="transfer-selection-actions">
-                            <button type="button" class="btn btn-ghost btn-sm" id="btn-transfer-select-all">Selecionar todos</button>
-                            <span style="color: var(--border);">|</span>
-                            <button type="button" class="btn btn-ghost btn-sm" id="btn-transfer-clear-all">Limpar</button>
-                            <span class="transfer-selected-count-badge" id="transfer-selected-count-badge">0 selecionados</span>
-                          </div>
-                        </div>
-
-                        <!-- Lista de pessoas da equipe para marcar -->
-                        <div class="transfer-members-grid" id="transfer-members-checkbox-grid">
-                          <!-- Populated dynamically with team members -->
-                        </div>
-                      </div>
-
-                      <!-- 3. MODO TODA A EQUIPE: Banner informativo -->
-                      <div class="transfer-subpanel" id="transfer-subpanel-all" style="display: none;">
-                        <div class="transfer-all-team-banner">
-                          <div class="all-team-banner-icon">
-                            <i data-lucide="users" style="width: 20px; height: 20px; color: var(--primary);"></i>
-                          </div>
-                          <div>
-                            <strong>Distribuição Aberta para Toda a Equipe</strong>
-                            <p style="font-size: 12.5px; color: var(--text-muted); margin: 2px 0 0 0;">
-                              Quando o transbordo for acionado, qualquer colaborador com acesso ao atendimento (Inbox) poderá assumir a conversa na fila geral do sistema.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Opções Adicionais de Transbordo -->
-                      <div class="transfer-extra-options">
-                        <div class="form-group" style="margin-bottom: 12px;">
-                          <label class="form-label" for="transfer-custom-message">
-                            Mensagem automática enviada ao cliente antes do transbordo:
-                          </label>
-                          <input type="text" id="transfer-custom-message" class="form-input" 
-                            value="Aguarde um instante! Estou transferindo seu atendimento para um de nossos especialistas humanos." 
-                            placeholder="Digite a mensagem que o cliente receberá...">
-                        </div>
-
+                      <!-- Envio do Resumo da Conversa -->
+                      <div class="transfer-extra-options" style="padding-top: 12px; margin-top: 0; border-top: 1px solid var(--border-light);">
                         <div class="transfer-toggles-row">
                           <label class="transfer-checkbox-label">
-                            <input type="checkbox" id="transfer-opt-notify" checked>
-                            <span>Notificar atendente(s) imediatamente via aviso sonoro e pop-up</span>
-                          </label>
-                          <label class="transfer-checkbox-label">
                             <input type="checkbox" id="transfer-opt-attach-summary" checked>
-                            <span>Incluir resumo inteligente da IA com histórico e contexto da conversa</span>
+                            <span>Enviar resumo inteligente da IA com histórico e contexto para o atendente</span>
                           </label>
                         </div>
                       </div>
@@ -1782,6 +2249,95 @@
 
                         </div>
 
+                      </div>
+                    </div>
+
+                    <!-- Mensagem de saudação -->
+                    <div class="agent-greeting-config-section" style="padding-top: 24px; border-top: 1px solid var(--border-light); margin-bottom: 24px;">
+                      <div class="switch-control-group" style="margin-bottom: 16px;">
+                        <div class="switch-info">
+                          <span class="switch-title" style="display: flex; align-items: center; gap: 8px;">
+                            <i data-lucide="message-square" style="width:16px;height:16px;color:var(--primary);"></i>
+                            Mensagem de saudação
+                          </span>
+                          <span class="switch-desc">
+                            Defina se o agente envia uma saudação inicial ao cliente e se ela varia de acordo com o período do dia (Bom dia, Boa tarde, Boa noite).
+                          </span>
+                        </div>
+                        <label class="switch-toggle" title="Ativar ou desativar mensagem de saudação">
+                          <input type="checkbox" id="toggle-agent-greeting-config" checked>
+                          <span class="switch-slider"></span>
+                        </label>
+                      </div>
+
+                      <div class="agent-greeting-content" id="agent-greeting-content-config">
+                        <!-- Mode selector pills -->
+                        <div class="greeting-mode-pills" style="margin-bottom: 16px;">
+                          <button type="button" class="greeting-mode-pill active" data-greeting-mode="fixed">
+                            <i data-lucide="message-circle" style="width:14px;height:14px;"></i>
+                            <span>Mensagem padrão</span>
+                          </button>
+                          <button type="button" class="greeting-mode-pill" data-greeting-mode="dynamic">
+                            <i data-lucide="clock" style="width:14px;height:14px;"></i>
+                            <span>Por período (Bom dia / Boa tarde / Boa noite)</span>
+                          </button>
+                        </div>
+
+                        <!-- Fixed Box -->
+                        <div class="greeting-box-fixed" id="greeting-box-fixed-config">
+                          <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="agent-greeting-textarea-config">Texto da saudação:</label>
+                            <div class="behavior-textarea-container" style="margin-bottom: 0;">
+                              <textarea id="agent-greeting-textarea-config" class="behavior-textarea" rows="2" placeholder="Ex.: Olá! Seja muito bem-vindo(a). Como posso te ajudar hoje?">Olá! Seja muito bem-vindo(a). Como posso te ajudar hoje?</textarea>
+                              <div class="behavior-counter-bar">
+                                <span id="greeting-char-count-config">56/500</span>
+                              </div>
+                            </div>
+                            <div class="greeting-tags-bar" style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                              <span style="font-size: 11.5px; color: var(--text-muted);">Tags rápidas:</span>
+                              <button type="button" class="btn-tag-insert" data-target="config" data-tag="{saudacao}" style="font-size: 11.5px; padding: 2px 8px; border-radius: 4px; border: 1px dashed var(--border-medium); background: var(--bg-hover); color: var(--primary); cursor: pointer;">+ {saudacao}</button>
+                              <button type="button" class="btn-tag-insert" data-target="config" data-tag="{nome}" style="font-size: 11.5px; padding: 2px 8px; border-radius: 4px; border: 1px dashed var(--border-medium); background: var(--bg-hover); color: var(--text-main); cursor: pointer;">+ {nome}</button>
+                            </div>
+                            <span style="display: block; margin-top: 6px; font-size: 12px; color: var(--text-muted);">
+                              A tag <code>{saudacao}</code> adapta automaticamente para Bom dia, Boa tarde ou Boa noite conforme o horário.
+                            </span>
+                          </div>
+                        </div>
+
+                        <!-- Dynamic Box -->
+                        <div class="greeting-box-dynamic" id="greeting-box-dynamic-config" style="display: none;">
+                          <div class="greeting-periods-list" style="display: flex; flex-direction: column; gap: 10px;">
+                            <div class="greeting-period-item">
+                              <label class="form-label" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 12px;">
+                                <span class="greeting-period-badge morning" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; background: rgba(245, 158, 11, 0.12); color: #d97706; font-weight: 600; font-size: 11px;">
+                                  <i data-lucide="sun" style="width: 12px; height: 12px;"></i> Manhã (05h às 12h)
+                                </span>
+                              </label>
+                              <input type="text" id="greeting-input-morning-config" class="form-input" placeholder="Ex.: Bom dia! Seja muito bem-vindo(a). Como posso te ajudar hoje?" value="Bom dia! Seja muito bem-vindo(a). Como posso te ajudar hoje?">
+                            </div>
+
+                            <div class="greeting-period-item">
+                              <label class="form-label" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 12px;">
+                                <span class="greeting-period-badge afternoon" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; background: rgba(59, 130, 246, 0.12); color: #2563eb; font-weight: 600; font-size: 11px;">
+                                  <i data-lucide="sun-medium" style="width: 12px; height: 12px;"></i> Tarde (12h às 18h)
+                                </span>
+                              </label>
+                              <input type="text" id="greeting-input-afternoon-config" class="form-input" placeholder="Ex.: Boa tarde! Seja muito bem-vindo(a). Como posso te ajudar hoje?" value="Boa tarde! Seja muito bem-vindo(a). Como posso te ajudar hoje?">
+                            </div>
+
+                            <div class="greeting-period-item">
+                              <label class="form-label" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 12px;">
+                                <span class="greeting-period-badge night" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; background: rgba(139, 92, 246, 0.12); color: #7c3aed; font-weight: 600; font-size: 11px;">
+                                  <i data-lucide="moon" style="width: 12px; height: 12px;"></i> Noite (18h às 05h)
+                                </span>
+                              </label>
+                              <input type="text" id="greeting-input-night-config" class="form-input" placeholder="Ex.: Boa noite! Seja muito bem-vindo(a). Como posso te ajudar hoje?" value="Boa noite! Seja muito bem-vindo(a). Como posso te ajudar hoje?">
+                            </div>
+                          </div>
+                          <span style="display: block; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
+                            O agente detectará o horário da mensagem do cliente e enviará a saudação apropriada automaticamente.
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -2915,7 +3471,13 @@
           <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
           <span>Excluir Lead</span>
         </button>
-        <button type="button" class="btn btn-secondary modal-close">Fechar</button>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-secondary" id="btn-view-lead-create-deal">
+            <i data-lucide="kanban" style="width: 14px; height: 14px; color: var(--primary);"></i>
+            <span>Criar Oportunidade no CRM</span>
+          </button>
+          <button type="button" class="btn btn-secondary modal-close">Fechar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -4478,6 +5040,564 @@
           <button type="submit" class="btn btn-primary">Adicionar campo</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal Editar Conhecimento (Contextual por tipo) -->
+  <div class="modal-backdrop" id="modal-edit-knowledge">
+    <div class="modal-dialog" style="max-width: 520px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div id="modal-edit-knowledge-icon-box" style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="file-edit" id="modal-edit-knowledge-icon" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" id="modal-edit-knowledge-title" style="margin: 0; font-size: 16px;">Editar Conhecimento</h3>
+            <p id="modal-edit-knowledge-desc" style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">Atualize o material de treinamento do agente</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar">&times;</button>
+      </div>
+      <form id="form-edit-knowledge">
+        <input type="hidden" id="edit-knowledge-card-id">
+        <input type="hidden" id="edit-knowledge-type" value="arquivo">
+        
+        <div class="modal-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 14px;">
+          
+          <!-- 1. BLOCO PARA ARQUIVOS (PDF, DOCX, TXT, CSV) -->
+          <div id="edit-block-arquivo" class="edit-knowledge-context-block">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" for="edit-file-name">Nome do arquivo:</label>
+              <input type="text" id="edit-file-name" class="form-input" placeholder="Ex.: catalogo_produtos_2026.pdf">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Arquivo de treinamento:</label>
+              <div class="edit-knowledge-file-box" style="border: 1px dashed var(--border-medium); border-radius: var(--radius-md); padding: 12px 14px; background: var(--bg-hover); display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                  <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(0, 168, 104, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <i data-lucide="file-up" style="width: 17px; height: 17px;"></i>
+                  </div>
+                  <div style="min-width: 0;">
+                    <div id="edit-file-current-label" style="font-size: 13px; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">arquivo.pdf</div>
+                    <div id="edit-file-current-meta" style="font-size: 11.5px; color: var(--text-muted);">Arquivo carregado</div>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-reupload-file" style="flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;">
+                  <i data-lucide="upload-cloud" style="width: 13px; height: 13px;"></i>
+                  <span>Substituir arquivo</span>
+                </button>
+                <input type="file" id="edit-file-hidden-input" accept=".pdf,.txt,.docx,.csv" style="display: none;">
+              </div>
+              <span id="edit-file-reupload-feedback" style="display: block; margin-top: 6px; font-size: 11.5px; color: var(--text-muted);">Formatos suportados: PDF, DOCX, TXT ou CSV até 25MB.</span>
+            </div>
+          </div>
+
+          <!-- 2. BLOCO PARA SITE / URL -->
+          <div id="edit-block-site" class="edit-knowledge-context-block" style="display: none;">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" for="edit-site-url">Endereço da Página / URL:</label>
+              <div style="position: relative;">
+                <input type="url" id="edit-site-url" class="form-input" style="padding-left: 36px;" placeholder="https://seusite.com.br/duvidas">
+                <i data-lucide="globe" style="position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-muted);"></i>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.22); border-radius: var(--radius-md); gap: 10px;">
+                <div>
+                  <span style="font-size: 12.5px; font-weight: 600; color: var(--text-main); display: block;">Sincronização com o Site</span>
+                  <span id="edit-site-sync-status" style="font-size: 11.5px; color: var(--text-muted);">Sincronizado recentemente</span>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-sync-site-now" style="flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;">
+                  <i data-lucide="refresh-cw" id="icon-sync-site" style="width: 13px; height: 13px;"></i>
+                  <span id="text-sync-site">Puxar dados atualizados</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. BLOCO PARA PERGUNTAS E RESPOSTAS -->
+          <div id="edit-block-faq" class="edit-knowledge-context-block" style="display: none;">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" for="edit-faq-question">Pergunta do cliente:</label>
+              <input type="text" id="edit-faq-question" class="form-input" placeholder="Ex.: Qual o prazo de envio e código de rastreio?">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="edit-faq-answer">Resposta esperada da IA:</label>
+              <textarea id="edit-faq-answer" class="form-textarea" rows="4" placeholder="Insira a resposta detalhada que o agente deve dar quando o cliente fizer esta pergunta..."></textarea>
+            </div>
+          </div>
+
+          <!-- 4. BLOCO PARA TEXTO LIVRE -->
+          <div id="edit-block-texto" class="edit-knowledge-context-block" style="display: none;">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" for="edit-text-title">Título do texto:</label>
+              <input type="text" id="edit-text-title" class="form-input" placeholder="Ex.: Regras de frete grátis">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="edit-text-body">Conteúdo do texto:</label>
+              <textarea id="edit-text-body" class="form-textarea" rows="4" placeholder="Insira o texto completo para treinar a IA..."></textarea>
+            </div>
+          </div>
+
+          <!-- Status no atendimento (comum a todos) -->
+          <div class="form-group" style="margin-bottom: 0; padding-top: 6px; border-top: 1px solid var(--border-light);">
+            <label class="form-label" for="edit-knowledge-status">Status no atendimento:</label>
+            <select id="edit-knowledge-status" class="form-select">
+              <option value="active">Ativo (IA utiliza nas respostas)</option>
+              <option value="paused">Pausado (Temporariamente ignorado)</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" for="edit-knowledge-notes">Instruções adicionais / Observações (opcional):</label>
+            <textarea id="edit-knowledge-notes" class="form-textarea" rows="2" placeholder="Ex.: Priorizar este arquivo para dúvidas sobre devolução..."></textarea>
+          </div>
+
+        </div>
+        <div class="modal-footer" style="padding: 14px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-light);">
+          <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-knowledge-edit">
+            <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+            Salvar alterações
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 16: Nova Oportunidade CRM -->
+  <div class="modal-backdrop" id="modal-new-deal">
+    <div class="modal-dialog" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Nova Oportunidade no CRM</h3>
+        <button type="button" class="modal-close" aria-label="Fechar">&times;</button>
+      </div>
+      <form id="form-new-deal">
+        <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+          <div class="form-group">
+            <label class="form-label" for="new-deal-input-title">Título da Oportunidade</label>
+            <input type="text" id="new-deal-input-title" class="form-input" placeholder="Ex: Implantação ZapChat 5 Conexões" required>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label" for="new-deal-input-contact">Nome do Contato</label>
+              <input type="text" id="new-deal-input-contact" class="form-input" placeholder="Ex: Lucas Gomes" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="new-deal-input-company">Empresa / Negócio</label>
+              <input type="text" id="new-deal-input-company" class="form-input" placeholder="Ex: TechVendas Brasil">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label" for="new-deal-input-value">Valor Estimado (R$)</label>
+              <input type="number" id="new-deal-input-value" class="form-input" placeholder="Ex: 8500" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="new-deal-input-stage">Etapa Inicial</label>
+              <select id="new-deal-input-stage" class="form-select">
+                <option value="prospeccao">Prospecção</option>
+                <option value="qualificacao">Qualificação</option>
+                <option value="proposta">Proposta Enviada</option>
+                <option value="negociacao">Negociação</option>
+                <option value="ganho">Fechado Ganho</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+            <div class="form-group">
+              <label class="form-label" for="new-deal-input-agent">Responsável</label>
+              <select id="new-deal-input-agent" class="form-select">
+                <option value="Carla Menezes">Carla Menezes</option>
+                <option value="Juliana Santos">Juliana Santos</option>
+                <option value="Rodrigo Almeida">Rodrigo Almeida</option>
+                <option value="Felipe Costa">Felipe Costa</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="new-deal-input-channel">Canal</label>
+              <select id="new-deal-input-channel" class="form-select">
+                <option value="WhatsApp">WhatsApp</option>
+                <option value="Instagram">Instagram</option>
+                <option value="Site">Site</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="new-deal-input-priority">Prioridade</label>
+              <select id="new-deal-input-priority" class="form-select">
+                <option value="Alta">Alta</option>
+                <option value="Média" selected>Média</option>
+                <option value="Baixa">Baixa</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="new-deal-input-notes">Observações / Necessidades</label>
+            <textarea id="new-deal-input-notes" class="form-textarea" rows="3" placeholder="Detalhes do lead, dores relatadas no atendimento..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding: 14px 20px; display:flex; justify-content:flex-end; gap:8px;">
+          <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Criar Oportunidade</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 17: Visualizar Detalhes da Oportunidade CRM -->
+  <div class="modal-backdrop" id="modal-view-deal">
+    <div class="modal-dialog" style="max-width: 620px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Detalhes da Oportunidade</h3>
+        <button type="button" class="modal-close" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="crm-deal-modal-body">
+        <!-- Visual Funnel Stepper -->
+        <div class="crm-deal-modal-stepper" id="view-deal-stepper">
+          <!-- Populated dynamically by crm.js -->
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <h2 id="view-deal-title" style="font-size: 18px; font-weight: 700; color: var(--text-main); margin: 0 0 4px 0;">-</h2>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="view-deal-company" style="font-size: 13px; color: var(--text-muted);">-</span>
+              <span style="font-size: 11px; padding: 2px 8px; border-radius: 6px; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-muted);" id="view-deal-channel">-</span>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Valor Estimado</span>
+            <div id="view-deal-value" style="font-size: 22px; font-weight: 700; color: var(--primary-color);">-</div>
+          </div>
+        </div>
+
+        <!-- Info Grid -->
+        <div class="crm-modal-grid-info">
+          <div class="crm-info-item">
+            <span class="crm-info-label">Contato Principal</span>
+            <span class="crm-info-val" id="view-deal-contact">-</span>
+          </div>
+          <div class="crm-info-item">
+            <span class="crm-info-label">Telefone</span>
+            <span class="crm-info-val" id="view-deal-phone">-</span>
+          </div>
+          <div class="crm-info-item">
+            <span class="crm-info-label">E-mail</span>
+            <span class="crm-info-val" id="view-deal-email">-</span>
+          </div>
+          <div class="crm-info-item">
+            <span class="crm-info-label">Responsável</span>
+            <span class="crm-info-val" id="view-deal-agent">-</span>
+          </div>
+          <div class="crm-info-item">
+            <span class="crm-info-label">Prioridade</span>
+            <span class="crm-info-val" id="view-deal-priority">-</span>
+          </div>
+          <div class="crm-info-item">
+            <span class="crm-info-label">Previsão de Fechamento</span>
+            <span class="crm-info-val" id="view-deal-expected">-</span>
+          </div>
+        </div>
+
+        <!-- Activity Timeline -->
+        <div class="crm-modal-timeline">
+          <span class="crm-timeline-header">Histórico de Atividades Recentes</span>
+          <div class="crm-timeline-item">
+            <i data-lucide="message-circle" class="crm-timeline-icon" style="width: 16px; height: 16px;"></i>
+            <div class="crm-timeline-content">
+              <strong>Atendimento Inicial via IA:</strong> Lead qualificado automaticamente e transferido para negociação.
+              <div class="crm-timeline-time">Ontem às 14:20</div>
+            </div>
+          </div>
+          <div class="crm-timeline-item">
+            <i data-lucide="file-text" class="crm-timeline-icon" style="width: 16px; height: 16px;"></i>
+            <div class="crm-timeline-content">
+              <strong>Proposta Comercial Gerada:</strong> Condições personalizadas enviadas ao decisor.
+              <div class="crm-timeline-time">Hoje às 09:15</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <span class="crm-timeline-header" style="display:block; margin-bottom: 6px;">Observações Internas</span>
+          <div id="view-deal-notes" style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 9px; padding: 12px; font-size: 13px; color: var(--text-main); line-height: 1.4;">
+            -
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: 14px 20px; display:flex; justify-content:space-between; align-items:center;">
+        <button type="button" class="btn btn-secondary modal-close item-danger" id="btn-deal-modal-delete" style="color: #DC2626;">
+          <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+          <span>Excluir</span>
+        </button>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-secondary" id="btn-deal-modal-chat">
+            <i data-lucide="message-square" style="width: 14px; height: 14px;"></i>
+            <span>Abrir Conversa</span>
+          </button>
+          <button type="button" class="btn btn-primary" id="btn-deal-modal-mark-won">
+            <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+            <span>Marcar como Ganho</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 18: Novo Chatbot -->
+  <div class="modal-backdrop" id="modal-new-chatbot">
+    <div class="modal-dialog" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Novo Chatbot de Atendimento</h3>
+        <button type="button" class="modal-close" aria-label="Fechar">&times;</button>
+      </div>
+      <form id="form-new-chatbot">
+        <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+          <div class="form-group">
+            <label class="form-label" for="new-bot-input-name">Nome do Chatbot</label>
+            <input type="text" id="new-bot-input-name" class="form-input" placeholder="Ex: Triagem & Boas-Vindas Vendas" required>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label" for="new-bot-input-channel">Canal Conectado</label>
+              <select id="new-bot-input-channel" class="form-select">
+                <option value="WhatsApp">WhatsApp</option>
+                <option value="Instagram">Instagram Direct</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="new-bot-input-agent">Agente de IA Padrão</label>
+              <select id="new-bot-input-agent" class="form-select">
+                <option value="Juliana Santos">Juliana Santos (Vendas)</option>
+                <option value="Pedro">Pedro (Suporte)</option>
+                <option value="Carla Menezes">Carla Menezes (Triagem)</option>
+                <option value="Felipe Costa">Felipe Costa (Qualificação)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="new-bot-input-trigger">Gatilho de Início</label>
+            <input type="text" id="new-bot-input-trigger" class="form-input" placeholder="Ex: Primeira mensagem recebida ou Palavra-chave: 'orçamento'" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="new-bot-input-desc">Descrição do Fluxo</label>
+            <textarea id="new-bot-input-desc" class="form-textarea" rows="2" placeholder="Explique resumidamente o objetivo deste fluxo de conversa..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding: 14px 20px; display:flex; justify-content:flex-end; gap:8px;">
+          <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Criar Chatbot</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 19: Construtor Visual de Fluxo (Flow Builder) -->
+  <div class="modal-backdrop" id="modal-flow-builder">
+    <div class="modal-dialog" style="max-width: 680px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" style="margin:0;">Editor de Fluxo: <span id="flow-builder-bot-name">-</span></h3>
+          <span style="font-size:12px; color:var(--text-muted);">Canal: <strong id="flow-builder-bot-channel">-</strong> • Conecte opções aos seus Agentes de IA</span>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar">&times;</button>
+      </div>
+      <form id="form-save-flow-builder">
+        <div class="flow-builder-container">
+          <!-- Node 1: Gatilho -->
+          <div class="flow-node">
+            <div class="flow-node-header">
+              <span class="flow-node-badge trigger">
+                <i data-lucide="zap" style="width:12px; height:12px;"></i>
+                Passo 1: Gatilho de Disparo
+              </span>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label" style="font-size:12px;">Condição de Entrada no Chatbot</label>
+              <input type="text" id="flow-input-trigger" class="form-input" required />
+            </div>
+          </div>
+
+          <div class="flow-connector-line"></div>
+
+          <!-- Node 2: Mensagem e Menu -->
+          <div class="flow-node">
+            <div class="flow-node-header">
+              <span class="flow-node-badge menu">
+                <i data-lucide="message-square" style="width:12px; height:12px;"></i>
+                Passo 2: Mensagem de Boas-vindas & Menu Interativo
+              </span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="font-size:12px;">Mensagem enviada pelo robô ao cliente</label>
+              <textarea id="flow-input-message" class="form-textarea" rows="3" required></textarea>
+            </div>
+
+            <!-- Options Tree with AI Hand-off -->
+            <div style="margin-top: 14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <label class="form-label" style="font-size:12px; margin:0;">Opções do Menu & Destino (Agente de IA / Humano)</label>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-flow-add-option" style="padding:3px 8px; font-size:11px;">
+                  <i data-lucide="plus" style="width:12px; height:12px;"></i>
+                  <span>Adicionar Opção</span>
+                </button>
+              </div>
+
+              <div class="flow-options-tree" id="flow-builder-options-container">
+                <!-- Rendered dynamically by chatbot.js -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding: 14px 20px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:12px; color:var(--text-muted);">
+            <i data-lucide="sparkles" style="width:13px; height:13px; color:var(--ai-purple); display:inline-block; vertical-align:middle;"></i>
+            Transbordo automático para IA ativado
+          </span>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar Fluxo</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 20: Simulador de Chatbot Interativo Ultra-Realista (WhatsApp Phone Preview) -->
+  <div class="modal-backdrop" id="modal-simulate-chatbot">
+    <div class="modal-dialog sim-modal-dialog">
+      <!-- Top Control Bar -->
+      <div class="sim-top-bar">
+        <div class="sim-top-left">
+          <div class="sim-live-badge">
+            <span class="sim-pulse-dot"></span>
+            <span>Simulador Ao Vivo</span>
+          </div>
+          <div class="sim-step-badge" id="sim-step-badge" title="Nó em execução no fluxo">
+            <i data-lucide="git-branch" style="width:12px; height:12px;"></i>
+            <span id="sim-current-node-name">Bloco Inicial</span>
+          </div>
+        </div>
+        <div class="sim-top-right">
+          <button type="button" class="sim-action-btn" id="btn-toggle-wa-theme" title="Alternar tema WhatsApp (Claro / Escuro)">
+            <i data-lucide="moon" id="sim-theme-icon" style="width:13px; height:13px;"></i>
+            <span id="sim-theme-text">Escuro</span>
+          </button>
+          <button type="button" class="sim-action-btn" id="btn-restart-simulation" title="Reiniciar fluxo do início">
+            <i data-lucide="rotate-ccw" style="width:13px; height:13px;"></i>
+            <span>Reiniciar</span>
+          </button>
+          <button type="button" class="sim-close-btn modal-close" title="Fechar pré-visualização">
+            <i data-lucide="x" style="width:15px; height:15px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Smartphone Hardware Mockup Frame (iPhone Titanium Style) -->
+      <div class="sim-phone-chassis" id="sim-phone-chassis" data-wa-theme="light">
+        <!-- Physical Side Buttons -->
+        <div class="sim-hardware-btn sim-btn-silent"></div>
+        <div class="sim-hardware-btn sim-btn-vol-up"></div>
+        <div class="sim-hardware-btn sim-btn-vol-down"></div>
+        <div class="sim-hardware-btn sim-btn-power"></div>
+
+        <!-- Phone Screen Container -->
+        <div class="sim-screen-container">
+          <!-- iOS Status Bar with Dynamic Island -->
+          <div class="sim-status-bar">
+            <div class="sim-status-time" id="sim-clock-time">09:41</div>
+            <div class="sim-dynamic-island">
+              <span class="sim-island-camera"></span>
+              <span class="sim-island-sensor"></span>
+            </div>
+            <div class="sim-status-icons">
+              <svg class="sim-status-icon-svg" viewBox="0 0 18 14" width="15" height="11" fill="currentColor">
+                <rect x="0" y="9" width="3" height="5" rx="0.5"/>
+                <rect x="4.5" y="6" width="3" height="8" rx="0.5"/>
+                <rect x="9" y="3" width="3" height="11" rx="0.5"/>
+                <rect x="13.5" y="0" width="3" height="14" rx="0.5"/>
+              </svg>
+              <span class="sim-network-label">5G</span>
+              <svg class="sim-battery-icon-svg" viewBox="0 0 25 12" width="22" height="11" fill="none" stroke="currentColor">
+                <rect x="1" y="1" width="20" height="10" rx="3" stroke-width="1.2"/>
+                <rect x="2.5" y="2.5" width="16" height="7" rx="2" fill="currentColor"/>
+                <path d="M22 4.5C22.5 4.8 23 5.3 23 6C23 6.7 22.5 7.2 22 7.5" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- WhatsApp In-App Navigation Bar -->
+          <div class="sim-wa-header">
+            <div class="sim-wa-header-left">
+              <button type="button" class="sim-wa-back-btn" title="Voltar">
+                <i data-lucide="chevron-left" style="width:20px; height:20px;"></i>
+                <span class="sim-wa-back-count">14</span>
+              </button>
+              <div class="sim-wa-avatar-wrap">
+                <div class="sim-wa-avatar" id="sim-phone-avatar">🤖</div>
+                <span class="sim-wa-online-dot"></span>
+              </div>
+              <div class="sim-wa-contact-info">
+                <div class="sim-wa-name-row">
+                  <span class="sim-wa-name" id="sim-phone-bot-name">Chatbot ZapChat</span>
+                  <svg class="sim-wa-verified" viewBox="0 0 16 16" width="14" height="14">
+                    <circle cx="8" cy="8" r="8" fill="#25D366"/>
+                    <path d="M4.5 8.2L6.8 10.5L11.5 5.8" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                  </svg>
+                </div>
+                <span class="sim-wa-status" id="sim-phone-status-text">online</span>
+              </div>
+            </div>
+            <div class="sim-wa-header-right">
+              <button type="button" class="sim-wa-icon-btn" title="Chamada de Vídeo"><i data-lucide="video" style="width:17px; height:17px;"></i></button>
+              <button type="button" class="sim-wa-icon-btn" title="Chamada de Voz"><i data-lucide="phone" style="width:16px; height:16px;"></i></button>
+              <button type="button" class="sim-wa-icon-btn" title="Mais opções"><i data-lucide="more-vertical" style="width:17px; height:17px;"></i></button>
+            </div>
+          </div>
+
+          <!-- WhatsApp Chat Messages Body -->
+          <div class="sim-phone-messages" id="sim-phone-messages">
+            <!-- Simulated conversation messages rendered dynamically -->
+          </div>
+
+          <!-- WhatsApp Chat Input Footer -->
+          <div class="sim-wa-footer">
+            <button type="button" class="sim-wa-footer-btn" id="sim-btn-emoji" title="Inserir emoji">
+              <i data-lucide="smile" style="width:20px; height:20px;"></i>
+            </button>
+            <button type="button" class="sim-wa-footer-btn" id="sim-btn-attach" title="Anexar arquivo ou mídia">
+              <i data-lucide="paperclip" style="width:19px; height:19px;"></i>
+            </button>
+            <div class="sim-wa-input-wrap">
+              <input type="text" id="sim-input-text" class="sim-wa-input" placeholder="Mensagem" autocomplete="off" />
+              <button type="button" class="sim-wa-camera-btn" id="sim-btn-camera" title="Enviar foto ou câmera">
+                <i data-lucide="camera" style="width:18px; height:18px;"></i>
+              </button>
+            </div>
+            <button type="button" class="sim-wa-send-btn" id="sim-btn-send" title="Enviar mensagem ou gravar áudio">
+              <i data-lucide="mic" id="sim-send-icon" style="width:17px; height:17px;"></i>
+            </button>
+          </div>
+
+          <!-- iOS Home Indicator -->
+          <div class="sim-home-bar-area">
+            <div class="sim-home-bar"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

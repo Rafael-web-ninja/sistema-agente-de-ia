@@ -1,7 +1,6 @@
 // Module: Editar Agente
 import { zapChatData } from './data.js';
 import { showToast } from './settings.js';
-import { getTeamMembers, getDepartments } from './team.js';
 
 let currentAgentId = 'pedro';
 let currentTone = 'normal';
@@ -10,14 +9,18 @@ export function initEditAgentView() {
   setupInternalTabs();
   setupBehaviorConfiguration();
   setupBehaviorCounter();
+  setupAgentGreeting();
   setupSaveAction();
   setupBackToAgents();
   setupTrainingActions();
   setupAgentSchedule();
   setupAgentHumanTransfer();
+  setupAgentStatusToggle();
 
   // Expose globally
   window.openEditAgent = openEditAgent;
+  window.toggleCurrentAgentStatus = toggleCurrentAgentStatus;
+  window.switchAgentInternalTab = switchAgentInternalTab;
 }
 
 /**
@@ -46,19 +49,14 @@ export function openEditAgent(agentId = 'pedro') {
       avatarEl.innerHTML = agent.name.charAt(0).toUpperCase();
     }
 
-    const statusBadge = document.getElementById('edit-agent-status-badge');
-    if (statusBadge) {
-      statusBadge.textContent = (agent.status === 'Ativo' || !agent.status) ? 'IA ativa' : agent.status;
-      if (agent.statusType === 'testing') {
-        statusBadge.className = 'badge badge-dot badge-testing';
-      } else {
-        statusBadge.className = 'badge badge-dot badge-active';
-      }
-    }
+    updateAgentStatusDisplay(agent);
   }
 
   // Load schedule settings for this agent
   loadAgentSchedule(currentAgentId);
+
+  // Load greeting message settings for this agent
+  loadAgentGreeting(currentAgentId);
 
   // Load human transfer settings for this agent
   loadAgentTransferSettings(currentAgentId);
@@ -112,13 +110,13 @@ function switchAgentInternalTab(tabId) {
  * Internal tab navigation bindings
  */
 function setupInternalTabs() {
-  const navBtns = document.querySelectorAll('.agent-internal-nav-btn[data-agent-tab]');
-  navBtns.forEach(btn => {
-    btn.addEventListener('click', (e) => {
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.agent-internal-nav-btn[data-agent-tab]');
+    if (btn) {
       e.preventDefault();
       const tabId = btn.getAttribute('data-agent-tab');
       switchAgentInternalTab(tabId);
-    });
+    }
   });
 }
 
@@ -1570,11 +1568,18 @@ function setupSaveAction() {
         if (newSegment) agent.segment = newSegment;
       }
 
+      // Save agent greeting preferences
+      saveAgentGreeting(currentAgentId);
+
       // Save agent schedule preferences
       saveAgentSchedule(currentAgentId);
 
       // Save agent human transfer preferences
       saveAgentTransferSettings(currentAgentId);
+
+      if (window.refreshAgentsTable) {
+        window.refreshAgentsTable();
+      }
 
       showToast('Configurações do agente salvas com sucesso!');
 
@@ -2018,42 +2023,255 @@ function setupTrainingActions() {
     updateKnowledgeCount();
   }
 
-  // 6. Event delegation for Edit and Delete actions on knowledge list
+  // 6. Contextual Knowledge Edit Modal and Event delegation
+  let currentEditingKnowledgeCard = null;
+  const knowledgeModal = document.getElementById('modal-edit-knowledge');
+  const formEditKnowledge = document.getElementById('form-edit-knowledge');
+
+  // Detect knowledge item type
+  function getKnowledgeCardType(card) {
+    if (!card) return 'arquivo';
+    if (card.querySelector('.knowledge-item-icon-box.arquivo')) return 'arquivo';
+    if (card.querySelector('.knowledge-item-icon-box.site')) return 'site';
+    if (card.querySelector('.knowledge-item-icon-box.faq')) return 'faq';
+    if (card.querySelector('.knowledge-item-icon-box.texto')) return 'texto';
+
+    const name = (card.querySelector('.knowledge-item-name')?.textContent || '').toLowerCase();
+    const meta = (card.querySelector('.knowledge-item-meta')?.textContent || '').toLowerCase();
+
+    if (name.startsWith('http') || meta.includes('site') || meta.includes('url')) return 'site';
+    if (meta.includes('pergunta') || meta.includes('par cadastrado')) return 'faq';
+    if (meta.includes('texto')) return 'texto';
+    return 'arquivo';
+  }
+
+  // Handle file re-upload inside modal
+  const btnReupload = document.getElementById('btn-reupload-file');
+  const fileHiddenInput = document.getElementById('edit-file-hidden-input');
+  if (btnReupload && fileHiddenInput) {
+    btnReupload.addEventListener('click', () => {
+      fileHiddenInput.click();
+    });
+
+    fileHiddenInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const nameInp = document.getElementById('edit-file-name');
+      const labelEl = document.getElementById('edit-file-current-label');
+      const metaEl = document.getElementById('edit-file-current-meta');
+      const feedbackEl = document.getElementById('edit-file-reupload-feedback');
+
+      if (nameInp) nameInp.value = file.name;
+      if (labelEl) labelEl.textContent = file.name;
+
+      const sizeStr = file.size > 1024 * 1024
+        ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+        : (file.size / 1024).toFixed(0) + ' KB';
+      const ext = file.name.split('.').pop()?.toUpperCase() || 'ARQUIVO';
+
+      if (metaEl) metaEl.textContent = `Arquivo ${ext} • ${sizeStr}`;
+      if (feedbackEl) {
+        feedbackEl.textContent = `✓ Novo arquivo selecionado: ${file.name} (${sizeStr}) pronto para salvar.`;
+        feedbackEl.style.color = 'var(--primary)';
+      }
+    });
+  }
+
+  // Handle site sync button inside modal
+  const btnSyncSite = document.getElementById('btn-sync-site-now');
+  if (btnSyncSite) {
+    btnSyncSite.addEventListener('click', () => {
+      const icon = document.getElementById('icon-sync-site');
+      const text = document.getElementById('text-sync-site');
+      const statusEl = document.getElementById('edit-site-sync-status');
+
+      if (icon) icon.classList.add('spin-anim');
+      if (text) text.textContent = 'Sincronizando...';
+      btnSyncSite.disabled = true;
+
+      setTimeout(() => {
+        if (icon) icon.classList.remove('spin-anim');
+        if (text) text.textContent = 'Puxar dados atualizados';
+        btnSyncSite.disabled = false;
+        if (statusEl) statusEl.textContent = 'Sincronizado agora mesmo';
+        showToast('Conteúdo do site sincronizado com sucesso!');
+      }, 850);
+    });
+  }
+
+  // Form submit handler
+  if (formEditKnowledge) {
+    formEditKnowledge.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!currentEditingKnowledgeCard) return;
+
+      const type = document.getElementById('edit-knowledge-type')?.value || 'arquivo';
+      const nameEl = currentEditingKnowledgeCard.querySelector('.knowledge-item-name');
+      const metaEl = currentEditingKnowledgeCard.querySelector('.knowledge-item-meta');
+      const badge = currentEditingKnowledgeCard.querySelector('.badge-dot');
+      const statusVal = document.getElementById('edit-knowledge-status')?.value;
+      const notesVal = document.getElementById('edit-knowledge-notes')?.value.trim();
+
+      if (type === 'arquivo') {
+        const fileName = document.getElementById('edit-file-name')?.value.trim();
+        const fileMeta = document.getElementById('edit-file-current-meta')?.textContent.trim();
+        if (nameEl && fileName) nameEl.textContent = fileName;
+        if (metaEl && fileMeta) metaEl.textContent = fileMeta;
+      } else if (type === 'site') {
+        const siteUrl = document.getElementById('edit-site-url')?.value.trim();
+        const syncStatus = document.getElementById('edit-site-sync-status')?.textContent.trim() || 'Sincronizado agora mesmo';
+        if (nameEl && siteUrl) nameEl.textContent = siteUrl;
+        if (metaEl) metaEl.textContent = `Site / URL • ${syncStatus}`;
+      } else if (type === 'faq') {
+        const question = document.getElementById('edit-faq-question')?.value.trim();
+        const answer = document.getElementById('edit-faq-answer')?.value.trim();
+        if (nameEl && question) nameEl.textContent = question;
+        if (answer) currentEditingKnowledgeCard.setAttribute('data-faq-answer', answer);
+      } else if (type === 'texto') {
+        const textTitle = document.getElementById('edit-text-title')?.value.trim();
+        const textBody = document.getElementById('edit-text-body')?.value.trim();
+        if (nameEl && textTitle) nameEl.textContent = textTitle;
+        if (textBody) currentEditingKnowledgeCard.setAttribute('data-text-body', textBody);
+      }
+
+      if (badge && statusVal) {
+        if (statusVal === 'active') {
+          badge.className = 'badge badge-dot badge-active';
+          badge.textContent = 'Ativo';
+        } else {
+          badge.className = 'badge badge-dot badge-gray';
+          badge.textContent = 'Pausado';
+        }
+      }
+
+      if (notesVal) {
+        currentEditingKnowledgeCard.setAttribute('data-notes', notesVal);
+      }
+
+      if (knowledgeModal) {
+        knowledgeModal.classList.remove('open');
+        knowledgeModal.classList.remove('active');
+      }
+      showToast('Conhecimento atualizado com sucesso!');
+    });
+  }
+
+  // Handle Edit and Delete on document level so it works reliably everywhere
+  document.addEventListener('click', (e) => {
+    const delBtn = e.target.closest('.btn-delete-knowledge');
+    if (delBtn) {
+      e.preventDefault();
+      const card = delBtn.closest('.knowledge-item-card');
+      if (card) {
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.96)';
+        card.style.transition = 'all 0.2s ease';
+        setTimeout(() => {
+          card.remove();
+          updateKnowledgeCount();
+          showToast('Conhecimento excluído com sucesso.');
+        }, 200);
+      }
+      return;
+    }
+
+    const editBtn = e.target.closest('.btn-edit-knowledge');
+    if (editBtn) {
+      e.preventDefault();
+      const card = editBtn.closest('.knowledge-item-card');
+      if (card) {
+        currentEditingKnowledgeCard = card;
+        const type = getKnowledgeCardType(card);
+        const nameEl = card.querySelector('.knowledge-item-name');
+        const metaEl = card.querySelector('.knowledge-item-meta');
+        const badge = card.querySelector('.badge-dot');
+
+        const name = nameEl ? nameEl.textContent.trim() : '';
+        const meta = metaEl ? metaEl.textContent.trim() : '';
+
+        // Configure modal header & context block by type
+        const typeInput = document.getElementById('edit-knowledge-type');
+        if (typeInput) typeInput.value = type;
+
+        const titleEl = document.getElementById('modal-edit-knowledge-title');
+        const descEl = document.getElementById('modal-edit-knowledge-desc');
+        const iconEl = document.getElementById('modal-edit-knowledge-icon');
+
+        document.querySelectorAll('.edit-knowledge-context-block').forEach(b => (b.style.display = 'none'));
+        const targetBlock = document.getElementById(`edit-block-${type}`);
+        if (targetBlock) targetBlock.style.display = 'block';
+
+        if (type === 'arquivo') {
+          if (titleEl) titleEl.textContent = 'Editar Arquivo de Conhecimento';
+          if (descEl) descEl.textContent = 'Renomeie ou substitua o arquivo de treinamento do agente';
+          if (iconEl) iconEl.setAttribute('data-lucide', 'file-text');
+
+          const nameInp = document.getElementById('edit-file-name');
+          const labelEl = document.getElementById('edit-file-current-label');
+          const metaCurrEl = document.getElementById('edit-file-current-meta');
+          const feedbackEl = document.getElementById('edit-file-reupload-feedback');
+
+          if (nameInp) nameInp.value = name;
+          if (labelEl) labelEl.textContent = name;
+          if (metaCurrEl) metaCurrEl.textContent = meta || 'Arquivo carregado';
+          if (feedbackEl) {
+            feedbackEl.textContent = 'Formatos suportados: PDF, DOCX, TXT ou CSV até 25MB.';
+            feedbackEl.style.color = 'var(--text-muted)';
+          }
+        } else if (type === 'site') {
+          if (titleEl) titleEl.textContent = 'Editar Site / URL de Conhecimento';
+          if (descEl) descEl.textContent = 'Altere a URL ou puxe os dados mais recentes da página';
+          if (iconEl) iconEl.setAttribute('data-lucide', 'globe');
+
+          const urlInp = document.getElementById('edit-site-url');
+          const syncStatusEl = document.getElementById('edit-site-sync-status');
+          if (urlInp) urlInp.value = name;
+          if (syncStatusEl) {
+            syncStatusEl.textContent = meta.includes('•') ? meta.split('•')[1]?.trim() : (meta || 'Sincronizado recentemente');
+          }
+        } else if (type === 'faq') {
+          if (titleEl) titleEl.textContent = 'Editar Pergunta e Resposta';
+          if (descEl) descEl.textContent = 'Altere a dúvida cadastrada e a resposta padrão da IA';
+          if (iconEl) iconEl.setAttribute('data-lucide', 'help-circle');
+
+          const qInp = document.getElementById('edit-faq-question');
+          const aInp = document.getElementById('edit-faq-answer');
+          if (qInp) qInp.value = name;
+          if (aInp) {
+            aInp.value = card.getAttribute('data-faq-answer') ||
+              'O prazo de entrega varia de 3 a 7 dias úteis dependendo da sua localidade. O código de rastreamento é enviado automaticamente para o seu WhatsApp e e-mail assim que o pedido for despachado.';
+          }
+        } else if (type === 'texto') {
+          if (titleEl) titleEl.textContent = 'Editar Texto de Conhecimento';
+          if (descEl) descEl.textContent = 'Modifique o título e as instruções do texto livre';
+          if (iconEl) iconEl.setAttribute('data-lucide', 'align-left');
+
+          const tInp = document.getElementById('edit-text-title');
+          const bInp = document.getElementById('edit-text-body');
+          if (tInp) tInp.value = name;
+          if (bInp) bInp.value = card.getAttribute('data-text-body') || '';
+        }
+
+        const statusSelect = document.getElementById('edit-knowledge-status');
+        const notesInput = document.getElementById('edit-knowledge-notes');
+        if (statusSelect) statusSelect.value = (badge && badge.classList.contains('badge-active')) ? 'active' : 'paused';
+        if (notesInput) notesInput.value = card.getAttribute('data-notes') || '';
+
+        const modal = document.getElementById('modal-edit-knowledge');
+        if (modal) {
+          modal.classList.add('open');
+          modal.classList.add('active');
+          if (window.lucide) window.lucide.createIcons();
+        }
+      }
+      return;
+    }
+  });
+
   const knowledgeList = document.getElementById('knowledge-items-list');
   if (knowledgeList) {
     knowledgeList.addEventListener('click', (e) => {
-      const delBtn = e.target.closest('.btn-delete-knowledge');
-      if (delBtn) {
-        e.preventDefault();
-        const card = delBtn.closest('.knowledge-item-card');
-        if (card) {
-          card.style.opacity = '0';
-          card.style.transform = 'scale(0.96)';
-          card.style.transition = 'all 0.2s ease';
-          setTimeout(() => {
-            card.remove();
-            updateKnowledgeCount();
-            showToast('Conhecimento excluído com sucesso.');
-          }, 200);
-        }
-        return;
-      }
-
-      const editBtn = e.target.closest('.btn-edit-knowledge');
-      if (editBtn) {
-        e.preventDefault();
-        const card = editBtn.closest('.knowledge-item-card');
-        if (card) {
-          const nameEl = card.querySelector('.knowledge-item-name');
-          const currentText = nameEl ? nameEl.textContent : '';
-          const newText = prompt('Editar nome / título do conhecimento:', currentText);
-          if (newText !== null && newText.trim() !== '') {
-            nameEl.textContent = newText.trim();
-            showToast('Conhecimento atualizado com sucesso!');
-          }
-        }
-        return;
-      }
 
       // Allow clicking on badge to toggle Ativo / Pausado status
       const badge = e.target.closest('.badge-dot');
@@ -2497,17 +2715,246 @@ function saveAgentSchedule(agentId) {
 }
 
 /* ==========================================================================
-   HUMAN TRANSFER DESTINATION MANAGEMENT (DEPARTMENTS OR TEAM MEMBERS)
+   AGENT GREETING MESSAGE (MENSAGEM DE SAUDAÇÃO & PERÍODOS)
+   ========================================================================== */
+
+let agentGreetingSettings = {
+  enabled: true,
+  mode: 'fixed', // 'fixed' | 'dynamic'
+  message: 'Olá! Seja muito bem-vindo(a). Como posso te ajudar hoje?',
+  morning: 'Bom dia! Seja muito bem-vindo(a). Como posso te ajudar hoje?',
+  afternoon: 'Boa tarde! Seja muito bem-vindo(a). Como posso te ajudar hoje?',
+  night: 'Boa noite! Seja muito bem-vindo(a). Como posso te ajudar hoje?'
+};
+
+function setupAgentGreeting() {
+  const toggles = [
+    document.getElementById('toggle-agent-greeting'),
+    document.getElementById('toggle-agent-greeting-config')
+  ].filter(Boolean);
+
+  const contents = [
+    document.getElementById('agent-greeting-content'),
+    document.getElementById('agent-greeting-content-config')
+  ].filter(Boolean);
+
+  // Sync Toggles
+  toggles.forEach(toggle => {
+    toggle.addEventListener('change', () => {
+      agentGreetingSettings.enabled = toggle.checked;
+      toggles.forEach(t => (t.checked = toggle.checked));
+      contents.forEach(c => c.classList.toggle('is-disabled', !toggle.checked));
+      showToast(toggle.checked ? 'Mensagem de saudação ativada.' : 'Mensagem de saudação desativada.');
+    });
+  });
+
+  // Sync Mode Pills
+  const allModePills = document.querySelectorAll('.greeting-mode-pill');
+  allModePills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      const mode = pill.getAttribute('data-greeting-mode') || 'fixed';
+      agentGreetingSettings.mode = mode;
+      applyGreetingModeUI(mode);
+    });
+  });
+
+  // Sync Textareas (Fixed mode)
+  const textareas = [
+    document.getElementById('agent-greeting-textarea'),
+    document.getElementById('agent-greeting-textarea-config')
+  ].filter(Boolean);
+
+  const counters = [
+    document.getElementById('greeting-char-count'),
+    document.getElementById('greeting-char-count-config')
+  ].filter(Boolean);
+
+  textareas.forEach(textarea => {
+    textarea.addEventListener('input', () => {
+      agentGreetingSettings.message = textarea.value;
+      textareas.forEach(ta => { if (ta !== textarea) ta.value = textarea.value; });
+      counters.forEach(c => (c.textContent = `${textarea.value.length}/500`));
+    });
+  });
+
+  // Sync Period Inputs
+  const morningInputs = [
+    document.getElementById('greeting-input-morning'),
+    document.getElementById('greeting-input-morning-config')
+  ].filter(Boolean);
+  morningInputs.forEach(input => {
+    input.addEventListener('input', () => {
+      agentGreetingSettings.morning = input.value;
+      morningInputs.forEach(other => { if (other !== input) other.value = input.value; });
+    });
+  });
+
+  const afternoonInputs = [
+    document.getElementById('greeting-input-afternoon'),
+    document.getElementById('greeting-input-afternoon-config')
+  ].filter(Boolean);
+  afternoonInputs.forEach(input => {
+    input.addEventListener('input', () => {
+      agentGreetingSettings.afternoon = input.value;
+      afternoonInputs.forEach(other => { if (other !== input) other.value = input.value; });
+    });
+  });
+
+  const nightInputs = [
+    document.getElementById('greeting-input-night'),
+    document.getElementById('greeting-input-night-config')
+  ].filter(Boolean);
+  nightInputs.forEach(input => {
+    input.addEventListener('input', () => {
+      agentGreetingSettings.night = input.value;
+      nightInputs.forEach(other => { if (other !== input) other.value = input.value; });
+    });
+  });
+
+  // Tag Insert Buttons
+  document.querySelectorAll('.btn-tag-insert').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tag = btn.getAttribute('data-tag');
+      if (!tag) return;
+      textareas.forEach(ta => {
+        const start = ta.selectionStart || ta.value.length;
+        const end = ta.selectionEnd || ta.value.length;
+        const val = ta.value;
+        ta.value = val.substring(0, start) + tag + val.substring(end);
+        ta.focus();
+        ta.setSelectionRange(start + tag.length, start + tag.length);
+        agentGreetingSettings.message = ta.value;
+      });
+      counters.forEach(c => (c.textContent = `${agentGreetingSettings.message.length}/500`));
+      showToast(`Tag ${tag} adicionada!`);
+    });
+  });
+}
+
+function applyGreetingModeUI(mode) {
+  document.querySelectorAll('.greeting-mode-pill').forEach(p => {
+    p.classList.toggle('active', p.getAttribute('data-greeting-mode') === mode);
+  });
+
+  const fixedBoxes = [
+    document.getElementById('greeting-box-fixed-perfil'),
+    document.getElementById('greeting-box-fixed-config')
+  ].filter(Boolean);
+
+  const dynamicBoxes = [
+    document.getElementById('greeting-box-dynamic-perfil'),
+    document.getElementById('greeting-box-dynamic-config')
+  ].filter(Boolean);
+
+  fixedBoxes.forEach(b => (b.style.display = mode === 'fixed' ? 'block' : 'none'));
+  dynamicBoxes.forEach(b => (b.style.display = mode === 'dynamic' ? 'block' : 'none'));
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function loadAgentGreeting(agentId) {
+  const saved = localStorage.getItem(`zapchat_agent_greeting_${agentId}`);
+  const agent = zapChatData.agentes?.list?.find(a => a.id === agentId);
+
+  if (saved) {
+    try {
+      agentGreetingSettings = { ...agentGreetingSettings, ...JSON.parse(saved) };
+    } catch (e) {
+      console.warn('Error loading greeting settings', e);
+    }
+  } else if (agent && agent.greetingMessage) {
+    agentGreetingSettings.enabled = agent.greetingEnabled !== false;
+    agentGreetingSettings.message = agent.greetingMessage;
+    if (agent.greetingMode) agentGreetingSettings.mode = agent.greetingMode;
+    if (agent.greetingMorning) agentGreetingSettings.morning = agent.greetingMorning;
+    if (agent.greetingAfternoon) agentGreetingSettings.afternoon = agent.greetingAfternoon;
+    if (agent.greetingNight) agentGreetingSettings.night = agent.greetingNight;
+  }
+
+  // Update UI Elements
+  const toggles = [
+    document.getElementById('toggle-agent-greeting'),
+    document.getElementById('toggle-agent-greeting-config')
+  ].filter(Boolean);
+  toggles.forEach(t => (t.checked = agentGreetingSettings.enabled));
+
+  const contents = [
+    document.getElementById('agent-greeting-content'),
+    document.getElementById('agent-greeting-content-config')
+  ].filter(Boolean);
+  contents.forEach(c => c.classList.toggle('is-disabled', !agentGreetingSettings.enabled));
+
+  const textareas = [
+    document.getElementById('agent-greeting-textarea'),
+    document.getElementById('agent-greeting-textarea-config')
+  ].filter(Boolean);
+  textareas.forEach(ta => (ta.value = agentGreetingSettings.message || ''));
+
+  const counters = [
+    document.getElementById('greeting-char-count'),
+    document.getElementById('greeting-char-count-config')
+  ].filter(Boolean);
+  counters.forEach(c => (c.textContent = `${(agentGreetingSettings.message || '').length}/500`));
+
+  const morningInputs = [
+    document.getElementById('greeting-input-morning'),
+    document.getElementById('greeting-input-morning-config')
+  ].filter(Boolean);
+  morningInputs.forEach(i => (i.value = agentGreetingSettings.morning || ''));
+
+  const afternoonInputs = [
+    document.getElementById('greeting-input-afternoon'),
+    document.getElementById('greeting-input-afternoon-config')
+  ].filter(Boolean);
+  afternoonInputs.forEach(i => (i.value = agentGreetingSettings.afternoon || ''));
+
+  const nightInputs = [
+    document.getElementById('greeting-input-night'),
+    document.getElementById('greeting-input-night-config')
+  ].filter(Boolean);
+  nightInputs.forEach(i => (i.value = agentGreetingSettings.night || ''));
+
+  applyGreetingModeUI(agentGreetingSettings.mode || 'fixed');
+}
+
+function saveAgentGreeting(agentId) {
+  const toggle = document.getElementById('toggle-agent-greeting') || document.getElementById('toggle-agent-greeting-config');
+  const textarea = document.getElementById('agent-greeting-textarea') || document.getElementById('agent-greeting-textarea-config');
+  const morning = document.getElementById('greeting-input-morning') || document.getElementById('greeting-input-morning-config');
+  const afternoon = document.getElementById('greeting-input-afternoon') || document.getElementById('greeting-input-afternoon-config');
+  const night = document.getElementById('greeting-input-night') || document.getElementById('greeting-input-night-config');
+
+  if (toggle) agentGreetingSettings.enabled = toggle.checked;
+  if (textarea) agentGreetingSettings.message = textarea.value;
+  if (morning) agentGreetingSettings.morning = morning.value;
+  if (afternoon) agentGreetingSettings.afternoon = afternoon.value;
+  if (night) agentGreetingSettings.night = night.value;
+
+  const agent = zapChatData.agentes?.list?.find(a => a.id === agentId);
+  if (agent) {
+    agent.greetingEnabled = agentGreetingSettings.enabled;
+    agent.greetingMode = agentGreetingSettings.mode;
+    agent.greetingMessage = agentGreetingSettings.message;
+    agent.greetingMorning = agentGreetingSettings.morning;
+    agent.greetingAfternoon = agentGreetingSettings.afternoon;
+    agent.greetingNight = agentGreetingSettings.night;
+  }
+
+  localStorage.setItem(`zapchat_agent_greeting_${agentId}`, JSON.stringify(agentGreetingSettings));
+}
+
+/* ==========================================================================
+   HUMAN TRANSFER DESTINATION MANAGEMENT (CENTRALIZED & SIMPLIFIED)
    ========================================================================== */
 
 let agentTransferSettings = {
   enabled: true,
-  mode: 'department', // 'department' | 'members' | 'all_team'
-  department: 'Comercial & Vendas',
-  selectedMembers: ['rafael_mota', 'alaine_felix'],
-  deptDistributionRule: 'round_robin',
-  customMessage: 'Aguarde um instante! Estou transferindo seu atendimento para um de nossos especialistas humanos.',
-  notifyAttendants: true,
+  transferTriggers: {
+    requested: true,
+    sensitive: true,
+    notfound: true
+  },
+  customMessage: 'Aguarde um instante! Estou transferindo seu atendimento para um de nossos especialistas.',
   attachSummary: true
 };
 
@@ -2529,114 +2976,31 @@ function setupAgentHumanTransfer() {
     });
   }
 
-  // 2. Radio cards for Transfer Mode (Department | Specific Members | All Team)
-  const modeRadios = document.querySelectorAll('input[name="agent_transfer_mode"]');
-  modeRadios.forEach(radio => {
-    radio.addEventListener('change', () => {
-      document.querySelectorAll('.transfer-mode-card').forEach(card => card.classList.remove('active'));
-      const activeCard = radio.closest('.transfer-mode-card');
-      if (activeCard) activeCard.classList.add('active');
+  // 2. Transfer triggers (centralizados da aba Perfil)
+  const trigRequested = document.getElementById('check-transfer-requested');
+  const trigSensitive = document.getElementById('check-transfer-sensitive');
+  const trigNotfound = document.getElementById('check-transfer-notfound');
 
-      agentTransferSettings.mode = radio.value;
-      switchTransferSubpanel(radio.value);
-      updateTransferSummaryBadge();
+  if (trigRequested) {
+    trigRequested.addEventListener('change', () => {
+      if (!agentTransferSettings.transferTriggers) agentTransferSettings.transferTriggers = {};
+      agentTransferSettings.transferTriggers.requested = trigRequested.checked;
     });
-  });
-
-  // 3. Department select change
-  const deptSelect = document.getElementById('select-transfer-dept');
-  if (deptSelect) {
-    deptSelect.addEventListener('change', () => {
-      agentTransferSettings.department = deptSelect.value;
-      updateDeptMembersPreview(deptSelect.value);
-      updateTransferSummaryBadge();
+  }
+  if (trigSensitive) {
+    trigSensitive.addEventListener('change', () => {
+      if (!agentTransferSettings.transferTriggers) agentTransferSettings.transferTriggers = {};
+      agentTransferSettings.transferTriggers.sensitive = trigSensitive.checked;
+    });
+  }
+  if (trigNotfound) {
+    trigNotfound.addEventListener('change', () => {
+      if (!agentTransferSettings.transferTriggers) agentTransferSettings.transferTriggers = {};
+      agentTransferSettings.transferTriggers.notfound = trigNotfound.checked;
     });
   }
 
-  // 4. Search input for members
-  const memberSearch = document.getElementById('transfer-member-search');
-  if (memberSearch) {
-    memberSearch.addEventListener('input', () => {
-      filterTransferMembersGrid(memberSearch.value);
-    });
-  }
-
-  // 5. Select all members button
-  const btnSelectAll = document.getElementById('btn-transfer-select-all');
-  if (btnSelectAll) {
-    btnSelectAll.addEventListener('click', (e) => {
-      e.preventDefault();
-      const grid = document.getElementById('transfer-members-checkbox-grid');
-      if (!grid) return;
-      grid.querySelectorAll('.transfer-member-item-card').forEach(card => {
-        if (card.style.display !== 'none') {
-          const input = card.querySelector('input[type="checkbox"]');
-          if (input) {
-            input.checked = true;
-            card.classList.add('selected');
-            const id = card.getAttribute('data-member-id');
-            if (id && !agentTransferSettings.selectedMembers.includes(id)) {
-              agentTransferSettings.selectedMembers.push(id);
-            }
-          }
-        }
-      });
-      updateSelectedMembersBadge();
-      updateTransferSummaryBadge();
-    });
-  }
-
-  // 6. Clear all selected members button
-  const btnClearAll = document.getElementById('btn-transfer-clear-all');
-  if (btnClearAll) {
-    btnClearAll.addEventListener('click', (e) => {
-      e.preventDefault();
-      const grid = document.getElementById('transfer-members-checkbox-grid');
-      if (!grid) return;
-      grid.querySelectorAll('.transfer-member-item-card').forEach(card => {
-        const input = card.querySelector('input[type="checkbox"]');
-        if (input) input.checked = false;
-        card.classList.remove('selected');
-      });
-      agentTransferSettings.selectedMembers = [];
-      updateSelectedMembersBadge();
-      updateTransferSummaryBadge();
-    });
-  }
-
-  // 7. Delegated checkbox change for member cards
-  const grid = document.getElementById('transfer-members-checkbox-grid');
-  if (grid) {
-    grid.addEventListener('change', (e) => {
-      const input = e.target.closest('input[type="checkbox"]');
-      if (!input) return;
-      const card = input.closest('.transfer-member-item-card');
-      const memberId = card?.getAttribute('data-member-id');
-      if (!memberId) return;
-
-      if (input.checked) {
-        card.classList.add('selected');
-        if (!agentTransferSettings.selectedMembers.includes(memberId)) {
-          agentTransferSettings.selectedMembers.push(memberId);
-        }
-      } else {
-        card.classList.remove('selected');
-        agentTransferSettings.selectedMembers = agentTransferSettings.selectedMembers.filter(id => id !== memberId);
-      }
-      updateSelectedMembersBadge();
-      updateTransferSummaryBadge();
-    });
-  }
-
-  // 8. Distribution rule radio
-  const distRadios = document.querySelectorAll('input[name="dept_dist_rule"]');
-  distRadios.forEach(r => {
-    r.addEventListener('change', () => {
-      agentTransferSettings.deptDistributionRule = r.value;
-    });
-  });
-
-  // 9. Extra options
+  // 3. Custom transfer message
   const msgInput = document.getElementById('transfer-custom-message');
   if (msgInput) {
     msgInput.addEventListener('input', () => {
@@ -2644,13 +3008,7 @@ function setupAgentHumanTransfer() {
     });
   }
 
-  const optNotify = document.getElementById('transfer-opt-notify');
-  if (optNotify) {
-    optNotify.addEventListener('change', () => {
-      agentTransferSettings.notifyAttendants = optNotify.checked;
-    });
-  }
-
+  // 4. Attach conversation summary checkbox
   const optAttach = document.getElementById('transfer-opt-attach-summary');
   if (optAttach) {
     optAttach.addEventListener('change', () => {
@@ -2659,160 +3017,33 @@ function setupAgentHumanTransfer() {
   }
 }
 
-function switchTransferSubpanel(mode) {
-  const panelDept = document.getElementById('transfer-subpanel-department');
-  const panelMembers = document.getElementById('transfer-subpanel-members');
-  const panelAll = document.getElementById('transfer-subpanel-all');
-
-  if (panelDept) panelDept.style.display = mode === 'department' ? 'block' : 'none';
-  if (panelMembers) {
-    panelMembers.style.display = mode === 'members' ? 'block' : 'none';
-    if (mode === 'members') {
-      renderTransferMembersGrid();
-    }
-  }
-  if (panelAll) panelAll.style.display = mode === 'all_team' ? 'block' : 'none';
-
-  if (window.lucide) window.lucide.createIcons();
-}
-
-function populateTransferDepartments(selectedDeptName) {
-  const select = document.getElementById('select-transfer-dept');
-  if (!select) return;
-
-  const departments = getDepartments();
-  select.innerHTML = departments.map(d => `
-    <option value="${d.name}" ${d.name === selectedDeptName ? 'selected' : ''}>
-      ${d.name} (${d.desc ? d.desc.substring(0, 36) + '...' : ''})
-    </option>
-  `).join('');
-
-  if (!selectedDeptName && departments.length > 0) {
-    select.value = departments[0].name;
-    agentTransferSettings.department = departments[0].name;
-  }
-
-  updateDeptMembersPreview(select.value);
-}
-
-function updateDeptMembersPreview(deptName) {
-  const container = document.getElementById('transfer-dept-members-chips');
-  const countEl = document.getElementById('transfer-dept-preview-count');
-  if (!container) return;
-
-  const members = getTeamMembers();
-  const filtered = members.filter(m => {
-    if (!m.department) return false;
-    return m.department === deptName ||
-           deptName.toLowerCase().includes(m.department.toLowerCase()) ||
-           m.department.toLowerCase().includes(deptName.toLowerCase());
-  });
-
-  if (countEl) {
-    countEl.textContent = `${filtered.length} ${filtered.length === 1 ? 'atendente' : 'atendentes'}`;
-  }
-
-  if (filtered.length === 0) {
-    container.innerHTML = `<span style="font-size: 12px; color: var(--text-muted); font-style: italic;">Nenhum atendente vinculado a este departamento no momento.</span>`;
-  } else {
-    container.innerHTML = filtered.map(m => `
-      <div class="dept-member-chip" title="${m.role || 'Atendente'}">
-        <div class="dept-member-chip-avatar" style="background-color: ${m.avatarBg || '#00A868'}; color: ${m.avatarColor || '#FFFFFF'};">
-          ${m.initials || m.name.substring(0, 2).toUpperCase()}
-        </div>
-        <span>${m.name}</span>
-      </div>
-    `).join('');
-  }
-}
-
-function renderTransferMembersGrid() {
-  const grid = document.getElementById('transfer-members-checkbox-grid');
-  if (!grid) return;
-
-  const members = getTeamMembers();
-  const selectedIds = agentTransferSettings.selectedMembers || [];
-
-  grid.innerHTML = members.map(m => {
-    const isSelected = selectedIds.includes(m.id);
-    const statusDotClass = m.status === 'online' ? 'status-dot-online' : 'status-dot-offline';
-
-    return `
-      <label class="transfer-member-item-card ${isSelected ? 'selected' : ''}" data-member-id="${m.id}" data-search-text="${(m.name + ' ' + (m.role || '') + ' ' + (m.department || '')).toLowerCase()}">
-        <input type="checkbox" value="${m.id}" ${isSelected ? 'checked' : ''}>
-        <div class="transfer-member-card-avatar" style="background-color: ${m.avatarBg || '#00A868'}; color: ${m.avatarColor || '#FFFFFF'};">
-          ${m.initials || m.name.substring(0, 2).toUpperCase()}
-          <span class="team-status-indicator ${statusDotClass}"></span>
-        </div>
-        <div class="transfer-member-card-info">
-          <span class="transfer-member-card-name">
-            ${m.name}
-            ${m.isOwner ? '<span class="team-badge-owner">dono</span>' : ''}
-          </span>
-          <span class="transfer-member-card-sub">${m.department || 'Geral'} • ${m.role || 'Atendente'}</span>
-        </div>
-      </label>
-    `;
-  }).join('');
-
-  updateSelectedMembersBadge();
-}
-
-function filterTransferMembersGrid(query) {
-  const q = (query || '').toLowerCase().trim();
-  const grid = document.getElementById('transfer-members-checkbox-grid');
-  if (!grid) return;
-
-  grid.querySelectorAll('.transfer-member-item-card').forEach(card => {
-    const text = card.getAttribute('data-search-text') || '';
-    if (!q || text.includes(q)) {
-      card.style.display = 'flex';
-    } else {
-      card.style.display = 'none';
-    }
-  });
-}
-
-function updateSelectedMembersBadge() {
-  const badge = document.getElementById('transfer-selected-count-badge');
-  if (badge) {
-    const count = (agentTransferSettings.selectedMembers || []).length;
-    badge.textContent = `${count} ${count === 1 ? 'selecionado' : 'selecionados'}`;
-  }
-}
-
-function updateTransferSummaryBadge() {
-  const badge = document.getElementById('transfer-destination-summary-badge');
-  if (!badge) return;
-
-  if (agentTransferSettings.mode === 'department') {
-    badge.textContent = `Fila: ${agentTransferSettings.department || 'Comercial & Vendas'}`;
-  } else if (agentTransferSettings.mode === 'members') {
-    const count = (agentTransferSettings.selectedMembers || []).length;
-    badge.textContent = count === 1 ? '1 atendente específico' : `${count} atendentes específicos`;
-  } else {
-    badge.textContent = 'Toda a Equipe (Geral)';
-  }
-}
-
 function loadAgentTransferSettings(agentId) {
   const saved = localStorage.getItem(`zapchat_agent_transfer_${agentId}`);
   if (saved) {
     try {
-      agentTransferSettings = JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      agentTransferSettings = {
+        enabled: parsed.enabled !== false,
+        transferTriggers: {
+          requested: parsed.transferTriggers?.requested !== false,
+          sensitive: parsed.transferTriggers?.sensitive !== false,
+          notfound: parsed.transferTriggers?.notfound !== false
+        },
+        customMessage: parsed.customMessage || 'Aguarde um instante! Estou transferindo seu atendimento para um de nossos especialistas.',
+        attachSummary: parsed.attachSummary !== false
+      };
     } catch (e) {
       console.warn('Error loading agent transfer settings', e);
     }
   } else {
-    // Defaults: route to department
     agentTransferSettings = {
       enabled: true,
-      mode: 'department',
-      department: 'Comercial & Vendas',
-      selectedMembers: ['rafael_mota', 'alaine_felix'],
-      deptDistributionRule: 'round_robin',
-      customMessage: 'Aguarde um instante! Estou transferindo seu atendimento para um de nossos especialistas humanos.',
-      notifyAttendants: true,
+      transferTriggers: {
+        requested: true,
+        sensitive: true,
+        notfound: true
+      },
+      customMessage: 'Aguarde um instante! Estou transferindo seu atendimento para um de nossos especialistas.',
       attachSummary: true
     };
   }
@@ -2823,29 +3054,13 @@ function loadAgentTransferSettings(agentId) {
   if (toggle) toggle.checked = agentTransferSettings.enabled;
   if (configBox) configBox.style.display = agentTransferSettings.enabled ? 'flex' : 'none';
 
-  // Mode cards
-  const modeRadios = document.querySelectorAll('input[name="agent_transfer_mode"]');
-  modeRadios.forEach(r => {
-    if (r.value === agentTransferSettings.mode) {
-      r.checked = true;
-      r.closest('.transfer-mode-card')?.classList.add('active');
-    } else {
-      r.checked = false;
-      r.closest('.transfer-mode-card')?.classList.remove('active');
-    }
-  });
-
-  // Populate departments
-  populateTransferDepartments(agentTransferSettings.department);
-
-  // Render members grid
-  renderTransferMembersGrid();
-
-  // Distribution rule
-  const distRadios = document.querySelectorAll('input[name="dept_dist_rule"]');
-  distRadios.forEach(r => {
-    r.checked = r.value === agentTransferSettings.deptDistributionRule;
-  });
+  // Triggers
+  const trigRequested = document.getElementById('check-transfer-requested');
+  const trigSensitive = document.getElementById('check-transfer-sensitive');
+  const trigNotfound = document.getElementById('check-transfer-notfound');
+  if (trigRequested) trigRequested.checked = agentTransferSettings.transferTriggers?.requested !== false;
+  if (trigSensitive) trigSensitive.checked = agentTransferSettings.transferTriggers?.sensitive !== false;
+  if (trigNotfound) trigNotfound.checked = agentTransferSettings.transferTriggers?.notfound !== false;
 
   // Custom message
   const msgInput = document.getElementById('transfer-custom-message');
@@ -2853,38 +3068,278 @@ function loadAgentTransferSettings(agentId) {
     msgInput.value = agentTransferSettings.customMessage;
   }
 
-  // Checkboxes
-  const optNotify = document.getElementById('transfer-opt-notify');
-  if (optNotify) optNotify.checked = !!agentTransferSettings.notifyAttendants;
-
+  // Summary
   const optAttach = document.getElementById('transfer-opt-attach-summary');
-  if (optAttach) optAttach.checked = !!agentTransferSettings.attachSummary;
-
-  switchTransferSubpanel(agentTransferSettings.mode);
-  updateTransferSummaryBadge();
+  if (optAttach) optAttach.checked = agentTransferSettings.attachSummary !== false;
 }
 
 function saveAgentTransferSettings(agentId) {
   const toggle = document.getElementById('toggle-agent-transfer-human');
   if (toggle) agentTransferSettings.enabled = toggle.checked;
 
-  const activeMode = document.querySelector('input[name="agent_transfer_mode"]:checked');
-  if (activeMode) agentTransferSettings.mode = activeMode.value;
-
-  const deptSelect = document.getElementById('select-transfer-dept');
-  if (deptSelect) agentTransferSettings.department = deptSelect.value;
-
-  const activeRule = document.querySelector('input[name="dept_dist_rule"]:checked');
-  if (activeRule) agentTransferSettings.deptDistributionRule = activeRule.value;
+  const trigRequested = document.getElementById('check-transfer-requested');
+  const trigSensitive = document.getElementById('check-transfer-sensitive');
+  const trigNotfound = document.getElementById('check-transfer-notfound');
+  agentTransferSettings.transferTriggers = {
+    requested: trigRequested ? trigRequested.checked : true,
+    sensitive: trigSensitive ? trigSensitive.checked : true,
+    notfound: trigNotfound ? trigNotfound.checked : true
+  };
 
   const msgInput = document.getElementById('transfer-custom-message');
   if (msgInput) agentTransferSettings.customMessage = msgInput.value;
-
-  const optNotify = document.getElementById('transfer-opt-notify');
-  if (optNotify) agentTransferSettings.notifyAttendants = optNotify.checked;
 
   const optAttach = document.getElementById('transfer-opt-attach-summary');
   if (optAttach) agentTransferSettings.attachSummary = optAttach.checked;
 
   localStorage.setItem(`zapchat_agent_transfer_${agentId}`, JSON.stringify(agentTransferSettings));
 }
+
+/**
+ * Update UI controls for agent active / paused status across all views:
+ * - Configurações tab (master card, toggle switch, banner, action button)
+ * - Sidebar profile (status badge pill, quick pause button, avatar dot)
+ * - Header action bar (toggle button)
+ */
+export function updateAgentStatusDisplay(agent) {
+  if (!agent) {
+    agent = zapChatData.agentes.list.find(a => a.id === currentAgentId) || zapChatData.agentes.list[0];
+  }
+  if (!agent) return;
+
+  const isActive = agent.status === 'Ativo';
+
+  // 1. Sidebar status badge & avatar dot
+  const statusBadge = document.getElementById('edit-agent-status-badge');
+  const avatarStatusDot = document.querySelector('.agent-avatar-status-dot');
+  const sidebarQuickBtn = document.getElementById('btn-sidebar-quick-pause');
+  const sidebarQuickIcon = document.getElementById('sidebar-quick-pause-icon');
+  const sidebarQuickText = document.getElementById('sidebar-quick-pause-text');
+
+  if (statusBadge) {
+    if (isActive) {
+      statusBadge.className = 'badge badge-dot badge-active agent-sidebar-status-pill is-active';
+      statusBadge.textContent = 'IA ativa';
+      statusBadge.title = 'Status: IA ativa — Clique para alternar';
+    } else {
+      statusBadge.className = 'badge badge-dot badge-paused agent-sidebar-status-pill is-paused';
+      statusBadge.textContent = 'Pausado';
+      statusBadge.title = 'Status: Pausado — Clique para alternar';
+    }
+  }
+
+  if (avatarStatusDot) {
+    if (isActive) {
+      avatarStatusDot.classList.remove('paused');
+      avatarStatusDot.title = 'Online';
+    } else {
+      avatarStatusDot.classList.add('paused');
+      avatarStatusDot.title = 'Pausado';
+    }
+  }
+
+  if (sidebarQuickBtn) {
+    if (isActive) {
+      sidebarQuickBtn.className = 'agent-sidebar-switcher is-active';
+      sidebarQuickBtn.setAttribute('role', 'switch');
+      sidebarQuickBtn.setAttribute('aria-checked', 'true');
+      sidebarQuickBtn.title = 'Status: Ativo — Clique para pausar';
+      if (sidebarQuickIcon) sidebarQuickIcon.setAttribute('data-lucide', 'pause');
+      if (sidebarQuickText) sidebarQuickText.textContent = 'Pausar';
+    } else {
+      sidebarQuickBtn.className = 'agent-sidebar-switcher is-paused';
+      sidebarQuickBtn.setAttribute('role', 'switch');
+      sidebarQuickBtn.setAttribute('aria-checked', 'false');
+      sidebarQuickBtn.title = 'Status: Pausado — Clique para ativar';
+      if (sidebarQuickIcon) sidebarQuickIcon.setAttribute('data-lucide', 'play');
+      if (sidebarQuickText) sidebarQuickText.textContent = 'Ativar';
+    }
+  }
+
+  // 2. Top Header status button
+  const headerBtn = document.getElementById('btn-header-toggle-agent-status');
+  const headerIcon = document.getElementById('header-status-icon');
+  const headerText = document.getElementById('header-status-text');
+
+  if (headerBtn) {
+    if (isActive) {
+      headerBtn.className = 'btn btn-outline-status btn-sm is-active';
+      headerBtn.title = 'Pausar respostas automáticas deste agente';
+      if (headerIcon) headerIcon.setAttribute('data-lucide', 'pause-circle');
+      if (headerText) headerText.textContent = 'Pausar agente';
+    } else {
+      headerBtn.className = 'btn btn-outline-status btn-sm is-paused';
+      headerBtn.title = 'Reativar atendimento automático deste agente';
+      if (headerIcon) headerIcon.setAttribute('data-lucide', 'play-circle');
+      if (headerText) headerText.textContent = 'Ativar agente';
+    }
+  }
+
+  // 3. Configurações Tab Master Status Card
+  const masterCard = document.getElementById('card-agent-status-control');
+  const configToggle = document.getElementById('toggle-agent-status-master');
+  const configBadge = document.getElementById('config-agent-status-badge');
+  const configIconBox = document.getElementById('agent-status-icon-box');
+  const configCardIcon = document.getElementById('agent-status-card-icon');
+  const configBtn = document.getElementById('btn-config-toggle-agent-status');
+  const configBtnIcon = document.getElementById('btn-config-status-icon');
+  const configBtnText = document.getElementById('btn-config-status-text');
+  const callout = document.getElementById('agent-status-callout');
+  const calloutIcon = document.getElementById('agent-status-callout-icon');
+  const calloutHeading = document.getElementById('agent-status-callout-heading');
+  const calloutText = document.getElementById('agent-status-callout-text');
+
+  if (masterCard) {
+    if (isActive) {
+      masterCard.classList.remove('is-paused');
+    } else {
+      masterCard.classList.add('is-paused');
+    }
+  }
+
+  if (configToggle) {
+    configToggle.checked = isActive;
+  }
+
+  if (configBadge) {
+    configBadge.className = isActive ? 'badge badge-dot badge-active' : 'badge badge-dot badge-paused';
+    configBadge.textContent = isActive ? 'IA ativa' : 'Pausado';
+  }
+
+  if (configIconBox) {
+    configIconBox.className = isActive ? 'agent-status-avatar-icon active' : 'agent-status-avatar-icon paused';
+    if (configCardIcon) {
+      configCardIcon.setAttribute('data-lucide', isActive ? 'power' : 'pause');
+    }
+  }
+
+  if (configBtn) {
+    if (isActive) {
+      configBtn.className = 'btn-status-pill-toggle';
+      if (configBtnIcon) configBtnIcon.setAttribute('data-lucide', 'pause-circle');
+      if (configBtnText) configBtnText.textContent = 'Pausar agente';
+    } else {
+      configBtn.className = 'btn-status-pill-toggle btn-status-activate';
+      if (configBtnIcon) configBtnIcon.setAttribute('data-lucide', 'play-circle');
+      if (configBtnText) configBtnText.textContent = 'Ativar agente';
+    }
+  }
+
+  if (callout) {
+    callout.className = isActive ? 'agent-status-callout active' : 'agent-status-callout paused';
+  }
+
+  if (calloutIcon) {
+    calloutIcon.innerHTML = isActive 
+      ? '<i data-lucide="check-circle-2" style="width: 17px; height: 17px;"></i>' 
+      : '<i data-lucide="alert-triangle" style="width: 17px; height: 17px;"></i>';
+  }
+
+  if (calloutHeading) {
+    calloutHeading.textContent = isActive 
+      ? 'Agente em operação normal' 
+      : 'Atendimento automático pausado';
+  }
+
+  if (calloutText) {
+    calloutText.innerHTML = isActive
+      ? `O assistente <strong>${agent.name}</strong> está ativo e responderá os clientes normalmente nos canais vinculados.`
+      : `O assistente <strong>${agent.name}</strong> está pausado. Nenhuma mensagem automática será enviada pela IA e os clientes aguardarão atendimento humano.`;
+  }
+
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+}
+
+/**
+ * Toggle active / paused status for the currently edited agent
+ */
+export function toggleCurrentAgentStatus() {
+  const agent = zapChatData.agentes.list.find(a => a.id === currentAgentId) || zapChatData.agentes.list[0];
+  if (!agent) return;
+
+  if (agent.status === 'Ativo') {
+    agent.status = 'Pausado';
+    agent.statusType = 'paused';
+    showToast(`Agente "${agent.name}" foi pausado.`);
+  } else {
+    agent.status = 'Ativo';
+    agent.statusType = 'active';
+    showToast(`Agente "${agent.name}" ativado com sucesso!`);
+  }
+
+  updateAgentStatusDisplay(agent);
+
+  if (window.refreshAgentsTable) {
+    window.refreshAgentsTable();
+  }
+}
+
+/**
+ * Setup event listeners for agent status controls
+ */
+function setupAgentStatusToggle() {
+  // 1. Sidebar badge click
+  const statusBadge = document.getElementById('edit-agent-status-badge');
+  if (statusBadge) {
+    statusBadge.addEventListener('click', (e) => {
+      e.preventDefault();
+      toggleCurrentAgentStatus();
+    });
+  }
+
+  // 2. Sidebar quick pause button
+  const sidebarQuickBtn = document.getElementById('btn-sidebar-quick-pause');
+  if (sidebarQuickBtn) {
+    sidebarQuickBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      toggleCurrentAgentStatus();
+    });
+  }
+
+  // 3. Header toggle button
+  const headerBtn = document.getElementById('btn-header-toggle-agent-status');
+  if (headerBtn) {
+    headerBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      toggleCurrentAgentStatus();
+    });
+  }
+
+  // 4. Config tab button
+  const configBtn = document.getElementById('btn-config-toggle-agent-status');
+  if (configBtn) {
+    configBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      toggleCurrentAgentStatus();
+    });
+  }
+
+  // 5. Config tab iOS switch
+  const configToggle = document.getElementById('toggle-agent-status-master');
+  if (configToggle) {
+    configToggle.addEventListener('change', () => {
+      const agent = zapChatData.agentes.list.find(a => a.id === currentAgentId) || zapChatData.agentes.list[0];
+      if (!agent) return;
+
+      const shouldBeActive = configToggle.checked;
+      if (shouldBeActive && agent.status !== 'Ativo') {
+        agent.status = 'Ativo';
+        agent.statusType = 'active';
+        showToast(`Agente "${agent.name}" ativado com sucesso!`);
+      } else if (!shouldBeActive && agent.status === 'Ativo') {
+        agent.status = 'Pausado';
+        agent.statusType = 'paused';
+        showToast(`Agente "${agent.name}" foi pausado.`);
+      }
+
+      updateAgentStatusDisplay(agent);
+
+      if (window.refreshAgentsTable) {
+        window.refreshAgentsTable();
+      }
+    });
+  }
+}
+

@@ -9,6 +9,9 @@ import { initSettingsView, showToast } from './settings.js';
 import { initSuporteView, renderTickets } from './suporte.js';
 import { initEditAgentView, openEditAgent, openTestAiModal } from './editar-agente.js';
 import { initNotifications } from './notifications.js';
+import { initCrmView, renderCrmBoard, renderCrmKpis } from './crm.js';
+import { initChatbotsView, renderChatbotsList, renderChatbotKpis } from './chatbot.js';
+import { openFlowBuilder, drawAllCables } from './flow-builder.js';
 
 export function renderInstagramIcons(root = document) {
   if (!root || !root.querySelectorAll) return;
@@ -44,14 +47,18 @@ function setupLucideInstagramSupport() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  window.zapChatData = zapChatData;
+  window.openFlowBuilder = openFlowBuilder;
   setupLucideInstagramSupport();
   initTheme();
   initNavigation();
   initDashboard();
   initAgents();
+  initChatbotsView();
   initLeadsView();
   initChannelsView();
   initChatView();
+  initCrmView();
   initSettingsView();
   initSuporteView();
   initEditAgentView();
@@ -75,10 +82,27 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         renderAgentsBarChart('chart-performance-bars', zapChatData.agentes.performanceHistory);
       }, 50);
+    } else if (view === 'chatbots' || view === 'chatbot') {
+      setTimeout(() => {
+        renderChatbotKpis();
+        renderChatbotsList();
+      }, 50);
+    } else if (view === 'chatbot-builder') {
+      setTimeout(() => {
+        drawAllCables();
+        if (window.lucide) window.lucide.createIcons();
+      }, 50);
+    } else if (view === 'crm') {
+      setTimeout(() => {
+        renderCrmKpis();
+        renderCrmBoard();
+      }, 50);
     } else if (view === 'suporte') {
       setTimeout(() => {
         renderTickets();
       }, 50);
+    } else if (view === 'editar-agente') {
+      // View is opened via openEditAgent(agentId); avoid infinite recursion
     }
     if (window.lucide) window.lucide.createIcons();
   });
@@ -179,6 +203,7 @@ export function refreshAgentsTable() {
     renderSimplifiedAgentsTable(zapChatData.agentes.list);
   }
 }
+window.refreshAgentsTable = refreshAgentsTable;
 
 export function toggleAgentActionsPopover(button, agentId) {
   const popover = document.getElementById('agent-actions-popover');
