@@ -2153,10 +2153,6 @@
                             <i data-lucide="globe" style="width:14px;height:14px;color:var(--text-muted);"></i>
                             <span>Fuso horário: <strong>América/São Paulo (Horário de Brasília - GMT-3)</strong></span>
                           </div>
-                          <div class="schedule-live-badge online" id="schedule-live-status-badge">
-                            <span class="schedule-status-dot"></span>
-                            <span id="schedule-live-status-text">IA em horário de atendimento</span>
-                          </div>
                         </div>
 
                         <!-- Presets / Atalhos Rápidos -->
@@ -2249,95 +2245,6 @@
 
                         </div>
 
-                      </div>
-                    </div>
-
-                    <!-- Mensagem de saudação -->
-                    <div class="agent-greeting-config-section" style="padding-top: 24px; border-top: 1px solid var(--border-light); margin-bottom: 24px;">
-                      <div class="switch-control-group" style="margin-bottom: 16px;">
-                        <div class="switch-info">
-                          <span class="switch-title" style="display: flex; align-items: center; gap: 8px;">
-                            <i data-lucide="message-square" style="width:16px;height:16px;color:var(--primary);"></i>
-                            Mensagem de saudação
-                          </span>
-                          <span class="switch-desc">
-                            Defina se o agente envia uma saudação inicial ao cliente e se ela varia de acordo com o período do dia (Bom dia, Boa tarde, Boa noite).
-                          </span>
-                        </div>
-                        <label class="switch-toggle" title="Ativar ou desativar mensagem de saudação">
-                          <input type="checkbox" id="toggle-agent-greeting-config" checked>
-                          <span class="switch-slider"></span>
-                        </label>
-                      </div>
-
-                      <div class="agent-greeting-content" id="agent-greeting-content-config">
-                        <!-- Mode selector pills -->
-                        <div class="greeting-mode-pills" style="margin-bottom: 16px;">
-                          <button type="button" class="greeting-mode-pill active" data-greeting-mode="fixed">
-                            <i data-lucide="message-circle" style="width:14px;height:14px;"></i>
-                            <span>Mensagem padrão</span>
-                          </button>
-                          <button type="button" class="greeting-mode-pill" data-greeting-mode="dynamic">
-                            <i data-lucide="clock" style="width:14px;height:14px;"></i>
-                            <span>Por período (Bom dia / Boa tarde / Boa noite)</span>
-                          </button>
-                        </div>
-
-                        <!-- Fixed Box -->
-                        <div class="greeting-box-fixed" id="greeting-box-fixed-config">
-                          <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label" for="agent-greeting-textarea-config">Texto da saudação:</label>
-                            <div class="behavior-textarea-container" style="margin-bottom: 0;">
-                              <textarea id="agent-greeting-textarea-config" class="behavior-textarea" rows="2" placeholder="Ex.: Olá! Seja muito bem-vindo(a). Como posso te ajudar hoje?">Olá! Seja muito bem-vindo(a). Como posso te ajudar hoje?</textarea>
-                              <div class="behavior-counter-bar">
-                                <span id="greeting-char-count-config">56/500</span>
-                              </div>
-                            </div>
-                            <div class="greeting-tags-bar" style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
-                              <span style="font-size: 11.5px; color: var(--text-muted);">Tags rápidas:</span>
-                              <button type="button" class="btn-tag-insert" data-target="config" data-tag="{saudacao}" style="font-size: 11.5px; padding: 2px 8px; border-radius: 4px; border: 1px dashed var(--border-medium); background: var(--bg-hover); color: var(--primary); cursor: pointer;">+ {saudacao}</button>
-                              <button type="button" class="btn-tag-insert" data-target="config" data-tag="{nome}" style="font-size: 11.5px; padding: 2px 8px; border-radius: 4px; border: 1px dashed var(--border-medium); background: var(--bg-hover); color: var(--text-main); cursor: pointer;">+ {nome}</button>
-                            </div>
-                            <span style="display: block; margin-top: 6px; font-size: 12px; color: var(--text-muted);">
-                              A tag <code>{saudacao}</code> adapta automaticamente para Bom dia, Boa tarde ou Boa noite conforme o horário.
-                            </span>
-                          </div>
-                        </div>
-
-                        <!-- Dynamic Box -->
-                        <div class="greeting-box-dynamic" id="greeting-box-dynamic-config" style="display: none;">
-                          <div class="greeting-periods-list" style="display: flex; flex-direction: column; gap: 10px;">
-                            <div class="greeting-period-item">
-                              <label class="form-label" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 12px;">
-                                <span class="greeting-period-badge morning" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; background: rgba(245, 158, 11, 0.12); color: #d97706; font-weight: 600; font-size: 11px;">
-                                  <i data-lucide="sun" style="width: 12px; height: 12px;"></i> Manhã (05h às 12h)
-                                </span>
-                              </label>
-                              <input type="text" id="greeting-input-morning-config" class="form-input" placeholder="Ex.: Bom dia! Seja muito bem-vindo(a). Como posso te ajudar hoje?" value="Bom dia! Seja muito bem-vindo(a). Como posso te ajudar hoje?">
-                            </div>
-
-                            <div class="greeting-period-item">
-                              <label class="form-label" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 12px;">
-                                <span class="greeting-period-badge afternoon" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; background: rgba(59, 130, 246, 0.12); color: #2563eb; font-weight: 600; font-size: 11px;">
-                                  <i data-lucide="sun-medium" style="width: 12px; height: 12px;"></i> Tarde (12h às 18h)
-                                </span>
-                              </label>
-                              <input type="text" id="greeting-input-afternoon-config" class="form-input" placeholder="Ex.: Boa tarde! Seja muito bem-vindo(a). Como posso te ajudar hoje?" value="Boa tarde! Seja muito bem-vindo(a). Como posso te ajudar hoje?">
-                            </div>
-
-                            <div class="greeting-period-item">
-                              <label class="form-label" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 12px;">
-                                <span class="greeting-period-badge night" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; background: rgba(139, 92, 246, 0.12); color: #7c3aed; font-weight: 600; font-size: 11px;">
-                                  <i data-lucide="moon" style="width: 12px; height: 12px;"></i> Noite (18h às 05h)
-                                </span>
-                              </label>
-                              <input type="text" id="greeting-input-night-config" class="form-input" placeholder="Ex.: Boa noite! Seja muito bem-vindo(a). Como posso te ajudar hoje?" value="Boa noite! Seja muito bem-vindo(a). Como posso te ajudar hoje?">
-                            </div>
-                          </div>
-                          <span style="display: block; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
-                            O agente detectará o horário da mensagem do cliente e enviará a saudação apropriada automaticamente.
-                          </span>
-                        </div>
                       </div>
                     </div>
 
@@ -3306,7 +3213,6 @@
             <option value="WhatsApp">WhatsApp</option>
             <option value="Instagram">Instagram</option>
             <option value="Widget">Widget do site</option>
-            <option value="Telegram">Telegram</option>
           </select>
         </div>
         <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px;">

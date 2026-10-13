@@ -217,10 +217,10 @@ export const zapChatData = {
         agent: 'Suporte IA',
         user: 'chamado #7842',
         text: 'Dúvida sobre integração com API resolvida',
-        channel: 'Telegram',
+        channel: 'WhatsApp',
         time: 'Hoje, 08:47',
-        icon: 'send',
-        iconBg: '#0088CC'
+        icon: 'message-circle',
+        iconBg: '#25D366'
       }
     ]
   },

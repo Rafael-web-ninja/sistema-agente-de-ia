@@ -2728,25 +2728,17 @@ let agentGreetingSettings = {
 };
 
 function setupAgentGreeting() {
-  const toggles = [
-    document.getElementById('toggle-agent-greeting'),
-    document.getElementById('toggle-agent-greeting-config')
-  ].filter(Boolean);
+  const toggle = document.getElementById('toggle-agent-greeting');
+  const content = document.getElementById('agent-greeting-content');
 
-  const contents = [
-    document.getElementById('agent-greeting-content'),
-    document.getElementById('agent-greeting-content-config')
-  ].filter(Boolean);
-
-  // Sync Toggles
-  toggles.forEach(toggle => {
+  // Toggle Listener
+  if (toggle) {
     toggle.addEventListener('change', () => {
       agentGreetingSettings.enabled = toggle.checked;
-      toggles.forEach(t => (t.checked = toggle.checked));
-      contents.forEach(c => c.classList.toggle('is-disabled', !toggle.checked));
+      if (content) content.classList.toggle('is-disabled', !toggle.checked);
       showToast(toggle.checked ? 'Mensagem de saudação ativada.' : 'Mensagem de saudação desativada.');
     });
-  });
+  }
 
   // Sync Mode Pills
   const allModePills = document.querySelectorAll('.greeting-mode-pill');
@@ -2758,74 +2750,52 @@ function setupAgentGreeting() {
     });
   });
 
-  // Sync Textareas (Fixed mode)
-  const textareas = [
-    document.getElementById('agent-greeting-textarea'),
-    document.getElementById('agent-greeting-textarea-config')
-  ].filter(Boolean);
+  // Textarea (Fixed mode)
+  const textarea = document.getElementById('agent-greeting-textarea');
+  const counter = document.getElementById('greeting-char-count');
 
-  const counters = [
-    document.getElementById('greeting-char-count'),
-    document.getElementById('greeting-char-count-config')
-  ].filter(Boolean);
-
-  textareas.forEach(textarea => {
+  if (textarea) {
     textarea.addEventListener('input', () => {
       agentGreetingSettings.message = textarea.value;
-      textareas.forEach(ta => { if (ta !== textarea) ta.value = textarea.value; });
-      counters.forEach(c => (c.textContent = `${textarea.value.length}/500`));
+      if (counter) counter.textContent = `${textarea.value.length}/500`;
     });
-  });
+  }
 
-  // Sync Period Inputs
-  const morningInputs = [
-    document.getElementById('greeting-input-morning'),
-    document.getElementById('greeting-input-morning-config')
-  ].filter(Boolean);
-  morningInputs.forEach(input => {
-    input.addEventListener('input', () => {
-      agentGreetingSettings.morning = input.value;
-      morningInputs.forEach(other => { if (other !== input) other.value = input.value; });
+  // Period Inputs
+  const morningInput = document.getElementById('greeting-input-morning');
+  if (morningInput) {
+    morningInput.addEventListener('input', () => {
+      agentGreetingSettings.morning = morningInput.value;
     });
-  });
+  }
 
-  const afternoonInputs = [
-    document.getElementById('greeting-input-afternoon'),
-    document.getElementById('greeting-input-afternoon-config')
-  ].filter(Boolean);
-  afternoonInputs.forEach(input => {
-    input.addEventListener('input', () => {
-      agentGreetingSettings.afternoon = input.value;
-      afternoonInputs.forEach(other => { if (other !== input) other.value = input.value; });
+  const afternoonInput = document.getElementById('greeting-input-afternoon');
+  if (afternoonInput) {
+    afternoonInput.addEventListener('input', () => {
+      agentGreetingSettings.afternoon = afternoonInput.value;
     });
-  });
+  }
 
-  const nightInputs = [
-    document.getElementById('greeting-input-night'),
-    document.getElementById('greeting-input-night-config')
-  ].filter(Boolean);
-  nightInputs.forEach(input => {
-    input.addEventListener('input', () => {
-      agentGreetingSettings.night = input.value;
-      nightInputs.forEach(other => { if (other !== input) other.value = input.value; });
+  const nightInput = document.getElementById('greeting-input-night');
+  if (nightInput) {
+    nightInput.addEventListener('input', () => {
+      agentGreetingSettings.night = nightInput.value;
     });
-  });
+  }
 
   // Tag Insert Buttons
   document.querySelectorAll('.btn-tag-insert').forEach(btn => {
     btn.addEventListener('click', () => {
       const tag = btn.getAttribute('data-tag');
-      if (!tag) return;
-      textareas.forEach(ta => {
-        const start = ta.selectionStart || ta.value.length;
-        const end = ta.selectionEnd || ta.value.length;
-        const val = ta.value;
-        ta.value = val.substring(0, start) + tag + val.substring(end);
-        ta.focus();
-        ta.setSelectionRange(start + tag.length, start + tag.length);
-        agentGreetingSettings.message = ta.value;
-      });
-      counters.forEach(c => (c.textContent = `${agentGreetingSettings.message.length}/500`));
+      if (!tag || !textarea) return;
+      const start = textarea.selectionStart || textarea.value.length;
+      const end = textarea.selectionEnd || textarea.value.length;
+      const val = textarea.value;
+      textarea.value = val.substring(0, start) + tag + val.substring(end);
+      textarea.focus();
+      textarea.setSelectionRange(start + tag.length, start + tag.length);
+      agentGreetingSettings.message = textarea.value;
+      if (counter) counter.textContent = `${agentGreetingSettings.message.length}/500`;
       showToast(`Tag ${tag} adicionada!`);
     });
   });
@@ -2836,18 +2806,11 @@ function applyGreetingModeUI(mode) {
     p.classList.toggle('active', p.getAttribute('data-greeting-mode') === mode);
   });
 
-  const fixedBoxes = [
-    document.getElementById('greeting-box-fixed-perfil'),
-    document.getElementById('greeting-box-fixed-config')
-  ].filter(Boolean);
+  const fixedBox = document.getElementById('greeting-box-fixed-perfil');
+  const dynamicBox = document.getElementById('greeting-box-dynamic-perfil');
 
-  const dynamicBoxes = [
-    document.getElementById('greeting-box-dynamic-perfil'),
-    document.getElementById('greeting-box-dynamic-config')
-  ].filter(Boolean);
-
-  fixedBoxes.forEach(b => (b.style.display = mode === 'fixed' ? 'block' : 'none'));
-  dynamicBoxes.forEach(b => (b.style.display = mode === 'dynamic' ? 'block' : 'none'));
+  if (fixedBox) fixedBox.style.display = mode === 'fixed' ? 'block' : 'none';
+  if (dynamicBox) dynamicBox.style.display = mode === 'dynamic' ? 'block' : 'none';
 
   if (window.lucide) window.lucide.createIcons();
 }
@@ -2872,57 +2835,42 @@ function loadAgentGreeting(agentId) {
   }
 
   // Update UI Elements
-  const toggles = [
-    document.getElementById('toggle-agent-greeting'),
-    document.getElementById('toggle-agent-greeting-config')
-  ].filter(Boolean);
-  toggles.forEach(t => (t.checked = agentGreetingSettings.enabled));
+  const toggle = document.getElementById('toggle-agent-greeting');
+  if (toggle) toggle.checked = agentGreetingSettings.enabled;
 
-  const contents = [
-    document.getElementById('agent-greeting-content'),
-    document.getElementById('agent-greeting-content-config')
-  ].filter(Boolean);
-  contents.forEach(c => c.classList.toggle('is-disabled', !agentGreetingSettings.enabled));
+  const content = document.getElementById('agent-greeting-content');
+  if (content) content.classList.toggle('is-disabled', !agentGreetingSettings.enabled);
 
-  const textareas = [
-    document.getElementById('agent-greeting-textarea'),
-    document.getElementById('agent-greeting-textarea-config')
-  ].filter(Boolean);
-  textareas.forEach(ta => (ta.value = agentGreetingSettings.message || ''));
+  const textarea = document.getElementById('agent-greeting-textarea');
+  if (textarea) textarea.value = agentGreetingSettings.message || '';
 
-  const counters = [
-    document.getElementById('greeting-char-count'),
-    document.getElementById('greeting-char-count-config')
-  ].filter(Boolean);
-  counters.forEach(c => (c.textContent = `${(agentGreetingSettings.message || '').length}/500`));
+  const counter = document.getElementById('greeting-char-count');
+  if (counter) counter.textContent = `${(agentGreetingSettings.message || '').length}/500`;
 
-  const morningInputs = [
-    document.getElementById('greeting-input-morning'),
-    document.getElementById('greeting-input-morning-config')
-  ].filter(Boolean);
-  morningInputs.forEach(i => (i.value = agentGreetingSettings.morning || ''));
+  const morningInput = document.getElementById('greeting-input-morning');
+  if (morningInput) morningInput.value = agentGreetingSettings.morning || '';
 
-  const afternoonInputs = [
-    document.getElementById('greeting-input-afternoon'),
-    document.getElementById('greeting-input-afternoon-config')
-  ].filter(Boolean);
-  afternoonInputs.forEach(i => (i.value = agentGreetingSettings.afternoon || ''));
+  const afternoonInput = document.getElementById('greeting-input-afternoon');
+  if (afternoonInput) afternoonInput.value = agentGreetingSettings.afternoon || '';
 
-  const nightInputs = [
-    document.getElementById('greeting-input-night'),
-    document.getElementById('greeting-input-night-config')
-  ].filter(Boolean);
-  nightInputs.forEach(i => (i.value = agentGreetingSettings.night || ''));
+  const nightInput = document.getElementById('greeting-input-night');
+  if (nightInput) nightInput.value = agentGreetingSettings.night || '';
 
   applyGreetingModeUI(agentGreetingSettings.mode || 'fixed');
 }
 
 function saveAgentGreeting(agentId) {
-  const toggle = document.getElementById('toggle-agent-greeting') || document.getElementById('toggle-agent-greeting-config');
-  const textarea = document.getElementById('agent-greeting-textarea') || document.getElementById('agent-greeting-textarea-config');
-  const morning = document.getElementById('greeting-input-morning') || document.getElementById('greeting-input-morning-config');
-  const afternoon = document.getElementById('greeting-input-afternoon') || document.getElementById('greeting-input-afternoon-config');
-  const night = document.getElementById('greeting-input-night') || document.getElementById('greeting-input-night-config');
+  const toggle = document.getElementById('toggle-agent-greeting');
+  const textarea = document.getElementById('agent-greeting-textarea');
+  const morning = document.getElementById('greeting-input-morning');
+  const afternoon = document.getElementById('greeting-input-afternoon');
+  const night = document.getElementById('greeting-input-night');
+
+  if (toggle) agentGreetingSettings.enabled = toggle.checked;
+  if (textarea) agentGreetingSettings.message = textarea.value;
+  if (morning) agentGreetingSettings.morning = morning.value;
+  if (afternoon) agentGreetingSettings.afternoon = afternoon.value;
+  if (night) agentGreetingSettings.night = night.value;
 
   if (toggle) agentGreetingSettings.enabled = toggle.checked;
   if (textarea) agentGreetingSettings.message = textarea.value;
