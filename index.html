@@ -1230,10 +1230,6 @@
                 </div>
               </div>
               <div style="display: flex; gap: 10px; align-items: center;">
-                <button type="button" class="btn btn-outline-status btn-sm is-active" id="btn-header-toggle-agent-status" title="Alternar status do agente">
-                  <i data-lucide="pause-circle" id="header-status-icon" style="width:14px;height:14px;"></i>
-                  <span id="header-status-text">Pausar agente</span>
-                </button>
                 <button type="button" class="btn btn-secondary btn-sm btn-back-to-agents">Cancelar</button>
                 <button type="button" class="btn btn-primary btn-sm btn-save-agent">
                   <i data-lucide="save" style="width:14px;height:14px;"></i> Salvar alterações
@@ -1344,16 +1340,6 @@
                             <i data-lucide="chevron-down" class="segment-chevron-icon" id="segment-chevron-icon"></i>
                           </button>
                           <div class="segment-dropdown-menu" id="segment-dropdown-menu"></div>
-                        </div>
-                      </div>
-
-                      <div class="segment-suggestions-row">
-                        <span class="segment-suggestions-label">Sugestões:</span>
-                        <div class="segment-suggestions-chips">
-                          <button type="button" class="segment-chip active" data-segment="Clínica / Saúde">Clínica</button>
-                          <button type="button" class="segment-chip" data-segment="Advocacia / Jurídico">Advocacia</button>
-                          <button type="button" class="segment-chip" data-segment="Imobiliária / Corretores">Imobiliária</button>
-                          <button type="button" class="segment-chip" data-segment="Academia / Fitness">Academia</button>
                         </div>
                       </div>
                     </div>
@@ -1977,50 +1963,6 @@
 
                 <!-- PANE 7: PREFERÊNCIAS DE ATENDIMENTO / CONFIGURAÇÕES -->
                 <div class="agent-tab-pane" id="agent-tab-pane-configuracoes">
-
-                  <!-- 1. CARD PRINCIPAL DE STATUS DO AGENTE (ATIVAR / PAUSAR) -->
-                  <div class="agent-status-control-card" id="card-agent-status-control">
-                    <div class="agent-status-control-header">
-                      <div class="agent-status-info-cluster">
-                        <div class="agent-status-avatar-icon active" id="agent-status-icon-box">
-                          <i data-lucide="power" id="agent-status-card-icon" style="width: 20px; height: 20px;"></i>
-                        </div>
-                        <div>
-                          <div class="agent-status-title-badge-row">
-                            <h3 class="agent-status-card-title">Status da IA no Atendimento</h3>
-                            <span class="badge badge-dot badge-active" id="config-agent-status-badge">IA ativa</span>
-                          </div>
-                          <p class="agent-status-card-desc">
-                            Defina se este agente deve responder às mensagens automaticamente ou se o atendimento deve ficar temporariamente pausado.
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div class="agent-status-actions-cluster">
-                        <button type="button" class="btn-status-pill-toggle" id="btn-config-toggle-agent-status">
-                          <i data-lucide="pause-circle" id="btn-config-status-icon" style="width:14px;height:14px;"></i>
-                          <span id="btn-config-status-text">Pausar agente</span>
-                        </button>
-                        <label class="switch-toggle" title="Ativar ou pausar IA">
-                          <input type="checkbox" id="toggle-agent-status-master" checked>
-                          <span class="switch-slider"></span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <!-- Banner Contextual do Impacto do Status -->
-                    <div class="agent-status-callout active" id="agent-status-callout">
-                      <div class="agent-status-callout-icon" id="agent-status-callout-icon">
-                        <i data-lucide="check-circle-2" style="width: 17px; height: 17px;"></i>
-                      </div>
-                      <div class="agent-status-callout-body">
-                        <span class="agent-status-callout-heading" id="agent-status-callout-heading">Agente em operação normal</span>
-                        <p class="agent-status-callout-text" id="agent-status-callout-text">
-                          O agente está ativo e responderá os clientes automaticamente nos canais conectados (WhatsApp, etc.).
-                        </p>
-                      </div>
-                    </div>
-                  </div>
 
                   <div class="agent-config-card">
                     <div class="agent-config-card-header">
