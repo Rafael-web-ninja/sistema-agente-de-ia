@@ -1008,11 +1008,11 @@ function setupNewChatbotModal() {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
 
-    const name = document.getElementById('new-bot-input-name').value;
-    const channel = document.getElementById('new-bot-input-channel').value;
-    const desc = document.getElementById('new-bot-input-desc').value;
-    const trigger = document.getElementById('new-bot-input-trigger').value;
-    const defaultAgent = document.getElementById('new-bot-input-agent').value;
+    const name = document.getElementById('new-bot-input-name')?.value || 'Novo Chatbot';
+    const channel = document.getElementById('new-bot-input-channel')?.value || 'WhatsApp';
+    const desc = document.getElementById('new-bot-input-desc')?.value || '';
+    const trigger = document.getElementById('new-bot-input-trigger')?.value || 'Primeira mensagem recebida';
+    const defaultAgent = document.getElementById('new-bot-input-agent')?.value || 'Juliana Santos';
 
     const newBot = {
       id: 'bot_' + Date.now(),

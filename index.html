@@ -1825,6 +1825,9 @@
                         <div class="knowledge-item-right">
                           <span class="badge badge-dot badge-active">Ativo</span>
                           <div class="knowledge-item-actions">
+                            <button type="button" class="btn-knowledge-action btn-download-knowledge" title="Baixar arquivo">
+                              <i data-lucide="download" style="width:13px;height:13px;"></i>
+                            </button>
                             <button type="button" class="btn-knowledge-action btn-edit-knowledge" title="Editar">
                               <i data-lucide="edit-3" style="width:13px;height:13px;"></i>
                             </button>
@@ -1849,6 +1852,9 @@
                         <div class="knowledge-item-right">
                           <span class="badge badge-dot badge-active">Ativo</span>
                           <div class="knowledge-item-actions">
+                            <button type="button" class="btn-knowledge-action btn-download-knowledge" title="Baixar arquivo">
+                              <i data-lucide="download" style="width:13px;height:13px;"></i>
+                            </button>
                             <button type="button" class="btn-knowledge-action btn-edit-knowledge" title="Editar">
                               <i data-lucide="edit-3" style="width:13px;height:13px;"></i>
                             </button>
@@ -4921,23 +4927,32 @@
 
             <div class="form-group" style="margin-bottom: 0;">
               <label class="form-label">Arquivo de treinamento:</label>
-              <div class="edit-knowledge-file-box" style="border: 1px dashed var(--border-medium); border-radius: var(--radius-md); padding: 12px 14px; background: var(--bg-hover); display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+              <div class="edit-knowledge-file-box" id="edit-knowledge-file-dropzone">
                 <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-                  <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(0, 168, 104, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                    <i data-lucide="file-up" style="width: 17px; height: 17px;"></i>
+                  <div id="edit-file-icon-box" style="width: 34px; height: 34px; border-radius: 8px; background: rgba(0, 168, 104, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s ease;">
+                    <i data-lucide="file-up" id="edit-file-icon-symbol" style="width: 17px; height: 17px;"></i>
                   </div>
                   <div style="min-width: 0;">
                     <div id="edit-file-current-label" style="font-size: 13px; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">arquivo.pdf</div>
                     <div id="edit-file-current-meta" style="font-size: 11.5px; color: var(--text-muted);">Arquivo carregado</div>
                   </div>
                 </div>
-                <button type="button" class="btn btn-secondary btn-sm" id="btn-reupload-file" style="flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;">
-                  <i data-lucide="upload-cloud" style="width: 13px; height: 13px;"></i>
-                  <span>Substituir arquivo</span>
-                </button>
+                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-download-modal-file" style="display: inline-flex; align-items: center; gap: 6px;" title="Baixar este arquivo">
+                    <i data-lucide="download" style="width: 13px; height: 13px;"></i>
+                    <span>Baixar</span>
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-reupload-file" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <i data-lucide="upload-cloud" style="width: 13px; height: 13px;"></i>
+                    <span>Substituir</span>
+                  </button>
+                  <button type="button" class="btn-file-delete-action" id="btn-delete-modal-file" title="Excluir arquivo">
+                    <i data-lucide="x" style="width: 15px; height: 15px;"></i>
+                  </button>
+                </div>
                 <input type="file" id="edit-file-hidden-input" accept=".pdf,.txt,.docx,.csv" style="display: none;">
               </div>
-              <span id="edit-file-reupload-feedback" style="display: block; margin-top: 6px; font-size: 11.5px; color: var(--text-muted);">Formatos suportados: PDF, DOCX, TXT ou CSV até 25MB.</span>
+              <span id="edit-file-reupload-feedback" style="display: block; margin-top: 6px; font-size: 11.5px; color: var(--text-muted);">Arraste um novo arquivo aqui ou clique em Substituir (PDF, DOCX, TXT ou CSV até 25MB).</span>
             </div>
           </div>
 
@@ -5215,28 +5230,12 @@
             <input type="text" id="new-bot-input-name" class="form-input" placeholder="Ex: Triagem & Boas-Vindas Vendas" required>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div class="form-group">
-              <label class="form-label" for="new-bot-input-channel">Canal Conectado</label>
-              <select id="new-bot-input-channel" class="form-select">
-                <option value="WhatsApp">WhatsApp</option>
-                <option value="Instagram">Instagram Direct</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="new-bot-input-agent">Agente de IA Padrão</label>
-              <select id="new-bot-input-agent" class="form-select">
-                <option value="Juliana Santos">Juliana Santos (Vendas)</option>
-                <option value="Pedro">Pedro (Suporte)</option>
-                <option value="Carla Menezes">Carla Menezes (Triagem)</option>
-                <option value="Felipe Costa">Felipe Costa (Qualificação)</option>
-              </select>
-            </div>
-          </div>
-
           <div class="form-group">
-            <label class="form-label" for="new-bot-input-trigger">Gatilho de Início</label>
-            <input type="text" id="new-bot-input-trigger" class="form-input" placeholder="Ex: Primeira mensagem recebida ou Palavra-chave: 'orçamento'" required>
+            <label class="form-label" for="new-bot-input-channel">Canal Conectado</label>
+            <select id="new-bot-input-channel" class="form-select">
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Instagram">Instagram Direct</option>
+            </select>
           </div>
 
           <div class="form-group">

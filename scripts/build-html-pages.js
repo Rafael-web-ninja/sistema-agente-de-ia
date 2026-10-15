@@ -1069,6 +1069,24 @@ const editAgentPageScript = `
     const kList = document.getElementById('knowledge-items-list');
     if (kList) {
       kList.addEventListener('click', (e) => {
+        const dlBtn = e.target.closest('.btn-download-knowledge');
+        if (dlBtn) {
+          e.preventDefault();
+          const card = dlBtn.closest('.knowledge-item-card');
+          const name = card?.querySelector('.knowledge-item-name')?.textContent.trim();
+          if (name) {
+            const blob = new Blob(['ZapChat Conhecimento - Arquivo: ' + name + '\\nData: ' + new Date().toLocaleDateString('pt-BR')], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          }
+          return;
+        }
         const delBtn = e.target.closest('.btn-delete-knowledge');
         if (delBtn) {
           e.preventDefault();
@@ -1117,9 +1135,31 @@ const editAgentPageScript = `
                 const nInp = document.getElementById('edit-file-name');
                 const lbl = document.getElementById('edit-file-current-label');
                 const mCur = document.getElementById('edit-file-current-meta');
+                const delBtn = document.getElementById('btn-delete-modal-file');
+                const dropzone = document.getElementById('edit-knowledge-file-dropzone');
+                const iconBox = document.getElementById('edit-file-icon-box');
+                const fdbk = document.getElementById('edit-file-reupload-feedback');
                 if (nInp) nInp.value = name;
-                if (lbl) lbl.textContent = name;
+                if (lbl) {
+                  lbl.textContent = name;
+                  lbl.style.fontStyle = 'normal';
+                  lbl.style.color = 'var(--text-main)';
+                }
                 if (mCur) mCur.textContent = meta || 'Arquivo carregado';
+                if (delBtn) delBtn.style.display = 'inline-flex';
+                const dlBtnModal = document.getElementById('btn-download-modal-file');
+                if (dlBtnModal) dlBtnModal.style.display = 'inline-flex';
+                if (dropzone) dropzone.classList.remove('has-no-file');
+                if (iconBox) {
+                  iconBox.style.background = 'rgba(0, 168, 104, 0.12)';
+                  iconBox.style.color = 'var(--primary)';
+                }
+                if (fdbk) {
+                  fdbk.textContent = 'Arraste um novo arquivo aqui ou clique em Substituir (PDF, DOCX, TXT ou CSV até 25MB).';
+                  fdbk.style.color = 'var(--text-muted)';
+                }
+                window._standaloneFileRemoved = false;
+                window._standaloneNewFile = null;
               } else if (type === 'site') {
                 if (titleEl) titleEl.textContent = 'Editar Site / URL de Conhecimento';
                 if (descEl) descEl.textContent = 'Altere a URL ou puxe os dados mais recentes da página';
@@ -1173,27 +1213,138 @@ const editAgentPageScript = `
       });
     }
 
-    // Modal reupload button in standalone
+    // Modal reupload, drag-and-drop & delete in standalone
     const btnReup = document.getElementById('btn-reupload-file');
     const fInp = document.getElementById('edit-file-hidden-input');
+    const fDropzone = document.getElementById('edit-knowledge-file-dropzone');
+    const btnDelFile = document.getElementById('btn-delete-modal-file');
+
+    function applyFileStandalone(file) {
+      if (!file) return;
+      const nInp = document.getElementById('edit-file-name');
+      const lbl = document.getElementById('edit-file-current-label');
+      const mCur = document.getElementById('edit-file-current-meta');
+      const fdbk = document.getElementById('edit-file-reupload-feedback');
+      const delBtn = document.getElementById('btn-delete-modal-file');
+      const iconBox = document.getElementById('edit-file-icon-box');
+      const dropzone = document.getElementById('edit-knowledge-file-dropzone');
+
+      if (nInp) nInp.value = file.name;
+      if (lbl) {
+        lbl.textContent = file.name;
+        lbl.style.fontStyle = 'normal';
+        lbl.style.color = 'var(--text-main)';
+      }
+      const sz = file.size > 1024 * 1024 ? (file.size / (1024 * 1024)).toFixed(1) + ' MB' : (file.size / 1024).toFixed(0) + ' KB';
+      const fileExt = file.name.split('.').pop() || '';
+      if (mCur) mCur.textContent = 'Arquivo ' + fileExt.toUpperCase() + ' • ' + sz;
+      if (fdbk) {
+        fdbk.textContent = '✓ Novo arquivo carregado: ' + file.name + ' (' + sz + ') pronto para salvar.';
+        fdbk.style.color = '#00A868';
+      }
+      if (delBtn) delBtn.style.display = 'inline-flex';
+      const dlBtnModal = document.getElementById('btn-download-modal-file');
+      if (dlBtnModal) dlBtnModal.style.display = 'inline-flex';
+      if (dropzone) dropzone.classList.remove('has-no-file');
+      if (iconBox) {
+        iconBox.style.background = 'rgba(0, 168, 104, 0.12)';
+        iconBox.style.color = 'var(--primary)';
+      }
+      window._standaloneFileRemoved = false;
+      window._standaloneNewFile = file;
+    }
+
     if (btnReup && fInp) {
-      btnReup.addEventListener('click', () => fInp.click());
+      btnReup.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fInp.click();
+      });
       fInp.addEventListener('change', (e) => {
         const file = e.target.files?.[0];
-        if (!file) return;
+        if (file) applyFileStandalone(file);
+      });
+    }
+
+    const btnDlModalStandalone = document.getElementById('btn-download-modal-file');
+    if (btnDlModalStandalone) {
+      btnDlModalStandalone.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const nInp = document.getElementById('edit-file-name');
+        const lbl = document.getElementById('edit-file-current-label');
+        const fname = nInp?.value.trim() || lbl?.textContent.trim();
+        if (fname && fname !== 'Nenhum arquivo anexado') {
+          const blob = new Blob(['ZapChat Conhecimento - Arquivo: ' + fname + '\\nData: ' + new Date().toLocaleDateString('pt-BR')], { type: 'application/octet-stream' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fname;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+      });
+    }
+
+    if (fDropzone) {
+      ['dragenter', 'dragover'].forEach(evt => {
+        fDropzone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          fDropzone.classList.add('drag-active');
+        });
+      });
+      ['dragleave', 'dragend'].forEach(evt => {
+        fDropzone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          fDropzone.classList.remove('drag-active');
+        });
+      });
+      fDropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        fDropzone.classList.remove('drag-active');
+        const file = e.dataTransfer?.files?.[0];
+        if (file) applyFileStandalone(file);
+      });
+    }
+
+    if (btnDelFile) {
+      btnDelFile.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         const nInp = document.getElementById('edit-file-name');
         const lbl = document.getElementById('edit-file-current-label');
         const mCur = document.getElementById('edit-file-current-meta');
         const fdbk = document.getElementById('edit-file-reupload-feedback');
-        if (nInp) nInp.value = file.name;
-        if (lbl) lbl.textContent = file.name;
-        const sz = file.size > 1024 * 1024 ? (file.size / (1024 * 1024)).toFixed(1) + ' MB' : (file.size / 1024).toFixed(0) + ' KB';
-        const fileExt = file.name.split('.').pop() || '';
-        if (mCur) mCur.textContent = 'Arquivo ' + fileExt.toUpperCase() + ' • ' + sz;
-        if (fdbk) {
-          fdbk.textContent = '✓ Novo arquivo selecionado: ' + file.name + ' (' + sz + ') pronto para salvar.';
-          fdbk.style.color = '#00A868';
+        const iconBox = document.getElementById('edit-file-icon-box');
+        const dropzone = document.getElementById('edit-knowledge-file-dropzone');
+
+        if (lbl) {
+          lbl.textContent = 'Nenhum arquivo anexado';
+          lbl.style.fontStyle = 'italic';
+          lbl.style.color = 'var(--text-muted)';
         }
+        if (mCur) mCur.textContent = 'Arraste um novo arquivo aqui ou clique em Substituir';
+        if (nInp) nInp.value = '';
+        if (fInp) fInp.value = '';
+        if (fdbk) {
+          fdbk.textContent = 'Arquivo removido. Arraste um arquivo ou clique em Substituir para selecionar outro.';
+          fdbk.style.color = 'var(--status-danger)';
+        }
+        if (iconBox) {
+          iconBox.style.background = 'var(--bg-card-alt)';
+          iconBox.style.color = 'var(--text-muted)';
+        }
+        if (dropzone) dropzone.classList.add('has-no-file');
+
+        btnDelFile.style.display = 'none';
+        const dlBtnModal = document.getElementById('btn-download-modal-file');
+        if (dlBtnModal) dlBtnModal.style.display = 'none';
+        window._standaloneFileRemoved = true;
+        window._standaloneNewFile = null;
       });
     }
 
@@ -1209,6 +1360,12 @@ const editAgentPageScript = `
         const badge = card.querySelector('.badge-dot');
 
         if (type === 'arquivo') {
+          if (window._standaloneFileRemoved && !window._standaloneNewFile) {
+            card.remove();
+            const modal = document.getElementById('modal-edit-knowledge');
+            if (modal) modal.classList.remove('open');
+            return;
+          }
           const fn = document.getElementById('edit-file-name')?.value.trim();
           const fm = document.getElementById('edit-file-current-meta')?.textContent.trim();
           if (nameEl && fn) nameEl.textContent = fn;

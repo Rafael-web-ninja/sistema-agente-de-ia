@@ -1907,6 +1907,43 @@ function setupTrainingActions() {
     uploadDropzone.addEventListener('click', () => {
       fileInput.click();
     });
+
+    ['dragenter', 'dragover'].forEach(evt => {
+      uploadDropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        uploadDropzone.classList.add('drag-active');
+      });
+    });
+
+    ['dragleave', 'dragend'].forEach(evt => {
+      uploadDropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        uploadDropzone.classList.remove('drag-active');
+      });
+    });
+
+    uploadDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadDropzone.classList.remove('drag-active');
+      const files = Array.from(e.dataTransfer?.files || []);
+      if (files.length === 0) return;
+
+      files.forEach(file => {
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+        const ext = file.name.split('.').pop().toUpperCase();
+        addKnowledgeCardToList({
+          icon: 'file-text',
+          iconType: 'arquivo',
+          name: file.name,
+          meta: `Arquivo ${ext} • ${sizeMb > 0 ? sizeMb + ' MB' : Math.round(file.size / 1024) + ' KB'} • Adicionado agora`
+        });
+      });
+
+      showToast(`${files.length} arquivo(s) adicionado(s) à base de conhecimento!`);
+    });
   }
 
   // 3. Add Text Knowledge (Texto)
@@ -2008,6 +2045,10 @@ function setupTrainingActions() {
       <div class="knowledge-item-right">
         <span class="badge badge-dot badge-active">Ativo</span>
         <div class="knowledge-item-actions">
+          ${item.iconType === 'arquivo' ? `
+          <button type="button" class="btn-knowledge-action btn-download-knowledge" title="Baixar arquivo">
+            <i data-lucide="download" style="width:13px;height:13px;"></i>
+          </button>` : ''}
           <button type="button" class="btn-knowledge-action btn-edit-knowledge" title="Editar">
             <i data-lucide="edit-3" style="width:13px;height:13px;"></i>
           </button>
@@ -2045,35 +2086,209 @@ function setupTrainingActions() {
     return 'arquivo';
   }
 
-  // Handle file re-upload inside modal
+  // Handle file re-upload, drag & drop, and X delete inside modal
   const btnReupload = document.getElementById('btn-reupload-file');
   const fileHiddenInput = document.getElementById('edit-file-hidden-input');
+  const fileModalDropzone = document.getElementById('edit-knowledge-file-dropzone');
+  const btnDeleteModalFile = document.getElementById('btn-delete-modal-file');
+  const btnDownloadModalFile = document.getElementById('btn-download-modal-file');
+
+  window._knowledgeFilesStore = window._knowledgeFilesStore || {};
+
+  function triggerDownloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function downloadKnowledgeFile(fileName) {
+    if (!fileName) return;
+
+    if (window._knowledgeFilesStore[fileName]) {
+      triggerDownloadBlob(window._knowledgeFilesStore[fileName], fileName);
+      if (typeof showToast === 'function') {
+        showToast(`Download de "${fileName}" iniciado.`);
+      }
+      return;
+    }
+
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    let mime = 'application/octet-stream';
+    let content = `ZapChat - Material de Conhecimento e Treinamento do Agente\nArquivo: ${fileName}\nData de Emissão: ${new Date().toLocaleDateString('pt-BR')}\n\nDocumento indexado pela inteligência artificial para atendimento automático aos clientes no WhatsApp.`;
+
+    if (ext === 'pdf') {
+      mime = 'application/pdf';
+    } else if (ext === 'docx') {
+      mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    } else if (ext === 'txt') {
+      mime = 'text/plain;charset=utf-8';
+    } else if (ext === 'csv') {
+      mime = 'text/csv;charset=utf-8';
+      content = `id,titulo,descricao\n1,${fileName},Material de Treinamento ZapChat\n`;
+    }
+
+    const blob = new Blob([content], { type: mime });
+    triggerDownloadBlob(blob, fileName);
+
+    if (typeof showToast === 'function') {
+      showToast(`Download de "${fileName}" iniciado.`);
+    }
+  }
+
+  if (btnDownloadModalFile) {
+    btnDownloadModalFile.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const currentFileName = document.getElementById('edit-file-name')?.value.trim() ||
+        document.getElementById('edit-file-current-label')?.textContent.trim();
+      if (currentFileName && currentFileName !== 'Nenhum arquivo anexado') {
+        downloadKnowledgeFile(currentFileName);
+      } else {
+        if (typeof showToast === 'function') {
+          showToast('Nenhum arquivo disponível para download.');
+        }
+      }
+    });
+  }
+
+  function applyModalKnowledgeFile(file) {
+    if (!file) return;
+
+    const nameInp = document.getElementById('edit-file-name');
+    const labelEl = document.getElementById('edit-file-current-label');
+    const metaEl = document.getElementById('edit-file-current-meta');
+    const feedbackEl = document.getElementById('edit-file-reupload-feedback');
+    const deleteBtn = document.getElementById('btn-delete-modal-file');
+    const iconBox = document.getElementById('edit-file-icon-box');
+    const dropzone = document.getElementById('edit-knowledge-file-dropzone');
+
+    if (nameInp) nameInp.value = file.name;
+    if (labelEl) {
+      labelEl.textContent = file.name;
+      labelEl.style.fontStyle = 'normal';
+      labelEl.style.color = 'var(--text-main)';
+    }
+
+    const sizeStr = file.size > 1024 * 1024
+      ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+      : (file.size / 1024).toFixed(0) + ' KB';
+    const ext = file.name.split('.').pop()?.toUpperCase() || 'ARQUIVO';
+
+    if (metaEl) metaEl.textContent = `Arquivo ${ext} • ${sizeStr}`;
+    if (feedbackEl) {
+      feedbackEl.textContent = `✓ Novo arquivo carregado: ${file.name} (${sizeStr}) pronto para salvar.`;
+      feedbackEl.style.color = 'var(--primary)';
+    }
+
+    if (deleteBtn) deleteBtn.style.display = 'inline-flex';
+    if (btnDownloadModalFile) btnDownloadModalFile.style.display = 'inline-flex';
+    if (dropzone) dropzone.classList.remove('has-no-file');
+    if (iconBox) {
+      iconBox.style.background = 'rgba(0, 168, 104, 0.12)';
+      iconBox.style.color = 'var(--primary)';
+    }
+
+    window._editKnowledgeFileRemoved = false;
+    window._editKnowledgeNewFile = file;
+    window._knowledgeFilesStore[file.name] = file;
+    if (window.lucide) window.lucide.createIcons();
+  }
+
   if (btnReupload && fileHiddenInput) {
-    btnReupload.addEventListener('click', () => {
+    btnReupload.addEventListener('click', (e) => {
+      e.stopPropagation();
       fileHiddenInput.click();
     });
 
     fileHiddenInput.addEventListener('change', (e) => {
       const file = e.target.files?.[0];
-      if (!file) return;
+      if (file) applyModalKnowledgeFile(file);
+    });
+  }
+
+  if (fileModalDropzone) {
+    ['dragenter', 'dragover'].forEach(evt => {
+      fileModalDropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        fileModalDropzone.classList.add('drag-active');
+      });
+    });
+
+    ['dragleave', 'dragend'].forEach(evt => {
+      fileModalDropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        fileModalDropzone.classList.remove('drag-active');
+      });
+    });
+
+    fileModalDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      fileModalDropzone.classList.remove('drag-active');
+
+      const dt = e.dataTransfer;
+      const file = dt?.files?.[0];
+      if (file) {
+        applyModalKnowledgeFile(file);
+        if (typeof showToast === 'function') {
+          showToast(`Arquivo "${file.name}" carregado com sucesso.`);
+        }
+      }
+    });
+  }
+
+  if (btnDeleteModalFile) {
+    btnDeleteModalFile.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
 
       const nameInp = document.getElementById('edit-file-name');
       const labelEl = document.getElementById('edit-file-current-label');
       const metaEl = document.getElementById('edit-file-current-meta');
       const feedbackEl = document.getElementById('edit-file-reupload-feedback');
+      const iconBox = document.getElementById('edit-file-icon-box');
+      const dropzone = document.getElementById('edit-knowledge-file-dropzone');
 
-      if (nameInp) nameInp.value = file.name;
-      if (labelEl) labelEl.textContent = file.name;
-
-      const sizeStr = file.size > 1024 * 1024
-        ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
-        : (file.size / 1024).toFixed(0) + ' KB';
-      const ext = file.name.split('.').pop()?.toUpperCase() || 'ARQUIVO';
-
-      if (metaEl) metaEl.textContent = `Arquivo ${ext} • ${sizeStr}`;
+      if (labelEl) {
+        labelEl.textContent = 'Nenhum arquivo anexado';
+        labelEl.style.fontStyle = 'italic';
+        labelEl.style.color = 'var(--text-muted)';
+      }
+      if (metaEl) {
+        metaEl.textContent = 'Arraste um novo arquivo aqui ou clique em Substituir';
+      }
+      if (nameInp) {
+        nameInp.value = '';
+      }
+      if (fileHiddenInput) {
+        fileHiddenInput.value = '';
+      }
       if (feedbackEl) {
-        feedbackEl.textContent = `✓ Novo arquivo selecionado: ${file.name} (${sizeStr}) pronto para salvar.`;
-        feedbackEl.style.color = 'var(--primary)';
+        feedbackEl.textContent = 'Arquivo removido. Arraste um arquivo ou clique em Substituir para selecionar outro.';
+        feedbackEl.style.color = 'var(--status-danger)';
+      }
+      if (iconBox) {
+        iconBox.style.background = 'var(--bg-card-alt)';
+        iconBox.style.color = 'var(--text-muted)';
+      }
+      if (dropzone) {
+        dropzone.classList.add('has-no-file');
+      }
+
+      btnDeleteModalFile.style.display = 'none';
+      if (btnDownloadModalFile) btnDownloadModalFile.style.display = 'none';
+      window._editKnowledgeFileRemoved = true;
+      window._editKnowledgeNewFile = null;
+
+      if (typeof showToast === 'function') {
+        showToast('Arquivo removido.');
       }
     });
   }
@@ -2114,6 +2329,25 @@ function setupTrainingActions() {
       const notesVal = document.getElementById('edit-knowledge-notes')?.value.trim();
 
       if (type === 'arquivo') {
+        if (window._editKnowledgeFileRemoved && !window._editKnowledgeNewFile) {
+          // Arquivo foi excluído e salvo sem novo anexo -> remover card da base
+          currentEditingKnowledgeCard.style.opacity = '0';
+          currentEditingKnowledgeCard.style.transform = 'scale(0.96)';
+          currentEditingKnowledgeCard.style.transition = 'all 0.2s ease';
+          setTimeout(() => {
+            currentEditingKnowledgeCard.remove();
+            updateKnowledgeCount();
+            showToast('Arquivo de conhecimento excluído com sucesso.');
+          }, 200);
+
+          const modal = document.getElementById('modal-edit-knowledge');
+          if (modal) {
+            modal.classList.remove('open');
+            modal.classList.remove('active');
+          }
+          return;
+        }
+
         const fileName = document.getElementById('edit-file-name')?.value.trim();
         const fileMeta = document.getElementById('edit-file-current-meta')?.textContent.trim();
         if (nameEl && fileName) nameEl.textContent = fileName;
@@ -2176,6 +2410,17 @@ function setupTrainingActions() {
       return;
     }
 
+    const downloadBtn = e.target.closest('.btn-download-knowledge');
+    if (downloadBtn) {
+      e.preventDefault();
+      const card = downloadBtn.closest('.knowledge-item-card');
+      const name = card?.querySelector('.knowledge-item-name')?.textContent.trim();
+      if (name) {
+        downloadKnowledgeFile(name);
+      }
+      return;
+    }
+
     const editBtn = e.target.closest('.btn-edit-knowledge');
     if (editBtn) {
       e.preventDefault();
@@ -2211,14 +2456,32 @@ function setupTrainingActions() {
           const labelEl = document.getElementById('edit-file-current-label');
           const metaCurrEl = document.getElementById('edit-file-current-meta');
           const feedbackEl = document.getElementById('edit-file-reupload-feedback');
+          const deleteBtn = document.getElementById('btn-delete-modal-file');
+          const downloadBtnModal = document.getElementById('btn-download-modal-file');
+          const iconBox = document.getElementById('edit-file-icon-box');
+          const dropzone = document.getElementById('edit-knowledge-file-dropzone');
 
           if (nameInp) nameInp.value = name;
-          if (labelEl) labelEl.textContent = name;
+          if (labelEl) {
+            labelEl.textContent = name;
+            labelEl.style.fontStyle = 'normal';
+            labelEl.style.color = 'var(--text-main)';
+          }
           if (metaCurrEl) metaCurrEl.textContent = meta || 'Arquivo carregado';
+          if (deleteBtn) deleteBtn.style.display = 'inline-flex';
+          if (downloadBtnModal) downloadBtnModal.style.display = 'inline-flex';
+          if (dropzone) dropzone.classList.remove('has-no-file');
+          if (iconBox) {
+            iconBox.style.background = 'rgba(0, 168, 104, 0.12)';
+            iconBox.style.color = 'var(--primary)';
+          }
           if (feedbackEl) {
-            feedbackEl.textContent = 'Formatos suportados: PDF, DOCX, TXT ou CSV até 25MB.';
+            feedbackEl.textContent = 'Arraste um novo arquivo aqui ou clique em Substituir (PDF, DOCX, TXT ou CSV até 25MB).';
             feedbackEl.style.color = 'var(--text-muted)';
           }
+
+          window._editKnowledgeFileRemoved = false;
+          window._editKnowledgeNewFile = null;
         } else if (type === 'site') {
           if (titleEl) titleEl.textContent = 'Editar Site / URL de Conhecimento';
           if (descEl) descEl.textContent = 'Altere a URL ou puxe os dados mais recentes da página';
