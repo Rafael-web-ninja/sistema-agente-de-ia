@@ -12,15 +12,22 @@
   min-height: 480px;
   margin-bottom: 0;
   position: relative;
-  transition: grid-template-columns 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  transition: grid-template-columns 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .conversas-simplified-layout.chat-profile-closed {
-  grid-template-columns: 310px 1fr !important;
+  grid-template-columns: 310px 1fr 0px !important;
 }
 
 .conversas-simplified-layout.chat-profile-closed .chat-profile-column {
-  display: none !important;
+  opacity: 0 !important;
+  transform: translateX(30px) !important;
+  margin-left: -12px !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+  transition: opacity 0.2s ease, transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), margin-left 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s;
 }
 
 .mobile-chat-back-btn {
@@ -627,12 +634,27 @@
   padding: 0 14px 12px 14px;
   gap: 8px;
   border-bottom: 1px solid var(--border-light);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   white-space: nowrap;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  cursor: grab;
+  user-select: none;
+}
+
+.chat-simplified-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.chat-simplified-tabs.is-dragging {
+  cursor: grabbing;
+  scroll-behavior: auto;
 }
 
 .chat-tab-pill {
-  padding: 5px 10px;
+  padding: 5px 11px;
   border-radius: var(--radius-pill);
   font-size: 12px;
   font-weight: 500;
@@ -643,6 +665,7 @@
   align-items: center;
   gap: 5px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .chat-tab-pill:hover {
@@ -1152,6 +1175,20 @@
   background: rgba(0, 168, 104, 0.2);
   color: var(--primary-hover);
   border-color: var(--primary);
+}
+
+.sidebar-toggle-svg {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: block;
+  flex-shrink: 0;
+}
+
+.chat-header-actions .btn-action-round:hover .sidebar-toggle-svg {
+  transform: scale(1.06);
+}
+
+.chat-header-actions .btn-action-round:active .sidebar-toggle-svg {
+  transform: scale(0.92);
 }
 
 /* Dark mode tweaks for chat header actions */
@@ -1738,6 +1775,15 @@
   flex-direction: column;
   gap: 14px;
   overflow-y: auto;
+  overflow-x: hidden;
+  width: 270px;
+  min-width: 0;
+  margin-left: 0;
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), margin-left 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s;
+  visibility: visible;
+  will-change: transform, opacity, margin-left;
 }
 
 .profile-section-card {
@@ -2125,11 +2171,6 @@
   }
 
   .chat-profile-column {
-    display: none !important;
-  }
-
-  /* When profile drawer is opened via Info button */
-  .conversas-simplified-layout.chat-profile-open .chat-profile-column {
     display: flex !important;
     position: absolute;
     top: 0;
@@ -2140,9 +2181,21 @@
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    box-shadow: var(--shadow-2xl);
     padding: 16px;
+    transform: translateX(105%);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease, visibility 0.28s;
+  }
+
+  /* When profile drawer is opened via Info button */
+  .conversas-simplified-layout.chat-profile-open .chat-profile-column {
+    transform: translateX(0) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
   }
 
   .chat-profile-drawer-header {

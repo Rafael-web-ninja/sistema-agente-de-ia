@@ -1368,6 +1368,32 @@
   color: #99E2C4;
 }
 
+.btn-data-chip.custom-chip {
+  padding-right: 10px;
+}
+
+.chip-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  margin-left: 4px;
+  margin-right: -4px;
+  border-radius: 50%;
+  color: inherit;
+  opacity: 0.65;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chip-delete-btn:hover {
+  opacity: 1;
+  background: rgba(239, 68, 68, 0.16);
+  color: var(--status-danger) !important;
+  transform: scale(1.18);
+}
+
 .btn-add-custom-field {
   display: inline-flex;
   align-items: center;

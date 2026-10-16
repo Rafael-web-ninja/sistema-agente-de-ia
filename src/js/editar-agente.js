@@ -1418,9 +1418,26 @@ function setupBehaviorConfiguration() {
     });
   });
 
-  // 6. Client Data Chips (Multi select toggle)
+  // 6. Client Data Chips (Multi select toggle and deletion of custom fields)
   function attachDataChipListener(chip) {
     chip.addEventListener('click', (e) => {
+      const delBtn = e.target.closest('.chip-delete-btn');
+      if (delBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const fieldName = chip.querySelector('span:not(.chip-delete-btn)')?.textContent.trim() || 'Opção';
+        chip.style.opacity = '0';
+        chip.style.transform = 'scale(0.85)';
+        chip.style.transition = 'all 0.18s ease';
+        setTimeout(() => {
+          chip.remove();
+          if (typeof showToast === 'function') {
+            showToast(`Opção "${fieldName}" excluída com sucesso.`);
+          }
+        }, 180);
+        return;
+      }
+
       e.preventDefault();
       const isActive = chip.classList.toggle('active');
       const checkIcon = chip.querySelector('.chip-check-icon');
@@ -1432,6 +1449,30 @@ function setupBehaviorConfiguration() {
   }
   document.querySelectorAll('#client-data-chips-container .btn-data-chip').forEach(attachDataChipListener);
 
+  const clientChipsContainer = document.getElementById('client-data-chips-container');
+  if (clientChipsContainer) {
+    clientChipsContainer.addEventListener('click', (e) => {
+      const delBtn = e.target.closest('.chip-delete-btn');
+      if (delBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const chip = delBtn.closest('.btn-data-chip');
+        if (chip) {
+          const fieldName = chip.querySelector('span:not(.chip-delete-btn)')?.textContent.trim() || 'Opção';
+          chip.style.opacity = '0';
+          chip.style.transform = 'scale(0.85)';
+          chip.style.transition = 'all 0.18s ease';
+          setTimeout(() => {
+            chip.remove();
+            if (typeof showToast === 'function') {
+              showToast(`Opção "${fieldName}" excluída com sucesso.`);
+            }
+          }, 180);
+        }
+      }
+    });
+  }
+
   // Add custom client field
   const btnAddField = document.getElementById('btn-add-client-field');
   const modalAddField = document.getElementById('modal-add-client-field');
@@ -1442,6 +1483,7 @@ function setupBehaviorConfiguration() {
     btnAddField.addEventListener('click', (e) => {
       e.preventDefault();
       modalAddField.classList.add('open');
+      modalAddField.classList.add('active');
       if (inputNewField) inputNewField.focus();
     });
   }
@@ -1456,12 +1498,15 @@ function setupBehaviorConfiguration() {
       if (container && btnAddField) {
         const newChip = document.createElement('button');
         newChip.type = 'button';
-        newChip.className = 'btn-data-chip active';
+        newChip.className = 'btn-data-chip active custom-chip';
         newChip.setAttribute('data-field', val.toLowerCase().replace(/\s+/g, '-'));
         newChip.innerHTML = `
           <i data-lucide="check-square" class="chip-check-icon"></i>
           <i data-lucide="tag" class="chip-field-icon"></i>
           <span>${val}</span>
+          <span class="chip-delete-btn" title="Excluir opção" aria-label="Excluir opção">
+            <i data-lucide="x" style="width:11px;height:11px;"></i>
+          </span>
         `;
         container.insertBefore(newChip, btnAddField);
         attachDataChipListener(newChip);
@@ -1469,6 +1514,7 @@ function setupBehaviorConfiguration() {
       }
 
       modalAddField.classList.remove('open');
+      modalAddField.classList.remove('active');
       formAddField.reset();
       showToast(`Campo "${val}" adicionado com sucesso!`);
     });

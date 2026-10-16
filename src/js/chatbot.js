@@ -10,6 +10,7 @@ let currentEditingBot = null;
 export function initChatbotsView() {
   window.openSimulator = openSimulator;
   window.openFlowBuilder = openFlowBuilder;
+  window.renderChatbotsList = renderChatbotsList;
 
   renderChatbotKpis();
   renderChatbotsList();

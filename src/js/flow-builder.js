@@ -94,21 +94,29 @@ function ensureCanvasFlowData(bot) {
         {
           id: 'node-menu',
           type: 'menu',
-          title: 'Menu de Nicho',
+          title: 'Menu',
+          executions: 0,
+          clickRate: '0%',
           x: 400,
           y: 160,
           data: {
+            format: 'list_button',
+            question: 'Opa, tudo bem? Vi que tem interesse em transformar o atendimento do seu negócio! Qual é o seu segmento?',
             message: 'Opa, tudo bem? Vi que tem interesse em transformar o atendimento do seu negócio! Qual é o seu segmento?',
+            buttonTitle: 'VER OPÇÕES',
+            invalidMessage: 'Opção inválida. Por favor, escolha um dos números acima.',
+            maxErrors: 3,
+            timeoutDays: '1',
             options: [
-              { id: 'opt-2-1', label: 'E-commerce / Varejo' },
-              { id: 'opt-2-2', label: 'Serviços / Consultório' }
+              { id: 'opt-2-1', label: 'E-commerce / Varejo', description: 'Vendas online e lojas virtuais', ctr: 'CTR 0%' },
+              { id: 'opt-2-2', label: 'Serviços / Consultório', description: 'Atendimento e agendamentos', ctr: 'CTR 0%' }
             ]
           }
         },
         {
           id: 'node-ai-felipe',
           type: 'ai_agent',
-          title: 'Assistente IA Vendas',
+          title: 'Agente de IA Vendas',
           agentName: 'Felipe Costa',
           executions: 520,
           x: 780,
@@ -125,7 +133,7 @@ function ensureCanvasFlowData(bot) {
         {
           id: 'node-ai-carla',
           type: 'ai_agent',
-          title: 'Assistente IA Triagem',
+          title: 'Agente de IA Triagem',
           agentName: 'Carla Menezes',
           executions: 340,
           x: 780,
@@ -171,7 +179,7 @@ function ensureCanvasFlowData(bot) {
         id: 'node-start',
         type: 'start',
         title: 'Bloco Inicial',
-        x: 60,
+        x: 40,
         y: 200,
         data: {
           subtitle: 'Seu fluxo começa por este bloco. Conecte-o com outro bloco.',
@@ -180,16 +188,45 @@ function ensureCanvasFlowData(bot) {
         }
       },
       {
+        id: 'node-conteudo',
+        type: 'message',
+        title: 'Conteúdo',
+        x: 340,
+        y: 160,
+        data: {
+          items: [
+            {
+              id: 'item-demo-1',
+              type: 'text',
+              text: 'Olá {nome}! Seja muito bem-vindo ao nosso atendimento.',
+              saved: true
+            },
+            {
+              id: 'item-demo-2',
+              type: 'delay',
+              seconds: 2,
+              typing: true
+            },
+            {
+              id: 'item-demo-3',
+              type: 'text',
+              text: 'Nosso time preparou condições especiais para você hoje. O que você gostaria de ver?',
+              saved: true
+            }
+          ]
+        }
+      },
+      {
         id: 'node-ai-main',
         type: 'ai_agent',
-        title: 'Assistente GPT',
+        title: 'Agente de IA',
         agentName: primaryAgent,
         agentRole: 'Especialista Virtual ZapChat',
         executions: bot.executions || 1240,
-        x: 420,
+        x: 700,
         y: 120,
         data: {
-          method: 'Assistente de IA',
+          method: 'Agente de IA Conversacional',
           instructions: `Você é o Assistente Virtual do ZapChat. Seu objetivo é resolver dúvidas, demonstrar planos e qualificar o contato.`,
           branches: [
             { id: 'b-inactivity', label: 'Inatividade (30 min)', ctr: '0%', targetNodeId: 'node-action-restart' },
@@ -202,26 +239,29 @@ function ensureCanvasFlowData(bot) {
       {
         id: 'node-action-restart',
         type: 'action',
-        title: 'Ação',
-        actionType: 'restart',
-        actionLabel: 'Reiniciar automação',
-        x: 880,
+        title: 'Transferir Atendimento',
+        actionType: 'transfer',
+        actionLabel: 'Transferir atendimento',
+        transferType: 'queue',
+        transferTarget: 'Fila Geral (Triagem Automática)',
+        x: 1080,
         y: 60,
         data: {
-          description: 'Reinicia o fluxo após período de inatividade'
+          description: 'Encaminha para fila geral'
         }
       },
       {
         id: 'node-action-crm',
         type: 'action',
-        title: 'Ação',
-        actionType: 'crm_deal',
-        actionLabel: 'Atribuir e abrir atendimento',
-        targetPerson: 'Carlos Félix',
-        x: 880,
+        title: 'Transferir Atendimento',
+        actionType: 'transfer',
+        actionLabel: 'Transferir atendimento',
+        transferType: 'human',
+        transferTarget: 'Carlos Félix',
+        x: 1080,
         y: 260,
         data: {
-          description: 'Cria oportunidade no CRM e notifica consultor'
+          description: 'Transfere para atendente humano'
         }
       },
       {
@@ -231,7 +271,7 @@ function ensureCanvasFlowData(bot) {
         actionType: 'transfer_human',
         actionLabel: 'Fila de Atendimento Humano',
         targetPerson: 'Equipe Comercial',
-        x: 880,
+        x: 1080,
         y: 440,
         data: {
           description: 'Transfere conversa para operador humano disponível'
@@ -239,10 +279,11 @@ function ensureCanvasFlowData(bot) {
       }
     ],
     connections: [
-      { id: 'c-1', fromNode: 'node-start', fromPort: 'out', toNode: 'node-ai-main', toPort: 'in' },
-      { id: 'c-2', fromNode: 'node-ai-main', fromPort: 'b-inactivity', toNode: 'node-action-restart', toPort: 'in' },
-      { id: 'c-3', fromNode: 'node-ai-main', fromPort: 'b-success', toNode: 'node-action-crm', toPort: 'in' },
-      { id: 'c-4', fromNode: 'node-ai-main', fromPort: 'b-human', toNode: 'node-action-human', toPort: 'in' }
+      { id: 'c-1', fromNode: 'node-start', fromPort: 'out', toNode: 'node-conteudo', toPort: 'in' },
+      { id: 'c-2', fromNode: 'node-conteudo', fromPort: 'out', toNode: 'node-ai-main', toPort: 'in' },
+      { id: 'c-3', fromNode: 'node-ai-main', fromPort: 'b-inactivity', toNode: 'node-action-restart', toPort: 'in' },
+      { id: 'c-4', fromNode: 'node-ai-main', fromPort: 'b-success', toNode: 'node-action-crm', toPort: 'in' },
+      { id: 'c-5', fromNode: 'node-ai-main', fromPort: 'b-human', toNode: 'node-action-human', toPort: 'in' }
     ]
   };
 }
@@ -252,10 +293,14 @@ function ensureCanvasFlowData(bot) {
  */
 function renderBuilderTopbar() {
   const nameEl = document.getElementById('builder-bot-name');
+  const inputEl = document.getElementById('builder-bot-name-input');
+  const wrapper = document.getElementById('builder-title-wrapper');
   const channelBadgeEl = document.getElementById('builder-channel-badge');
   const statusBadgeEl = document.getElementById('builder-status-badge');
 
   if (nameEl) nameEl.textContent = currentBot.name;
+  if (inputEl) inputEl.value = currentBot.name;
+  if (wrapper) wrapper.classList.remove('is-editing');
 
   if (channelBadgeEl) {
     const isWa = currentBot.channel === 'WhatsApp';
@@ -370,10 +415,6 @@ function createNodeElement(node) {
         </div>
         <div class="node-body">
           <p class="node-desc">${node.data?.subtitle || 'Seu fluxo começa por este bloco. Conecte-o com outro bloco.'}</p>
-          <div class="node-trigger-pill">
-            <i data-lucide="zap" style="width: 11px; height: 11px;"></i>
-            <span>${node.data?.trigger || 'Primeira mensagem'}</span>
-          </div>
         </div>
         <div class="node-port port-out" data-node-id="${node.id}" data-port-id="out" data-port-type="out" title="Conectar ao próximo bloco">
           <i data-lucide="chevron-right" style="width: 10px; height: 10px;"></i>
@@ -388,6 +429,10 @@ function createNodeElement(node) {
       { id: 'b-stop', label: 'Condição de parada', ctr: '6%' }
     ];
 
+    const agentName = node.agentName || node.title || 'Agente de IA';
+    const agentsList = zapChatData?.agentes?.list || [];
+    const matchedAgent = agentsList.find(a => a.name === agentName || a.id === node.agentId);
+
     contentHtml = `
       <div class="flow-node-inner">
         <div class="node-port port-in" data-node-id="${node.id}" data-port-id="in" data-port-type="in" title="Entrada">
@@ -399,7 +444,7 @@ function createNodeElement(node) {
             <i data-lucide="bot" style="width: 14px; height: 14px;"></i>
           </div>
           <div class="node-header-title-wrap">
-            <span class="node-header-title">${node.agentName || 'Assistente GPT'}</span>
+            <span class="node-header-title">${agentName}</span>
             <span class="node-header-badge">${node.executions || 1240} Enviado</span>
           </div>
         </div>
@@ -407,11 +452,14 @@ function createNodeElement(node) {
         <div class="node-body">
           <div class="node-meta-row">
             <span class="node-meta-label">Método</span>
-            <span class="node-meta-val">${node.data?.method || 'Assistente de IA'}</span>
+            <span class="node-meta-val">${node.data?.method || 'Agente de IA Conversacional'}</span>
           </div>
           <div class="node-meta-block">
-            <span class="node-meta-label">Instruções do assistente</span>
-            <p class="node-instructions-preview">${(node.data?.instructions || 'Você é a IA especialista...').substring(0, 75)}...</p>
+            <span class="node-meta-label">Agente Integrado</span>
+            <p class="node-instructions-preview" style="display:flex; align-items:center; gap:6px;">
+              <strong style="color:var(--text-main);">${agentName}</strong>
+              <span style="font-size:10px; color:var(--text-muted);">${matchedAgent ? `(${matchedAgent.role})` : '(Configurado em Agentes)'}</span>
+            </p>
           </div>
 
           <div class="node-branches-list">
@@ -429,6 +477,8 @@ function createNodeElement(node) {
       </div>
     `;
   } else if (node.type === 'action') {
+    const label = node.actionLabel || 'Transferir atendimento';
+    const target = node.transferTarget || node.targetPerson || '';
     contentHtml = `
       <div class="flow-node-inner">
         <div class="node-port port-in" data-node-id="${node.id}" data-port-id="in" data-port-type="in" title="Entrada">
@@ -437,15 +487,15 @@ function createNodeElement(node) {
 
         <div class="node-header">
           <div class="node-header-icon action">
-            <i data-lucide="zap" style="width: 14px; height: 14px;"></i>
+            <i data-lucide="corner-up-right" style="width: 14px; height: 14px;"></i>
           </div>
           <span class="node-header-title">${node.title || 'Ação'}</span>
         </div>
 
         <div class="node-body">
           <div class="node-action-card">
-            <span>${node.actionLabel || 'Ação Automatizada'}</span>
-            ${node.targetPerson ? `<strong class="node-target-tag">${node.targetPerson}</strong>` : ''}
+            <span>${label}</span>
+            ${target ? `<strong class="node-target-tag">${target}</strong>` : ''}
           </div>
         </div>
 
@@ -455,9 +505,13 @@ function createNodeElement(node) {
       </div>
     `;
   } else if (node.type === 'menu') {
+    const format = node.data?.format || 'list_button';
+    const questionText = node.data?.question || node.data?.message || 'Texto da pergunta';
+    const buttonTitle = node.data?.buttonTitle || 'VER OPÇÕES';
+    const invalidText = node.data?.invalidMessage || 'Opção inválida. Por favor, escolha um dos números acima.';
+    const maxErrors = node.data?.maxErrors || 3;
     const options = node.data?.options || [
-      { id: 'opt-1', label: 'Opção 1' },
-      { id: 'opt-2', label: 'Opção 2' }
+      { id: 'opt-1', label: 'Resposta 1', ctr: 'CTR 0%' }
     ];
 
     contentHtml = `
@@ -467,28 +521,114 @@ function createNodeElement(node) {
         </div>
 
         <div class="node-header">
-          <div class="node-header-icon menu">
-            <i data-lucide="layout-list" style="width: 14px; height: 14px;"></i>
+          <div class="node-header-icon menu" style="background: rgba(0, 168, 104, 0.1); color: var(--primary);">
+            <i data-lucide="layout-grid" style="width: 14px; height: 14px;"></i>
           </div>
-          <span class="node-header-title">${node.title || 'Menu de Opções'}</span>
+          <div class="node-header-title-wrap">
+            <span class="node-header-title">${node.title || 'Menu'}</span>
+            <span class="node-header-badge">${format === 'list_button' ? 'Botão de Lista' : 'Numérico'}</span>
+          </div>
         </div>
 
         <div class="node-body">
-          <p class="node-desc">${node.data?.message || 'Escolha uma opção:'}</p>
+          <!-- Métricas de Envio / Clique -->
+          <div class="node-menu-stats-bar">
+            <div class="node-menu-stat-item">
+              <span class="node-menu-stat-val">${node.executions || 0}</span>
+              <span class="node-menu-stat-lbl">Enviado</span>
+            </div>
+            <div class="node-menu-stat-item">
+              <span class="node-menu-stat-val">${node.clickRate || '0%'}</span>
+              <span class="node-menu-stat-lbl">Clicada</span>
+            </div>
+          </div>
+
+          <div class="node-menu-text-preview">${questionText}</div>
+
+          ${format === 'list_button' ? `
+            <div class="node-menu-btn-name">
+              <span>Nome da lista de botões:</span><br>
+              <strong>${buttonTitle}</strong>
+            </div>
+          ` : `
+            <div style="font-size:10px; color:var(--text-muted); margin-bottom:6px;">
+              <span>Entrada inválida: <em>${invalidText.substring(0, 28)}...</em></span><br>
+              <span>Saída de erro: limite <strong>${maxErrors} tentativas</strong></span>
+            </div>
+          `}
+
           <div class="node-branches-list">
             ${options.map((opt, i) => `
               <div class="node-branch-item">
-                <span class="branch-label">${i + 1}. ${opt.label}</span>
+                <span class="branch-label">${format === 'number' ? `${i + 1}. ` : ''}${opt.label}</span>
+                <span class="branch-ctr">${opt.ctr || 'CTR 0%'}</span>
                 <div class="node-port port-out-branch" data-node-id="${node.id}" data-port-id="${opt.id}" data-port-type="out" title="Conectar opção: ${opt.label}">
                   <i data-lucide="chevron-right" style="width: 10px; height: 10px;"></i>
                 </div>
               </div>
             `).join('')}
+
+            <!-- Saída por Inatividade / Se usuário não responder -->
+            <div class="node-branch-item node-menu-timeout-branch">
+              <span style="font-size:10px; color:var(--text-muted);">Se usuário não responder</span>
+              <div class="node-port port-out-branch" data-node-id="${node.id}" data-port-id="timeout" data-port-type="out" title="Conectar se usuário não responder">
+                <i data-lucide="chevron-right" style="width: 10px; height: 10px;"></i>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     `;
   } else if (node.type === 'message') {
+    const items = node.data?.items || (node.data?.text ? [{ type: 'text', text: node.data.text }] : []);
+    let previewHtml = '';
+
+    if (items.length === 0) {
+      previewHtml = `<div class="node-message-bubble empty" style="color:var(--text-muted); font-style:italic;">Clique para adicionar mensagens...</div>`;
+    } else {
+      previewHtml = items.map(item => {
+        if (item.type === 'text') {
+          return `<div class="node-message-bubble">${item.text || 'Mensagem de texto'}</div>`;
+        } else if (item.type === 'image') {
+          return `
+            <div class="node-media-preview image">
+              <i data-lucide="image" style="width: 12px; height: 12px;"></i>
+              <span>${item.caption || item.fileName || 'Imagem anexada'}</span>
+            </div>
+          `;
+        } else if (item.type === 'video') {
+          return `
+            <div class="node-media-preview video">
+              <i data-lucide="video" style="width: 12px; height: 12px;"></i>
+              <span>${item.caption || item.fileName || 'Vídeo MP4'}</span>
+            </div>
+          `;
+        } else if (item.type === 'file') {
+          return `
+            <div class="node-media-preview file">
+              <i data-lucide="file-text" style="width: 12px; height: 12px;"></i>
+              <span>${item.fileName || 'Documento / Arquivo'}</span>
+            </div>
+          `;
+        } else if (item.type === 'audio') {
+          return `
+            <div class="node-media-preview audio">
+              <i data-lucide="volume-2" style="width: 12px; height: 12px;"></i>
+              <span>${item.fileName || 'Mensagem de voz'}</span>
+            </div>
+          `;
+        } else if (item.type === 'delay') {
+          return `
+            <div class="node-media-preview delay">
+              <i data-lucide="clock" style="width: 12px; height: 12px;"></i>
+              <span>Aguardar ${item.seconds || 3}s (Digitando...)</span>
+            </div>
+          `;
+        }
+        return '';
+      }).join('');
+    }
+
     contentHtml = `
       <div class="flow-node-inner">
         <div class="node-port port-in" data-node-id="${node.id}" data-port-id="in" data-port-type="in" title="Entrada">
@@ -496,15 +636,18 @@ function createNodeElement(node) {
         </div>
 
         <div class="node-header">
-          <div class="node-header-icon message">
-            <i data-lucide="message-square" style="width: 14px; height: 14px;"></i>
+          <div class="node-header-icon message" style="background: rgba(0, 168, 104, 0.1); color: var(--primary);">
+            <i data-lucide="star" style="width: 14px; height: 14px; fill: var(--primary); color: var(--primary);"></i>
           </div>
-          <span class="node-header-title">${node.title || 'Mensagem'}</span>
+          <div class="node-header-title-wrap">
+            <span class="node-header-title">${node.title || 'Conteúdo'}</span>
+            <span class="node-header-badge">${items.length} ${items.length === 1 ? 'item' : 'itens'}</span>
+          </div>
         </div>
 
         <div class="node-body">
-          <div class="node-message-bubble">
-            ${node.data?.text || 'Olá! Como posso ajudar você hoje?'}
+          <div class="node-content-items-stack">
+            ${previewHtml}
           </div>
         </div>
 
@@ -1024,6 +1167,87 @@ function setupBuilderInteractions() {
 
   // 9. Setup Left Inspector Drawer
   setupInspectorDrawer();
+
+  // 10. Setup Flow Name Inline Editing
+  setupFlowNameEditing();
+}
+
+/**
+ * Setup inline editing for Flow name in Studio Topbar
+ */
+function setupFlowNameEditing() {
+  const wrapper = document.getElementById('builder-title-wrapper');
+  const nameEl = document.getElementById('builder-bot-name');
+  const btnEdit = document.getElementById('btn-edit-flow-name');
+  const inputEl = document.getElementById('builder-bot-name-input');
+  if (!wrapper || !nameEl || !inputEl || wrapper._setupDone) return;
+  wrapper._setupDone = true;
+
+  function startEditing() {
+    if (!currentBot) return;
+    wrapper.classList.add('is-editing');
+    inputEl.value = currentBot.name || nameEl.textContent.trim();
+    inputEl.style.display = 'inline-block';
+    inputEl.focus();
+    inputEl.select();
+  }
+
+  function finishEditing(save = true) {
+    if (!wrapper.classList.contains('is-editing')) return;
+    wrapper.classList.remove('is-editing');
+    inputEl.style.display = 'none';
+
+    if (save && currentBot) {
+      const newName = inputEl.value.trim();
+      if (newName && newName !== currentBot.name) {
+        currentBot.name = newName;
+        nameEl.textContent = newName;
+        const botInList = zapChatData?.chatbots?.list?.find(b => b.id === currentBot.id);
+        if (botInList) botInList.name = newName;
+        if (window.renderChatbotsList) window.renderChatbotsList();
+        if (window.showToast) {
+          window.showToast(`Nome do fluxo alterado para "${newName}"`);
+        }
+      } else {
+        nameEl.textContent = currentBot.name;
+        inputEl.value = currentBot.name;
+      }
+    } else if (currentBot) {
+      nameEl.textContent = currentBot.name;
+      inputEl.value = currentBot.name;
+    }
+  }
+
+  wrapper.addEventListener('click', (e) => {
+    if (wrapper.classList.contains('is-editing')) return;
+    e.stopPropagation();
+    startEditing();
+  });
+
+  btnEdit?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!wrapper.classList.contains('is-editing')) {
+      startEditing();
+    }
+  });
+
+  inputEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      finishEditing(true);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      finishEditing(false);
+    }
+  });
+
+  inputEl.addEventListener('blur', () => {
+    finishEditing(true);
+  });
 }
 
 /**
@@ -1197,16 +1421,274 @@ function closeInspector() {
 }
 
 /**
+ * Render individual item card inside Conteúdo Drawer
+ */
+function renderConteudoItemHtml(item, index, total) {
+  if (item.type === 'text') {
+    return `
+      <div class="conteudo-item-card ${item.saved ? '' : 'editing'}" data-item-id="${item.id}" data-item-type="text">
+        <div class="conteudo-item-header">
+          <span class="conteudo-type-badge text">
+            <i data-lucide="type" style="width: 11px; height: 11px;"></i> Texto ${total > 1 ? `#${index + 1}` : ''}
+          </span>
+          <div class="conteudo-item-actions">
+            ${index > 0 ? `<button type="button" class="conteudo-btn-action btn-move-item-up" data-item-id="${item.id}" title="Mover para cima"><i data-lucide="arrow-up" style="width:12px;height:12px;"></i></button>` : ''}
+            ${index < total - 1 ? `<button type="button" class="conteudo-btn-action btn-move-item-down" data-item-id="${item.id}" title="Mover para baixo"><i data-lucide="arrow-down" style="width:12px;height:12px;"></i></button>` : ''}
+            <button type="button" class="conteudo-btn-action delete btn-delete-conteudo-item" data-item-id="${item.id}" title="Excluir Mensagem">
+              <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="conteudo-text-box">
+          <textarea class="conteudo-textarea" rows="3" placeholder="Insira texto" data-item-id="${item.id}">${item.text || ''}</textarea>
+          <div class="conteudo-format-toolbar">
+            <button type="button" class="conteudo-fmt-btn fmt-bold" data-item-id="${item.id}" title="Negrito (*)"><strong>B</strong></button>
+            <button type="button" class="conteudo-fmt-btn fmt-italic" data-item-id="${item.id}" title="Itálico (_)"><em>I</em></button>
+            <button type="button" class="conteudo-fmt-btn fmt-strike" data-item-id="${item.id}" title="Tachado (~)"><s>S</s></button>
+            <button type="button" class="conteudo-fmt-btn var fmt-brackets" data-item-id="${item.id}" title="Inserir Variável">{ }</button>
+          </div>
+        </div>
+
+        <div class="conteudo-card-actions">
+          <button type="button" class="btn-conteudo-cancel" data-item-id="${item.id}">Cancelar</button>
+          <button type="button" class="btn-conteudo-save" data-item-id="${item.id}">Salvar</button>
+        </div>
+      </div>
+    `;
+  } else if (item.type === 'image') {
+    return `
+      <div class="conteudo-item-card" data-item-id="${item.id}" data-item-type="image">
+        <div class="conteudo-item-header">
+          <span class="conteudo-type-badge image">
+            <i data-lucide="image" style="width: 11px; height: 11px;"></i> Imagem ${total > 1 ? `#${index + 1}` : ''}
+          </span>
+          <div class="conteudo-item-actions">
+            ${index > 0 ? `<button type="button" class="conteudo-btn-action btn-move-item-up" data-item-id="${item.id}" title="Mover para cima"><i data-lucide="arrow-up" style="width:12px;height:12px;"></i></button>` : ''}
+            ${index < total - 1 ? `<button type="button" class="conteudo-btn-action btn-move-item-down" data-item-id="${item.id}" title="Mover para baixo"><i data-lucide="arrow-down" style="width:12px;height:12px;"></i></button>` : ''}
+            <button type="button" class="conteudo-btn-action delete btn-delete-conteudo-item" data-item-id="${item.id}" title="Excluir Imagem">
+              <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
+            </button>
+          </div>
+        </div>
+
+        ${item.url ? `
+          <div class="conteudo-preview-card">
+            <img src="${item.url}" alt="Preview" class="conteudo-preview-img" />
+            <input type="text" class="conteudo-caption-input" placeholder="Legenda da imagem (opcional)..." value="${item.caption || ''}" data-item-id="${item.id}" />
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:10px; color:var(--text-muted);">${item.fileName || 'Imagem carregada'}</span>
+              <button type="button" class="btn-xs btn btn-secondary btn-upload-trigger" data-item-id="${item.id}">Trocar Imagem</button>
+            </div>
+          </div>
+        ` : `
+          <div class="conteudo-upload-box btn-upload-trigger" data-item-id="${item.id}">
+            <div class="conteudo-upload-icon">
+              <i data-lucide="image" style="width: 28px; height: 28px;"></i>
+            </div>
+            <p class="conteudo-upload-subtext">Tamanho máximo permitido: 2MB, Tipos de arquivos aceitos: jpg, jpeg, png, webp</p>
+            <span class="conteudo-upload-action">Subir Imagem</span>
+          </div>
+        `}
+        <input type="file" accept="image/png, image/jpeg, image/jpg, image/webp" class="conteudo-file-input" data-item-id="${item.id}" style="display:none;" />
+      </div>
+    `;
+  } else if (item.type === 'video') {
+    return `
+      <div class="conteudo-item-card" data-item-id="${item.id}" data-item-type="video">
+        <div class="conteudo-item-header">
+          <span class="conteudo-type-badge video">
+            <i data-lucide="video" style="width: 11px; height: 11px;"></i> Vídeo ${total > 1 ? `#${index + 1}` : ''}
+          </span>
+          <div class="conteudo-item-actions">
+            ${index > 0 ? `<button type="button" class="conteudo-btn-action btn-move-item-up" data-item-id="${item.id}" title="Mover para cima"><i data-lucide="arrow-up" style="width:12px;height:12px;"></i></button>` : ''}
+            ${index < total - 1 ? `<button type="button" class="conteudo-btn-action btn-move-item-down" data-item-id="${item.id}" title="Mover para baixo"><i data-lucide="arrow-down" style="width:12px;height:12px;"></i></button>` : ''}
+            <button type="button" class="conteudo-btn-action delete btn-delete-conteudo-item" data-item-id="${item.id}" title="Excluir Vídeo">
+              <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
+            </button>
+          </div>
+        </div>
+
+        ${item.fileName ? `
+          <div class="conteudo-preview-card">
+            <div class="conteudo-media-pill">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <i data-lucide="film" style="width:16px;height:16px;color:#7C3AED;"></i>
+                <strong>${item.fileName}</strong>
+              </div>
+              <button type="button" class="btn-xs btn btn-secondary btn-upload-trigger" data-item-id="${item.id}">Alterar</button>
+            </div>
+            <input type="text" class="conteudo-caption-input" placeholder="Legenda do vídeo (opcional)..." value="${item.caption || ''}" data-item-id="${item.id}" />
+          </div>
+        ` : `
+          <div class="conteudo-upload-box btn-upload-trigger" data-item-id="${item.id}">
+            <div class="conteudo-upload-icon" style="color:#7C3AED;">
+              <i data-lucide="play-square" style="width: 28px; height: 28px;"></i>
+            </div>
+            <span class="conteudo-upload-action" style="color:#7C3AED;">Clique Aqui Para Subir Video</span>
+            <p class="conteudo-upload-subtext">Tamanho do Vídeo deve ser abaixo de 15MB e tipo pode ser .mp4</p>
+          </div>
+        `}
+        <input type="file" accept="video/mp4" class="conteudo-file-input" data-item-id="${item.id}" style="display:none;" />
+      </div>
+    `;
+  } else if (item.type === 'file') {
+    return `
+      <div class="conteudo-item-card" data-item-id="${item.id}" data-item-type="file">
+        <div class="conteudo-item-header">
+          <span class="conteudo-type-badge file">
+            <i data-lucide="file-text" style="width: 11px; height: 11px;"></i> Arquivo ${total > 1 ? `#${index + 1}` : ''}
+          </span>
+          <div class="conteudo-item-actions">
+            ${index > 0 ? `<button type="button" class="conteudo-btn-action btn-move-item-up" data-item-id="${item.id}" title="Mover para cima"><i data-lucide="arrow-up" style="width:12px;height:12px;"></i></button>` : ''}
+            ${index < total - 1 ? `<button type="button" class="conteudo-btn-action btn-move-item-down" data-item-id="${item.id}" title="Mover para baixo"><i data-lucide="arrow-down" style="width:12px;height:12px;"></i></button>` : ''}
+            <button type="button" class="conteudo-btn-action delete btn-delete-conteudo-item" data-item-id="${item.id}" title="Excluir Arquivo">
+              <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
+            </button>
+          </div>
+        </div>
+
+        ${item.fileName ? `
+          <div class="conteudo-media-pill">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <i data-lucide="file" style="width:16px;height:16px;color:#D97706;"></i>
+              <span>${item.fileName}</span>
+            </div>
+            <button type="button" class="btn-xs btn btn-secondary btn-upload-trigger" data-item-id="${item.id}">Alterar</button>
+          </div>
+        ` : `
+          <div class="conteudo-upload-box btn-upload-trigger" data-item-id="${item.id}">
+            <div class="conteudo-upload-icon" style="color:#D97706;">
+              <i data-lucide="file-text" style="width: 28px; height: 28px;"></i>
+            </div>
+            <span class="conteudo-upload-action" style="color:#D97706;">Clique Aqui Para Subir Arquivo</span>
+            <p class="conteudo-upload-subtext">Tamanho máximo permitido: 25MB (PDF, DOCX, XLSX)</p>
+          </div>
+        `}
+        <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip" class="conteudo-file-input" data-item-id="${item.id}" style="display:none;" />
+      </div>
+    `;
+  } else if (item.type === 'audio') {
+    return `
+      <div class="conteudo-item-card" data-item-id="${item.id}" data-item-type="audio">
+        <div class="conteudo-item-header">
+          <span class="conteudo-type-badge audio">
+            <i data-lucide="volume-2" style="width: 11px; height: 11px;"></i> Áudio ${total > 1 ? `#${index + 1}` : ''}
+          </span>
+          <div class="conteudo-item-actions">
+            ${index > 0 ? `<button type="button" class="conteudo-btn-action btn-move-item-up" data-item-id="${item.id}" title="Mover para cima"><i data-lucide="arrow-up" style="width:12px;height:12px;"></i></button>` : ''}
+            ${index < total - 1 ? `<button type="button" class="conteudo-btn-action btn-move-item-down" data-item-id="${item.id}" title="Mover para baixo"><i data-lucide="arrow-down" style="width:12px;height:12px;"></i></button>` : ''}
+            <button type="button" class="conteudo-btn-action delete btn-delete-conteudo-item" data-item-id="${item.id}" title="Excluir Áudio">
+              <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
+            </button>
+          </div>
+        </div>
+
+        ${item.fileName ? `
+          <div class="conteudo-media-pill">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <i data-lucide="mic" style="width:16px;height:16px;color:#0891B2;"></i>
+              <span>${item.fileName}</span>
+            </div>
+            <button type="button" class="btn-xs btn btn-secondary btn-upload-trigger" data-item-id="${item.id}">Alterar</button>
+          </div>
+        ` : `
+          <div class="conteudo-upload-box btn-upload-trigger" data-item-id="${item.id}">
+            <div class="conteudo-upload-icon" style="color:#0891B2;">
+              <i data-lucide="volume-2" style="width: 28px; height: 28px;"></i>
+            </div>
+            <span class="conteudo-upload-action" style="color:#0891B2;">Clique Aqui Para Subir Áudio</span>
+            <p class="conteudo-upload-subtext">Formatos aceitos: .mp3, .ogg, .wav (Enviado como mensagem de voz)</p>
+          </div>
+        `}
+        <input type="file" accept="audio/*" class="conteudo-file-input" data-item-id="${item.id}" style="display:none;" />
+        
+        <div style="margin-top:8px;">
+          <label class="form-check-label" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" class="conteudo-audio-ptt" data-item-id="${item.id}" ${item.simulatedVoice !== false ? 'checked' : ''} />
+            <span style="font-size:11px; font-weight:500;">Simular gravação de voz na hora (PTT WhatsApp)</span>
+          </label>
+        </div>
+      </div>
+    `;
+  } else if (item.type === 'delay') {
+    return `
+      <div class="conteudo-item-card" data-item-id="${item.id}" data-item-type="delay">
+        <div class="conteudo-item-header">
+          <span class="conteudo-type-badge delay">
+            <i data-lucide="clock" style="width: 11px; height: 11px;"></i> Atraso ${total > 1 ? `#${index + 1}` : ''}
+          </span>
+          <div class="conteudo-item-actions">
+            ${index > 0 ? `<button type="button" class="conteudo-btn-action btn-move-item-up" data-item-id="${item.id}" title="Mover para cima"><i data-lucide="arrow-up" style="width:12px;height:12px;"></i></button>` : ''}
+            ${index < total - 1 ? `<button type="button" class="conteudo-btn-action btn-move-item-down" data-item-id="${item.id}" title="Mover para baixo"><i data-lucide="arrow-down" style="width:12px;height:12px;"></i></button>` : ''}
+            <button type="button" class="conteudo-btn-action delete btn-delete-conteudo-item" data-item-id="${item.id}" title="Excluir Atraso">
+              <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="conteudo-delay-box">
+          <div class="conteudo-delay-row">
+            <label style="font-size:12px; font-weight:500; min-width:80px;">Duração:</label>
+            <input type="number" min="1" max="60" class="form-input conteudo-delay-seconds" data-item-id="${item.id}" value="${item.seconds || 3}" style="width:70px; text-align:center;" />
+            <span style="font-size:12px; color:var(--text-muted);">segundos</span>
+          </div>
+          <div>
+            <label class="form-check-label" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="checkbox" class="conteudo-delay-typing" data-item-id="${item.id}" ${item.typing !== false ? 'checked' : ''} />
+              <span style="font-size:11px; font-weight:500;">Simular "Digitando..." no WhatsApp</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  return '';
+}
+
+/**
  * Populate Inspector Drawer with node properties
  */
 function populateInspector(node) {
   const titleEl = document.getElementById('inspector-node-title');
   const typeEl = document.getElementById('inspector-node-type');
   const bodyEl = document.getElementById('inspector-body');
+  const iconWrap = document.getElementById('inspector-icon-wrap');
   if (!bodyEl) return;
 
-  if (titleEl) titleEl.textContent = node.title;
-  if (typeEl) typeEl.textContent = getNodeTypeLabel(node.type);
+  if (node.type === 'message') {
+    if (iconWrap) {
+      iconWrap.innerHTML = '<i data-lucide="star" style="width: 16px; height: 16px; color: var(--primary); fill: var(--primary);"></i>';
+      iconWrap.style.background = 'rgba(0, 168, 104, 0.1)';
+      iconWrap.style.color = 'var(--primary)';
+    }
+    if (titleEl) titleEl.textContent = 'Conteúdo';
+    if (typeEl) typeEl.textContent = node.title || 'Sequência de Mensagens';
+  } else if (node.type === 'menu') {
+    if (iconWrap) {
+      iconWrap.innerHTML = '<i data-lucide="layout-grid" style="width: 16px; height: 16px; color: var(--primary);"></i>';
+      iconWrap.style.background = 'rgba(0, 168, 104, 0.1)';
+      iconWrap.style.color = 'var(--primary)';
+    }
+    if (titleEl) titleEl.textContent = 'Menu';
+    if (typeEl) typeEl.textContent = node.data?.format === 'number' ? 'Menu Numérico' : 'Menu de Botão de Lista';
+  } else if (node.type === 'ai_agent') {
+    if (iconWrap) {
+      iconWrap.innerHTML = '<i data-lucide="bot" style="width: 16px; height: 16px; color: var(--primary);"></i>';
+      iconWrap.style.background = 'rgba(0, 168, 104, 0.1)';
+      iconWrap.style.color = 'var(--primary)';
+    }
+    if (titleEl) titleEl.textContent = 'Agente de IA';
+    if (typeEl) typeEl.textContent = 'Agente de Inteligência Artificial';
+  } else {
+    if (iconWrap) {
+      iconWrap.innerHTML = '<i data-lucide="sliders" style="width: 16px; height: 16px;"></i>';
+      iconWrap.style.background = 'var(--primary-light)';
+      iconWrap.style.color = 'var(--primary)';
+    }
+    if (titleEl) titleEl.textContent = node.title;
+    if (typeEl) typeEl.textContent = getNodeTypeLabel(node.type);
+  }
 
   let formHtml = '';
 
@@ -1217,41 +1699,30 @@ function populateInspector(node) {
         <input type="text" class="form-input" id="insp-input-title" value="${node.title}" />
       </div>
       <div class="form-group">
-        <label class="form-label">Canal de Entrada</label>
-        <select class="form-select" id="insp-input-channel">
-          <option value="WhatsApp" ${node.data?.channel === 'WhatsApp' ? 'selected' : ''}>🟢 WhatsApp Oficial</option>
-          <option value="Instagram" ${node.data?.channel === 'Instagram' ? 'selected' : ''}>📸 Instagram Direct</option>
-          <option value="Webchat" ${node.data?.channel === 'Webchat' ? 'selected' : ''}>🌐 Chat no Site (Widget)</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Gatilho de Disparo</label>
-        <select class="form-select" id="insp-input-trigger">
-          <option value="Primeira mensagem recebida" ${node.data?.trigger?.includes('Primeira') ? 'selected' : ''}>⚡ Primeira mensagem recebida (Qualquer contato)</option>
-          <option value="Palavra-chave: preço ou orçamento" ${node.data?.trigger?.includes('Palavra') ? 'selected' : ''}>🔑 Palavra-chave específica (ex: "preço", "orçamento")</option>
-          <option value="Anúncio do Instagram (Click-to-WhatsApp)" ${node.data?.trigger?.includes('Anúncio') ? 'selected' : ''}>📢 Anúncio de Tráfego Pago (Instagram Ads)</option>
-          <option value="Início Manual por Atendente" ${node.data?.trigger?.includes('Manual') ? 'selected' : ''}>👤 Início Manual por Atendente</option>
-        </select>
-      </div>
-      <div class="form-group">
         <label class="form-label">Descrição / Observações</label>
-        <textarea class="form-textarea" rows="2" id="insp-input-desc">${node.data?.subtitle || ''}</textarea>
+        <textarea class="form-textarea" rows="3" id="insp-input-desc" placeholder="Descreva o propósito deste bloco inicial...">${node.data?.subtitle || ''}</textarea>
       </div>
     `;
   } else if (node.type === 'ai_agent') {
     const agentsList = zapChatData.agentes?.list || [
-      { name: 'Juliana Santos', role: 'Vendas' },
-      { name: 'Pedro', role: 'Suporte' },
-      { name: 'Carla Menezes', role: 'Triagem' },
-      { name: 'Felipe Costa', role: 'Qualificação' }
+      { id: 'pedro', name: 'Pedro', role: 'Atendimento geral', channel: 'WhatsApp', status: 'Ativo' },
+      { id: 'juliana', name: 'Juliana Santos', role: 'Vendas', channel: 'WhatsApp', status: 'Ativo' },
+      { id: 'carla', name: 'Carla Menezes', role: 'Triagem', channel: 'WhatsApp', status: 'Ativo' },
+      { id: 'felipe', name: 'Felipe Costa', role: 'Qualificação', channel: 'WhatsApp', status: 'Ativo' }
     ];
+
+    if (!node.agentName && agentsList.length > 0) {
+      node.agentName = agentsList[0].name;
+    }
+
+    const currentAgent = agentsList.find(ag => ag.name === node.agentName || ag.id === node.agentId) || agentsList[0];
 
     if (!node.data) node.data = {};
     if (!node.data.branches) {
       node.data.branches = [
         { id: `b-${Date.now().toString(36)}-1`, label: 'Resposta bem-sucedida', ctr: '82%' },
         { id: `b-${Date.now().toString(36)}-2`, label: 'Inatividade (15 min)', ctr: '0%' },
-        { id: `b-${Date.now().toString(36)}-3`, label: 'Solicitação de atendente', ctr: '12%' },
+        { id: `b-${Date.now().toString(36)}-3`, label: 'Transbordo Humano', ctr: '12%' },
         { id: `b-${Date.now().toString(36)}-4`, label: 'Condição de parada', ctr: '6%' }
       ];
     }
@@ -1259,7 +1730,7 @@ function populateInspector(node) {
     formHtml = `
       <div class="form-group">
         <label class="form-label">Título do Bloco</label>
-        <input type="text" class="form-input" id="insp-input-title" value="${node.title}" />
+        <input type="text" class="form-input" id="insp-input-title" value="${node.title || 'Agente de IA'}" />
       </div>
 
       <div class="form-group">
@@ -1267,34 +1738,31 @@ function populateInspector(node) {
         <select class="form-select" id="insp-input-agent">
           ${agentsList.map(ag => `
             <option value="${ag.name}" ${ag.name === node.agentName ? 'selected' : ''}>
-              🤖 ${ag.name} (${ag.role})
+              🤖 ${ag.name} (${ag.role || 'Agente'}${ag.channel ? ` - ${ag.channel}` : ''})
             </option>
           `).join('')}
         </select>
+        <span class="form-hint">Selecione o agente configurado na aba Agentes.</span>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Modelo de IA</label>
-        <select class="form-select" id="insp-input-ai-model">
-          <option value="gpt-4o-mini" ${(!node.data?.model || node.data?.model === 'gpt-4o-mini') ? 'selected' : ''}>⚡ GPT-4o Mini (Ultra Rápido & Econômico)</option>
-          <option value="gpt-4o" ${node.data?.model === 'gpt-4o' ? 'selected' : ''}>🧠 GPT-4o (Raciocínio Avançado)</option>
-          <option value="claude-3-5" ${node.data?.model === 'claude-3-5' ? 'selected' : ''}>🎯 Claude 3.5 Sonnet (Precisão Comercial)</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Modo de Operação</label>
-        <select class="form-select" id="insp-input-ai-mode">
-          <option value="conversational" ${(!node.data?.mode || node.data?.mode === 'conversational') ? 'selected' : ''}>💬 Conversação Natural & Vendas</option>
-          <option value="qualification" ${node.data?.mode === 'qualification' ? 'selected' : ''}>🎯 Triagem & Qualificação Rigorosa</option>
-          <option value="support" ${node.data?.mode === 'support' ? 'selected' : ''}>🛠️ Suporte Técnico & Resolução de Dúvidas</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Instruções / Prompt do Assistente</label>
-        <textarea class="form-textarea" rows="4" id="insp-input-instructions" placeholder="Defina persona, objetivos e instruções específicas...">${node.data?.instructions || ''}</textarea>
-        <span class="form-hint">Oriente a IA sobre limites e condições de encaminhamento.</span>
+      <!-- Preview do Agente Selecionado -->
+      <div class="agent-preview-box" style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="width:30px; height:30px; border-radius:50%; background:rgba(0,168,104,0.12); color:var(--primary); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px;">
+              ${(currentAgent?.name || 'A').substring(0, 2).toUpperCase()}
+            </div>
+            <div>
+              <strong style="font-size:13px; color:var(--text-main); display:block; line-height:1.2;">${currentAgent?.name || 'Agente de IA'}</strong>
+              <span style="font-size:11px; color:var(--text-muted);">${currentAgent?.role || 'Atendimento Geral'}</span>
+            </div>
+          </div>
+          <span class="badge badge-success" style="font-size:10px;">${currentAgent?.status || 'Ativo'}</span>
+        </div>
+        <div style="font-size:11px; color:var(--text-secondary); line-height:1.4; padding-top:6px; border-top:1px dashed var(--border); display:flex; align-items:center; justify-content:space-between;">
+          <span>Canal: <strong>${currentAgent?.channel || 'WhatsApp'}</strong></span>
+          <span style="color:var(--text-muted); font-size:10px;">Instruções definidas em Agentes</span>
+        </div>
       </div>
 
       <div class="form-group">
@@ -1316,7 +1784,7 @@ function populateInspector(node) {
             </div>
           `).join('')}
         </div>
-        <span class="form-hint">Cada ramificação cria um ponto de conexão roxo no card.</span>
+        <span class="form-hint">Cada ramificação cria um ponto de conexão no card.</span>
       </div>
 
       <div class="form-group">
@@ -1331,154 +1799,336 @@ function populateInspector(node) {
     `;
   } else if (node.type === 'action') {
     if (!node.data) node.data = {};
+    if (!node.actionType) node.actionType = 'transfer';
+    if (!node.transferType) node.transferType = 'human';
+    if (!node.transferTarget) node.transferTarget = 'Carlos Félix';
+    if (!node.actionLabel) node.actionLabel = 'Transferir atendimento';
+
+    const aiAgents = (zapChatData?.agentes?.list && zapChatData.agentes.list.length > 0)
+      ? zapChatData.agentes.list
+      : [
+          { id: 'pedro', name: 'Pedro', role: 'Atendimento geral' },
+          { id: 'juliana', name: 'Juliana Santos', role: 'Vendas' },
+          { id: 'carla', name: 'Carla Menezes', role: 'Triagem' },
+          { id: 'felipe', name: 'Felipe Costa', role: 'Qualificação' }
+        ];
+
+    const humanAgents = [
+      { id: 'carlos_felix', name: 'Carlos Félix', role: 'Consultor Comercial' },
+      { id: 'juliana_santos', name: 'Juliana Santos', role: 'Vendas' },
+      { id: 'pedro_henrique', name: 'Pedro Henrique', role: 'Suporte Técnico' },
+      { id: 'rodrigo_almeida', name: 'Rodrigo Almeida', role: 'Suporte N2' },
+      { id: 'carla_menezes', name: 'Carla Menezes', role: 'Enterprise' },
+      { id: 'rafael_mota', name: 'Rafael Mota', role: 'Administrador' }
+    ];
+
+    const queues = [
+      { id: 'fila_geral', name: 'Fila Geral (Triagem Automática)' },
+      { id: 'fila_vendas', name: 'Fila Comercial & Vendas' },
+      { id: 'fila_suporte', name: 'Fila de Suporte Técnico N1' },
+      { id: 'fila_financeiro', name: 'Fila Financeiro & Cobrança' }
+    ];
+
+    const currentVal = `${node.transferType || 'human'}:${node.transferTarget || 'Carlos Félix'}`;
+
     formHtml = `
       <div class="form-group">
         <label class="form-label">Título do Bloco</label>
-        <input type="text" class="form-input" id="insp-input-title" value="${node.title}" />
+        <input type="text" class="form-input" id="insp-input-title" value="${node.title || 'Ação'}" />
       </div>
 
       <div class="form-group">
         <label class="form-label">Tipo de Ação</label>
         <select class="form-select" id="insp-input-action-type">
-          <option value="crm_deal" ${(!node.actionType || node.actionType === 'crm_deal') ? 'selected' : ''}>💼 Criar / Mover Lead no CRM</option>
-          <option value="tag" ${node.actionType === 'tag' ? 'selected' : ''}>🏷️ Aplicar / Remover Tag no Contato</option>
-          <option value="restart" ${node.actionType === 'restart' ? 'selected' : ''}>🔄 Reiniciar Automação</option>
-          <option value="assign" ${node.actionType === 'assign' ? 'selected' : ''}>👤 Atribuir a um Consultor Específico</option>
-          <option value="webhook" ${node.actionType === 'webhook' ? 'selected' : ''}>🌐 Disparar Webhook Externo</option>
+          <option value="transfer" selected>Transferir atendimento</option>
         </select>
+        <span class="form-hint">Ação executada quando o contato passar por este bloco.</span>
       </div>
 
-      <div class="form-group" id="insp-action-stage-group" style="${(!node.actionType || node.actionType === 'crm_deal') ? '' : 'display:none;'}">
-        <label class="form-label">Etapa do Funil CRM</label>
-        <select class="form-select" id="insp-input-stage">
-          <option value="Primeiro Contato" ${node.data?.stage === 'Primeiro Contato' ? 'selected' : ''}>1. Primeiro Contato</option>
-          <option value="Qualificação" ${node.data?.stage === 'Qualificação' ? 'selected' : ''}>2. Qualificação</option>
-          <option value="Apresentação" ${node.data?.stage === 'Apresentação' ? 'selected' : ''}>3. Apresentação</option>
-          <option value="Proposta Enviada" ${node.data?.stage === 'Proposta Enviada' ? 'selected' : ''}>4. Proposta Enviada</option>
-          <option value="Negociação" ${node.data?.stage === 'Negociação' ? 'selected' : ''}>5. Negociação</option>
-          <option value="Fechamento" ${node.data?.stage === 'Fechamento' ? 'selected' : ''}>6. Fechamento (Ganho)</option>
+      <div class="form-group">
+        <label class="form-label">Destino da Transferência</label>
+        <select class="form-select" id="insp-input-transfer-target">
+          <optgroup label="🤖 Agentes de IA">
+            ${aiAgents.map(ag => {
+              const val = `ai:${ag.name}`;
+              return `<option value="${val}" ${val === currentVal ? 'selected' : ''}>🤖 ${ag.name} (${ag.role || 'Agente de IA'})</option>`;
+            }).join('')}
+          </optgroup>
+          <optgroup label="👤 Atendentes Humanos">
+            ${humanAgents.map(hu => {
+              const val = `human:${hu.name}`;
+              return `<option value="${val}" ${val === currentVal ? 'selected' : ''}>👤 ${hu.name} (${hu.role})</option>`;
+            }).join('')}
+          </optgroup>
+          <optgroup label="👥 Filas de Atendimento">
+            ${queues.map(q => {
+              const val = `queue:${q.name}`;
+              return `<option value="${val}" ${val === currentVal ? 'selected' : ''}>👥 ${q.name}</option>`;
+            }).join('')}
+          </optgroup>
         </select>
-      </div>
-
-      <div class="form-group" id="insp-action-tag-group" style="${node.actionType === 'tag' ? '' : 'display:none;'}">
-        <label class="form-label">Tag do Lead</label>
-        <select class="form-select" id="insp-input-tag">
-          <option value="Lead Quente" ${node.data?.tag === 'Lead Quente' ? 'selected' : ''}>🔥 Lead Quente</option>
-          <option value="VIP" ${node.data?.tag === 'VIP' ? 'selected' : ''}>⭐ Cliente VIP</option>
-          <option value="Interesse Planos" ${node.data?.tag === 'Interesse Planos' ? 'selected' : ''}>📦 Interesse Planos</option>
-          <option value="Aguardando Pagamento" ${node.data?.tag === 'Aguardando Pagamento' ? 'selected' : ''}>💳 Aguardando Pagamento</option>
-        </select>
+        <span class="form-hint">Selecione um Agente de IA, um atendente humano ou uma fila.</span>
       </div>
 
       <div class="form-group">
         <label class="form-label">Rótulo Exibido no Bloco</label>
-        <input type="text" class="form-input" id="insp-input-action-label" value="${node.actionLabel || 'Atribuir e abrir atendimento'}" />
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Responsável / Consultor</label>
-        <select class="form-select" id="insp-input-target-person">
-          <option value="Carlos Félix" ${node.targetPerson === 'Carlos Félix' ? 'selected' : ''}>Carlos Félix (Consultor Comercial)</option>
-          <option value="Equipe Comercial" ${node.targetPerson === 'Equipe Comercial' ? 'selected' : ''}>Equipe Comercial (Geral)</option>
-          <option value="Juliana Santos" ${node.targetPerson === 'Juliana Santos' ? 'selected' : ''}>Juliana Santos (Vendas)</option>
-          <option value="Pedro Henrique" ${node.targetPerson === 'Pedro Henrique' ? 'selected' : ''}>Pedro Henrique (Suporte)</option>
-        </select>
+        <input type="text" class="form-input" id="insp-input-action-label" value="${node.actionLabel || 'Transferir atendimento'}" />
       </div>
     `;
   } else if (node.type === 'menu') {
     if (!node.data) node.data = {};
+    if (!node.data.format) node.data.format = 'list_button';
+    if (node.data.question === undefined) node.data.question = node.data.message || 'Texto da pergunta';
+    if (!node.data.buttonTitle) node.data.buttonTitle = 'VER OPÇÕES';
+    if (!node.data.invalidMessage) node.data.invalidMessage = 'Opção inválida. Por favor, escolha um dos números acima.';
+    if (!node.data.maxErrors) node.data.maxErrors = 3;
+    if (!node.data.timeoutDays) node.data.timeoutDays = '1';
     if (!node.data.options) {
       node.data.options = [
-        { id: `opt-${Date.now().toString(36)}-1`, label: 'Quero comprar um plano' },
-        { id: `opt-${Date.now().toString(36)}-2`, label: 'Preciso de suporte técnico' }
+        { id: `opt-${Date.now().toString(36)}-1`, label: 'Resposta 1', description: '', ctr: 'CTR 0%' }
       ];
     }
 
     formHtml = `
-      <div class="form-group">
-        <label class="form-label">Título do Menu</label>
-        <input type="text" class="form-input" id="insp-input-title" value="${node.title}" />
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Mensagem enviada ao cliente</label>
-        <textarea class="form-textarea" rows="3" id="insp-input-message" placeholder="Como podemos te ajudar hoje?">${node.data?.message || ''}</textarea>
-      </div>
-
-      <div class="form-group">
-        <div class="insp-list-header">
-          <label class="form-label" style="margin:0;">Opções do Menu (${node.data.options.length})</label>
-          <button type="button" class="btn btn-secondary btn-xs" id="btn-insp-add-option">
-            <i data-lucide="plus" style="width: 12px; height: 12px;"></i>
-            <span>Adicionar Opção</span>
-          </button>
+      <div class="conteudo-panel-wrap">
+        <!-- Título do Bloco -->
+        <div class="form-group" style="margin-bottom: 2px;">
+          <label class="form-label">Título do Bloco</label>
+          <input type="text" class="form-input" id="insp-input-title" value="${node.title || 'Menu'}" placeholder="Nome do menu..." />
         </div>
-        <div id="insp-options-container" class="insp-items-list">
+
+        <!-- 1. Seletor de Formato: Botão de lista vs Número -->
+        <div class="menu-format-selector">
+          <label class="menu-radio-label">
+            <input type="radio" name="menu-format" value="list_button" ${node.data.format === 'list_button' ? 'checked' : ''} />
+            <span>Botão de lista</span>
+          </label>
+          <label class="menu-radio-label">
+            <input type="radio" name="menu-format" value="number" ${node.data.format === 'number' ? 'checked' : ''} />
+            <span>Número</span>
+          </label>
+        </div>
+
+        <!-- 2. Texto da pergunta -->
+        <div class="form-group" style="margin-top: 6px;">
+          <label class="form-label" style="margin-bottom: 4px;">Texto da pergunta</label>
+          <div class="conteudo-text-box">
+            <textarea class="conteudo-textarea" id="insp-menu-question" rows="3" placeholder="Insira o texto da pergunta">${node.data.question || ''}</textarea>
+            <div class="conteudo-format-toolbar">
+              <button type="button" class="conteudo-fmt-btn fmt-menu-bold" data-target="insp-menu-question" title="Negrito (*)"><strong>B</strong></button>
+              <button type="button" class="conteudo-fmt-btn fmt-menu-italic" data-target="insp-menu-question" title="Itálico (_)"><em>I</em></button>
+              <button type="button" class="conteudo-fmt-btn fmt-menu-strike" data-target="insp-menu-question" title="Tachado (~)"><s>S</s></button>
+              <button type="button" class="conteudo-fmt-btn var fmt-menu-var" data-target="insp-menu-question" title="Inserir Variável">{ }</button>
+            </div>
+          </div>
+          <div class="conteudo-card-actions">
+            <button type="button" class="btn-conteudo-cancel" id="btn-cancel-menu-question">Cancelar</button>
+            <button type="button" class="btn-conteudo-save" id="btn-save-menu-question">Salvar</button>
+          </div>
+        </div>
+
+        <!-- Campos específicos quando 'Botão de lista' -->
+        ${node.data.format === 'list_button' ? `
+          <div class="form-group">
+            <label class="form-label" style="margin-bottom: 4px;">Título do botão</label>
+            <div class="conteudo-text-box">
+              <input type="text" class="form-input" id="insp-menu-button-title" value="${node.data.buttonTitle || 'VER OPÇÕES'}" style="border:none; padding:4px 0; background:transparent;" placeholder="Ex: VER OPÇÕES" />
+              <div class="conteudo-format-toolbar">
+                <button type="button" class="conteudo-fmt-btn var fmt-menu-var" data-target="insp-menu-button-title" title="Inserir Variável">{ }</button>
+              </div>
+            </div>
+            <div class="conteudo-card-actions">
+              <button type="button" class="btn-conteudo-cancel" id="btn-cancel-menu-btntitle">Cancelar</button>
+              <button type="button" class="btn-conteudo-save" id="btn-save-menu-btntitle">Salvar</button>
+            </div>
+          </div>
+        ` : `
+          <!-- Campos específicos quando 'Número' -->
+          <div class="form-group">
+            <label class="form-label" style="margin-bottom: 4px;">Texto para entrada inválida</label>
+            <div class="conteudo-text-box">
+              <textarea class="conteudo-textarea" id="insp-menu-invalid-msg" rows="3" placeholder="Mensagem de entrada inválida...">${node.data.invalidMessage || 'Opção inválida. Por favor, escolha um dos números acima.'}</textarea>
+              <div class="conteudo-format-toolbar">
+                <button type="button" class="conteudo-fmt-btn fmt-menu-bold" data-target="insp-menu-invalid-msg" title="Negrito (*)"><strong>B</strong></button>
+                <button type="button" class="conteudo-fmt-btn fmt-menu-italic" data-target="insp-menu-invalid-msg" title="Itálico (_)"><em>I</em></button>
+                <button type="button" class="conteudo-fmt-btn fmt-menu-strike" data-target="insp-menu-invalid-msg" title="Tachado (~)"><s>S</s></button>
+                <button type="button" class="conteudo-fmt-btn var fmt-menu-var" data-target="insp-menu-invalid-msg" title="Inserir Variável">{ }</button>
+              </div>
+            </div>
+            <div class="conteudo-card-actions">
+              <button type="button" class="btn-conteudo-cancel" id="btn-cancel-menu-invalid">Cancelar</button>
+              <button type="button" class="btn-conteudo-save" id="btn-save-menu-invalid">Salvar</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" style="margin-bottom: 4px;">Limitar a quantidade de erros que depois usam saída adicional</label>
+            <select class="form-select" id="insp-menu-max-errors">
+              <option value="1" ${node.data.maxErrors === 1 ? 'selected' : ''}>1 tentativa</option>
+              <option value="2" ${node.data.maxErrors === 2 ? 'selected' : ''}>2 tentativas</option>
+              <option value="3" ${(!node.data.maxErrors || node.data.maxErrors === 3) ? 'selected' : ''}>3 tentativas (Recomendado)</option>
+              <option value="5" ${node.data.maxErrors === 5 ? 'selected' : ''}>5 tentativas</option>
+            </select>
+          </div>
+        `}
+
+        <!-- Divisor Respostas -->
+        <div class="menu-section-divider">
+          <span>Respostas</span>
+        </div>
+
+        <!-- Lista de Respostas / Opções -->
+        <div id="insp-menu-options-container">
           ${node.data.options.map((opt, i) => `
-            <div class="insp-item-row" data-opt-id="${opt.id}">
-              <span class="insp-item-num">${i + 1}</span>
-              <input type="text" class="form-input insp-option-input" data-opt-id="${opt.id}" value="${opt.label}" placeholder="Texto da opção" />
-              <button type="button" class="insp-btn-delete-item insp-btn-delete-opt" data-opt-id="${opt.id}" title="Excluir Opção">
-                <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
-              </button>
+            <div class="menu-response-card" data-opt-id="${opt.id}">
+              <div class="menu-response-header">
+                <span>Resposta ${i + 1}</span>
+                <button type="button" class="conteudo-btn-action delete btn-delete-menu-opt" data-opt-id="${opt.id}" title="Excluir Opção">
+                  <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+                </button>
+              </div>
+
+              <div class="conteudo-text-box">
+                <input type="text" class="form-input insp-menu-opt-input" data-opt-id="${opt.id}" value="${opt.label}" placeholder="Texto da opção..." style="border:none; padding:4px 0; background:transparent;" />
+                <div class="conteudo-format-toolbar">
+                  <button type="button" class="conteudo-fmt-btn fmt-menu-bold" data-target="opt-${opt.id}" title="Negrito (*)"><strong>B</strong></button>
+                  <button type="button" class="conteudo-fmt-btn fmt-menu-italic" data-target="opt-${opt.id}" title="Itálico (_)"><em>I</em></button>
+                  <button type="button" class="conteudo-fmt-btn fmt-menu-strike" data-target="opt-${opt.id}" title="Tachado (~)"><s>S</s></button>
+                  <button type="button" class="conteudo-fmt-btn var fmt-menu-var" data-target="opt-${opt.id}" title="Inserir Variável">{ }</button>
+                </div>
+              </div>
+
+              <div class="conteudo-card-actions">
+                <button type="button" class="btn-conteudo-cancel btn-cancel-menu-opt" data-opt-id="${opt.id}">Cancelar</button>
+                <button type="button" class="btn-conteudo-save btn-save-menu-opt" data-opt-id="${opt.id}">Salvar</button>
+              </div>
+
+              ${node.data.format === 'list_button' ? `
+                <div style="margin-top: 8px;">
+                  <label class="form-check-label" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                    <input type="checkbox" class="chk-menu-desc" data-opt-id="${opt.id}" ${opt.description ? 'checked' : ''} />
+                    <span style="font-size:11px; font-weight:500;">Adicionar descrição</span>
+                  </label>
+                  <div class="menu-desc-wrap" data-opt-id="${opt.id}" style="${opt.description ? 'display:block;' : 'display:none;'} margin-top:6px;">
+                    <input type="text" class="form-input insp-menu-desc-input" data-opt-id="${opt.id}" value="${opt.description || ''}" placeholder="Descrição curta (subtítulo do item)..." style="font-size:11px;" />
+                  </div>
+                </div>
+              ` : ''}
             </div>
           `).join('')}
         </div>
-        <span class="form-hint">Cada opção cria um ponto de saída numerado no card para conectar a outro bloco.</span>
-      </div>
 
-      <div class="form-group">
-        <label class="form-label">Tempo Limite para Escolha</label>
-        <select class="form-select" id="insp-input-timeout">
-          <option value="5" ${node.data?.timeout === '5' ? 'selected' : ''}>5 minutos</option>
-          <option value="15" ${(!node.data?.timeout || node.data?.timeout === '15') ? 'selected' : ''}>15 minutos (Padrão)</option>
-          <option value="30" ${node.data?.timeout === '30' ? 'selected' : ''}>30 minutos</option>
-          <option value="60" ${node.data?.timeout === '60' ? 'selected' : ''}>1 hora</option>
-        </select>
-      </div>
+        <button type="button" class="btn-add-menu-response" id="btn-add-menu-response">
+          <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+          <span>Adicionar nova resposta</span>
+        </button>
 
-      <div class="form-group">
-        <label class="form-label">Mensagem para Opção Inválida</label>
-        <input type="text" class="form-input" id="insp-input-invalid-msg" value="${node.data?.invalidMessage || 'Opção inválida. Por favor, escolha um dos números acima.'}" />
+        <!-- Seção: Se usuário não responder -->
+        <div class="menu-timeout-card">
+          <span class="menu-timeout-title">Se usuário não responder</span>
+          <p class="menu-timeout-desc">Mensagem expira em:</p>
+          <select class="form-select" id="insp-menu-timeout-days" style="font-size:12px;">
+            <option value="1" ${(!node.data.timeoutDays || node.data.timeoutDays === '1') ? 'selected' : ''}>1 Dia</option>
+            <option value="2" ${node.data.timeoutDays === '2' ? 'selected' : ''}>2 Dias</option>
+            <option value="3" ${node.data.timeoutDays === '3' ? 'selected' : ''}>3 Dias</option>
+            <option value="7" ${node.data.timeoutDays === '7' ? 'selected' : ''}>7 Dias</option>
+          </select>
+          <p class="menu-timeout-desc" style="margin-top:2px;">
+            Você pode iniciar outra Automação quando o tempo expirar sem resposta:
+          </p>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-menu-connect-timeout" style="width:100%; font-size:11px; gap:6px;">
+            <i data-lucide="git-branch" style="width:13px; height:13px; color:var(--primary);"></i>
+            <span>Conecte no fluxo (Saída de Inatividade)</span>
+          </button>
+        </div>
       </div>
     `;
   } else if (node.type === 'message') {
     if (!node.data) node.data = {};
+    if (!node.data.items) {
+      if (node.data.text) {
+        node.data.items = [
+          {
+            id: `item-${Date.now().toString(36)}-1`,
+            type: 'text',
+            text: node.data.text,
+            saved: true
+          }
+        ];
+      } else {
+        node.data.items = [
+          {
+            id: `item-${Date.now().toString(36)}-1`,
+            type: 'text',
+            text: '',
+            saved: false
+          }
+        ];
+      }
+    }
+
+    const items = node.data.items;
+
     formHtml = `
-      <div class="form-group">
-        <label class="form-label">Título do Bloco</label>
-        <input type="text" class="form-input" id="insp-input-title" value="${node.title}" />
-      </div>
+      <div class="conteudo-panel-wrap">
+        <!-- Título do Bloco -->
+        <div class="form-group" style="margin-bottom: 2px;">
+          <label class="form-label">Título do Bloco</label>
+          <input type="text" class="form-input" id="insp-input-title" value="${node.title || 'Conteúdo'}" placeholder="Nome do bloco..." />
+        </div>
 
-      <div class="form-group">
-        <label class="form-label">Tipo de Mensagem</label>
-        <select class="form-select" id="insp-input-msg-type">
-          <option value="text" ${(!node.data?.msgType || node.data?.msgType === 'text') ? 'selected' : ''}>💬 Mensagem de Texto</option>
-          <option value="image" ${node.data?.msgType === 'image' ? 'selected' : ''}>🖼️ Imagem com Legenda</option>
-          <option value="audio" ${node.data?.msgType === 'audio' ? 'selected' : ''}>🎙️ Áudio Gravado</option>
-          <option value="doc" ${node.data?.msgType === 'doc' ? 'selected' : ''}>📄 Documento / PDF</option>
-        </select>
-      </div>
+        <!-- Lista de Mensagens / Mídias Adicionadas -->
+        <div class="conteudo-items-container" id="conteudo-items-container">
+          ${items.map((item, index) => renderConteudoItemHtml(item, index, items.length)).join('')}
+        </div>
 
-      <div class="form-group">
-        <div class="insp-list-header">
-          <label class="form-label" style="margin:0;">Texto da Mensagem</label>
-          <div style="display:flex; gap:4px;">
-            <button type="button" class="btn btn-secondary btn-xs insp-btn-var" data-var="{nome}" title="Inserir {nome}">+ {nome}</button>
-            <button type="button" class="btn btn-secondary btn-xs insp-btn-var" data-var="{telefone}" title="Inserir {telefone}">+ {telefone}</button>
+        <!-- Grid de 6 Opções de Adição (Texto, Imagem, Video, Arquivo, Audio, Atraso) -->
+        <div class="conteudo-add-section">
+          <span class="conteudo-add-title">Adicionar Mensagem / Mídia</span>
+          <div class="conteudo-add-grid">
+            <button type="button" class="conteudo-add-btn btn-add-conteudo-type" data-add-type="text" title="Adicionar Bloco de Texto">
+              <div class="conteudo-add-icon">
+                <i data-lucide="type" style="width: 20px; height: 20px;"></i>
+              </div>
+              <span class="conteudo-add-label">Texto</span>
+            </button>
+
+            <button type="button" class="conteudo-add-btn btn-add-conteudo-type" data-add-type="image" title="Adicionar Imagem">
+              <div class="conteudo-add-icon">
+                <i data-lucide="image" style="width: 20px; height: 20px;"></i>
+              </div>
+              <span class="conteudo-add-label">Imagem</span>
+            </button>
+
+            <button type="button" class="conteudo-add-btn btn-add-conteudo-type" data-add-type="video" title="Adicionar Vídeo">
+              <div class="conteudo-add-icon">
+                <i data-lucide="video" style="width: 20px; height: 20px;"></i>
+              </div>
+              <span class="conteudo-add-label">Video</span>
+            </button>
+
+            <button type="button" class="conteudo-add-btn btn-add-conteudo-type" data-add-type="file" title="Adicionar Arquivo">
+              <div class="conteudo-add-icon">
+                <i data-lucide="file-text" style="width: 20px; height: 20px;"></i>
+              </div>
+              <span class="conteudo-add-label">Arquivo</span>
+            </button>
+
+            <button type="button" class="conteudo-add-btn btn-add-conteudo-type" data-add-type="audio" title="Adicionar Áudio">
+              <div class="conteudo-add-icon">
+                <i data-lucide="volume-2" style="width: 20px; height: 20px;"></i>
+              </div>
+              <span class="conteudo-add-label">Audio</span>
+            </button>
+
+            <button type="button" class="conteudo-add-btn btn-add-conteudo-type" data-add-type="delay" title="Adicionar Atraso">
+              <div class="conteudo-add-icon">
+                <i data-lucide="clock" style="width: 20px; height: 20px;"></i>
+              </div>
+              <span class="conteudo-add-label">Atraso</span>
+            </button>
           </div>
         </div>
-        <textarea class="form-textarea" rows="4" id="insp-input-message-text" placeholder="Digite a mensagem enviada ao cliente...">${node.data?.text || ''}</textarea>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Simular Digitação Prévia</label>
-        <select class="form-select" id="insp-input-typing-delay">
-          <option value="0" ${(!node.data?.typingDelay || node.data?.typingDelay === '0') ? 'selected' : ''}>Envio imediato (0s)</option>
-          <option value="2" ${node.data?.typingDelay === '2' ? 'selected' : ''}>2 segundos ("Digitando...")</option>
-          <option value="4" ${node.data?.typingDelay === '4' ? 'selected' : ''}>4 segundos ("Digitando...")</option>
-          <option value="7" ${node.data?.typingDelay === '7' ? 'selected' : ''}>7 segundos ("Digitando...")</option>
-        </select>
       </div>
     `;
   } else if (node.type === 'human') {
@@ -1581,29 +2231,69 @@ function populateInspector(node) {
   bodyEl.innerHTML = formHtml;
   if (window.lucide) window.lucide.createIcons();
 
+  // Helper for text formatting (bold, italic, strikethrough)
+  function wrapTextInTextarea(txtArea, symbolLeft, symbolRight = symbolLeft) {
+    if (!txtArea) return;
+    const start = txtArea.selectionStart || 0;
+    const end = txtArea.selectionEnd || 0;
+    const val = txtArea.value;
+    const selected = val.substring(start, end);
+    const replacement = selected ? `${symbolLeft}${selected}${symbolRight}` : `${symbolLeft}texto${symbolRight}`;
+    txtArea.value = val.substring(0, start) + replacement + val.substring(end);
+    txtArea.focus();
+    txtArea.selectionStart = start + symbolLeft.length;
+    txtArea.selectionEnd = start + replacement.length - symbolRight.length;
+    txtArea.dispatchEvent(new Event('input'));
+  }
+
   // Attach interactive events for dynamic controls in Inspector
+  if (node.type === 'start') {
+    document.getElementById('insp-input-title')?.addEventListener('input', (e) => {
+      node.title = e.target.value;
+      renderCanvasNodes();
+    });
+    document.getElementById('insp-input-desc')?.addEventListener('input', (e) => {
+      if (!node.data) node.data = {};
+      node.data.subtitle = e.target.value;
+      renderCanvasNodes();
+    });
+  }
+
   if (node.type === 'menu') {
-    // Add Option
-    document.getElementById('btn-insp-add-option')?.addEventListener('click', () => {
+    // 1. Format toggle (Botão de lista vs Número)
+    bodyEl.querySelectorAll('input[name="menu-format"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        node.data.format = e.target.value;
+        renderCanvasNodes();
+        renderAllCables();
+        populateInspector(node);
+      });
+    });
+
+    // 2. Add Response
+    document.getElementById('btn-add-menu-response')?.addEventListener('click', () => {
       if (!node.data) node.data = {};
       if (!node.data.options) node.data.options = [];
       const newOptId = `opt-${Date.now().toString(36)}`;
       node.data.options.push({
         id: newOptId,
-        label: `Opção ${node.data.options.length + 1}`
+        label: `Resposta ${node.data.options.length + 1}`,
+        description: '',
+        ctr: 'CTR 0%'
       });
       renderCanvasNodes();
       renderAllCables();
       populateInspector(node);
-      if (window.showToast) window.showToast('Nova opção adicionada!');
+      if (window.showToast) window.showToast('Nova resposta adicionada ao menu!');
     });
 
-    // Delete Option
-    bodyEl.querySelectorAll('.insp-btn-delete-opt').forEach(btn => {
-      btn.addEventListener('click', () => {
+    // 3. Delete Response
+    bodyEl.querySelectorAll('.btn-delete-menu-opt').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         const optId = btn.getAttribute('data-opt-id');
         if (!node.data?.options || node.data.options.length <= 1) {
-          if (window.showToast) window.showToast('O menu precisa ter pelo menos 1 opção.');
+          if (window.showToast) window.showToast('O menu precisa ter pelo menos 1 resposta.');
           return;
         }
         node.data.options = node.data.options.filter(o => o.id !== optId);
@@ -1615,27 +2305,176 @@ function populateInspector(node) {
         renderCanvasNodes();
         renderAllCables();
         populateInspector(node);
-        if (window.showToast) window.showToast('Opção removida do menu.');
+        if (window.showToast) window.showToast('Resposta removida do menu.');
       });
     });
 
-    // Realtime option input sync
-    bodyEl.querySelectorAll('.insp-option-input').forEach(input => {
+    // 4. Realtime Question Text
+    const questionTextarea = document.getElementById('insp-menu-question');
+    if (questionTextarea) {
+      questionTextarea.addEventListener('input', () => {
+        node.data.question = questionTextarea.value;
+        node.data.message = questionTextarea.value;
+        renderCanvasNodes();
+      });
+    }
+
+    // 5. Button Title (quando lista)
+    const btnTitleInput = document.getElementById('insp-menu-button-title');
+    if (btnTitleInput) {
+      btnTitleInput.addEventListener('input', () => {
+        node.data.buttonTitle = btnTitleInput.value;
+        renderCanvasNodes();
+      });
+    }
+
+    // 6. Invalid text & Max errors (quando número)
+    const invalidTextarea = document.getElementById('insp-menu-invalid-msg');
+    if (invalidTextarea) {
+      invalidTextarea.addEventListener('input', () => {
+        node.data.invalidMessage = invalidTextarea.value;
+        renderCanvasNodes();
+      });
+    }
+    const maxErrorsSelect = document.getElementById('insp-menu-max-errors');
+    if (maxErrorsSelect) {
+      maxErrorsSelect.addEventListener('change', () => {
+        node.data.maxErrors = parseInt(maxErrorsSelect.value) || 3;
+        renderCanvasNodes();
+      });
+    }
+
+    // 7. Timeout Days select & Connect Timeout
+    const timeoutDaysSelect = document.getElementById('insp-menu-timeout-days');
+    if (timeoutDaysSelect) {
+      timeoutDaysSelect.addEventListener('change', () => {
+        node.data.timeoutDays = timeoutDaysSelect.value;
+      });
+    }
+    document.getElementById('btn-menu-connect-timeout')?.addEventListener('click', () => {
+      if (window.showToast) window.showToast('Conecte o ponto "Se usuário não responder" no bloco de destino!');
+    });
+
+    // 8. Realtime Option Input & Description sync
+    bodyEl.querySelectorAll('.insp-menu-opt-input').forEach(input => {
       input.addEventListener('input', () => {
         const optId = input.getAttribute('data-opt-id');
         const opt = node.data?.options?.find(o => o.id === optId);
         if (opt) {
           opt.label = input.value;
-          const optEl = document.querySelector(`#canvas-node-${node.id} [data-port-id="${optId}"]`)?.closest('.node-branch-item');
-          if (optEl) {
-            const idx = node.data.options.findIndex(o => o.id === optId);
-            const labelEl = optEl.querySelector('.branch-label');
-            if (labelEl) labelEl.textContent = `${idx + 1}. ${opt.label}`;
-          }
+          renderCanvasNodes();
         }
       });
     });
+
+    bodyEl.querySelectorAll('.chk-menu-desc').forEach(chk => {
+      chk.addEventListener('change', () => {
+        const optId = chk.getAttribute('data-opt-id');
+        const wrap = bodyEl.querySelector(`.menu-desc-wrap[data-opt-id="${optId}"]`);
+        if (wrap) wrap.style.display = chk.checked ? 'block' : 'none';
+        const opt = node.data?.options?.find(o => o.id === optId);
+        if (opt && !chk.checked) opt.description = '';
+      });
+    });
+
+    bodyEl.querySelectorAll('.insp-menu-desc-input').forEach(input => {
+      input.addEventListener('input', () => {
+        const optId = input.getAttribute('data-opt-id');
+        const opt = node.data?.options?.find(o => o.id === optId);
+        if (opt) opt.description = input.value;
+      });
+    });
+
+    // 9. Format buttons (B, I, S, {}) in Menu
+    bodyEl.querySelectorAll('.fmt-menu-bold').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        const el = targetId.startsWith('opt-') 
+          ? bodyEl.querySelector(`.insp-menu-opt-input[data-opt-id="${targetId.replace('opt-', '')}"]`)
+          : document.getElementById(targetId);
+        wrapTextInTextarea(el, '*');
+      });
+    });
+
+    bodyEl.querySelectorAll('.fmt-menu-italic').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        const el = targetId.startsWith('opt-') 
+          ? bodyEl.querySelector(`.insp-menu-opt-input[data-opt-id="${targetId.replace('opt-', '')}"]`)
+          : document.getElementById(targetId);
+        wrapTextInTextarea(el, '_');
+      });
+    });
+
+    bodyEl.querySelectorAll('.fmt-menu-strike').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        const el = targetId.startsWith('opt-') 
+          ? bodyEl.querySelector(`.insp-menu-opt-input[data-opt-id="${targetId.replace('opt-', '')}"]`)
+          : document.getElementById(targetId);
+        wrapTextInTextarea(el, '~');
+      });
+    });
+
+    bodyEl.querySelectorAll('.fmt-menu-var').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        const el = targetId.startsWith('opt-') 
+          ? bodyEl.querySelector(`.insp-menu-opt-input[data-opt-id="${targetId.replace('opt-', '')}"]`)
+          : document.getElementById(targetId);
+        if (el) {
+          const varText = '{nome}';
+          const start = el.selectionStart || el.value.length;
+          const end = el.selectionEnd || el.value.length;
+          el.value = el.value.substring(0, start) + varText + el.value.substring(end);
+          el.focus();
+          el.selectionStart = el.selectionEnd = start + varText.length;
+          el.dispatchEvent(new Event('input'));
+          if (window.showToast) window.showToast('Variável {nome} inserida!');
+        }
+      });
+    });
+
+    // 10. Salvar & Cancelar buttons
+    bodyEl.querySelectorAll('.btn-save-menu-opt, #btn-save-menu-question, #btn-save-menu-btntitle, #btn-save-menu-invalid').forEach(btn => {
+      btn.addEventListener('click', () => {
+        renderCanvasNodes();
+        renderAllCables();
+        if (window.showToast) window.showToast('Salvo com sucesso!');
+      });
+    });
+
+    bodyEl.querySelectorAll('.btn-cancel-menu-opt, #btn-cancel-menu-question, #btn-cancel-menu-btntitle, #btn-cancel-menu-invalid').forEach(btn => {
+      btn.addEventListener('click', () => {
+        populateInspector(node);
+        if (window.showToast) window.showToast('Alterações descartadas.');
+      });
+    });
   } else if (node.type === 'ai_agent') {
+    // Agent selection change
+    document.getElementById('insp-input-agent')?.addEventListener('change', (e) => {
+      node.agentName = e.target.value;
+      if (currentBot && !currentBot.integratedAiAgents.includes(e.target.value)) {
+        currentBot.integratedAiAgents.push(e.target.value);
+      }
+      renderCanvasNodes();
+      renderAllCables();
+      populateInspector(node);
+      if (window.showToast) window.showToast(`Agente "${e.target.value}" conectado ao bloco!`);
+    });
+
+    // Block title change
+    document.getElementById('insp-input-title')?.addEventListener('input', (e) => {
+      node.title = e.target.value;
+      renderCanvasNodes();
+    });
+
+    // Timeout select change
+    document.getElementById('insp-input-timeout')?.addEventListener('change', (e) => {
+      if (!node.data) node.data = {};
+      node.data.timeout = e.target.value;
+    });
+
     // Add Branch
     document.getElementById('btn-insp-add-branch')?.addEventListener('click', () => {
       if (!node.data) node.data = {};
@@ -1689,20 +2528,24 @@ function populateInspector(node) {
       });
     });
   } else if (node.type === 'action') {
-    // Action Type toggle
-    document.getElementById('insp-input-action-type')?.addEventListener('change', (e) => {
-      const stageGroup = document.getElementById('insp-action-stage-group');
-      const tagGroup = document.getElementById('insp-action-tag-group');
-      const labelInput = document.getElementById('insp-input-action-label');
-      if (stageGroup) stageGroup.style.display = e.target.value === 'crm_deal' ? 'block' : 'none';
-      if (tagGroup) tagGroup.style.display = e.target.value === 'tag' ? 'block' : 'none';
-      if (labelInput) {
-        if (e.target.value === 'crm_deal') labelInput.value = 'Atribuir e abrir atendimento';
-        else if (e.target.value === 'tag') labelInput.value = 'Aplicar Tag no Lead';
-        else if (e.target.value === 'restart') labelInput.value = 'Reiniciar Automação';
-        else if (e.target.value === 'assign') labelInput.value = 'Encaminhar para Consultor';
-        else if (e.target.value === 'webhook') labelInput.value = 'Disparar Webhook';
-      }
+    document.getElementById('insp-input-title')?.addEventListener('input', (e) => {
+      node.title = e.target.value;
+      renderCanvasNodes();
+    });
+
+    document.getElementById('insp-input-action-label')?.addEventListener('input', (e) => {
+      node.actionLabel = e.target.value;
+      renderCanvasNodes();
+    });
+
+    document.getElementById('insp-input-transfer-target')?.addEventListener('change', (e) => {
+      const parts = e.target.value.split(':');
+      node.transferType = parts[0];
+      node.transferTarget = parts.slice(1).join(':');
+      node.actionType = 'transfer';
+      renderCanvasNodes();
+      populateInspector(node);
+      if (window.showToast) window.showToast(`Destino alterado para ${node.transferTarget}!`);
     });
   } else if (node.type === 'delay') {
     // Delay type toggle
@@ -1718,17 +2561,296 @@ function populateInspector(node) {
       }
     });
   } else if (node.type === 'message') {
-    // Variable insertion
-    bodyEl.querySelectorAll('.insp-btn-var').forEach(btn => {
+    if (!node.data) node.data = {};
+    if (!node.data.items) node.data.items = [];
+
+    // 1. Botões de Adicionar Novo Tipo de Mensagem (Grid de 6 Opções)
+    bodyEl.querySelectorAll('.btn-add-conteudo-type').forEach(btn => {
       btn.addEventListener('click', () => {
-        const varText = btn.getAttribute('data-var');
-        const txtArea = document.getElementById('insp-input-message-text');
-        if (txtArea && varText) {
+        const addType = btn.getAttribute('data-add-type');
+        const newId = `item-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`;
+
+        let newItem = { id: newId, type: addType };
+
+        if (addType === 'text') {
+          newItem.text = '';
+          newItem.saved = false;
+        } else if (addType === 'image') {
+          newItem.url = '';
+          newItem.caption = '';
+          newItem.fileName = '';
+        } else if (addType === 'video') {
+          newItem.fileName = '';
+          newItem.caption = '';
+          newItem.fileSize = '';
+        } else if (addType === 'file') {
+          newItem.fileName = '';
+          newItem.fileSize = '';
+        } else if (addType === 'audio') {
+          newItem.fileName = '';
+          newItem.simulatedVoice = true;
+        } else if (addType === 'delay') {
+          newItem.seconds = 3;
+          newItem.typing = true;
+        }
+
+        node.data.items.push(newItem);
+        renderCanvasNodes();
+        renderAllCables();
+        populateInspector(node);
+
+        // Auto-scroll to newly added block
+        const container = document.getElementById('conteudo-items-container');
+        if (container) {
+          const lastCard = container.querySelector(`[data-item-id="${newId}"]`);
+          if (lastCard) {
+            lastCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            const textarea = lastCard.querySelector('textarea');
+            if (textarea) textarea.focus();
+          }
+        }
+
+        if (window.showToast) window.showToast(`Novo bloco de ${addType} adicionado!`);
+      });
+    });
+
+    // 2. Excluir Bloco de Mensagem
+    bodyEl.querySelectorAll('.btn-delete-conteudo-item').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const itemId = btn.getAttribute('data-item-id');
+        node.data.items = node.data.items.filter(i => i.id !== itemId);
+        renderCanvasNodes();
+        renderAllCables();
+        populateInspector(node);
+        if (window.showToast) window.showToast('Item removido do conteúdo.');
+      });
+    });
+
+    // 3. Reordenar Itens (Mover para Cima e para Baixo)
+    bodyEl.querySelectorAll('.btn-move-item-up').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const itemId = btn.getAttribute('data-item-id');
+        const idx = node.data.items.findIndex(i => i.id === itemId);
+        if (idx > 0) {
+          const temp = node.data.items[idx];
+          node.data.items[idx] = node.data.items[idx - 1];
+          node.data.items[idx - 1] = temp;
+          renderCanvasNodes();
+          renderAllCables();
+          populateInspector(node);
+        }
+      });
+    });
+
+    bodyEl.querySelectorAll('.btn-move-item-down').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const itemId = btn.getAttribute('data-item-id');
+        const idx = node.data.items.findIndex(i => i.id === itemId);
+        if (idx !== -1 && idx < node.data.items.length - 1) {
+          const temp = node.data.items[idx];
+          node.data.items[idx] = node.data.items[idx + 1];
+          node.data.items[idx + 1] = temp;
+          renderCanvasNodes();
+          renderAllCables();
+          populateInspector(node);
+        }
+      });
+    });
+
+    // 4. Formatação de Texto (Bold, Italic, Strikethrough, Variáveis)
+    function wrapTextInTextarea(txtArea, symbolLeft, symbolRight = symbolLeft) {
+      if (!txtArea) return;
+      const start = txtArea.selectionStart || 0;
+      const end = txtArea.selectionEnd || 0;
+      const val = txtArea.value;
+      const selected = val.substring(start, end);
+      const replacement = selected ? `${symbolLeft}${selected}${symbolRight}` : `${symbolLeft}texto${symbolRight}`;
+      txtArea.value = val.substring(0, start) + replacement + val.substring(end);
+      txtArea.focus();
+      txtArea.selectionStart = start + symbolLeft.length;
+      txtArea.selectionEnd = start + replacement.length - symbolRight.length;
+      txtArea.dispatchEvent(new Event('input'));
+    }
+
+    bodyEl.querySelectorAll('.fmt-bold').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const itemId = btn.getAttribute('data-item-id');
+        const txtArea = bodyEl.querySelector(`textarea[data-item-id="${itemId}"]`);
+        wrapTextInTextarea(txtArea, '*');
+      });
+    });
+
+    bodyEl.querySelectorAll('.fmt-italic').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const itemId = btn.getAttribute('data-item-id');
+        const txtArea = bodyEl.querySelector(`textarea[data-item-id="${itemId}"]`);
+        wrapTextInTextarea(txtArea, '_');
+      });
+    });
+
+    bodyEl.querySelectorAll('.fmt-strike').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const itemId = btn.getAttribute('data-item-id');
+        const txtArea = bodyEl.querySelector(`textarea[data-item-id="${itemId}"]`);
+        wrapTextInTextarea(txtArea, '~');
+      });
+    });
+
+    bodyEl.querySelectorAll('.fmt-brackets').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const itemId = btn.getAttribute('data-item-id');
+        const txtArea = bodyEl.querySelector(`textarea[data-item-id="${itemId}"]`);
+        if (txtArea) {
+          const varText = '{nome}';
           const start = txtArea.selectionStart || txtArea.value.length;
           const end = txtArea.selectionEnd || txtArea.value.length;
           txtArea.value = txtArea.value.substring(0, start) + varText + txtArea.value.substring(end);
           txtArea.focus();
           txtArea.selectionStart = txtArea.selectionEnd = start + varText.length;
+          txtArea.dispatchEvent(new Event('input'));
+          if (window.showToast) window.showToast('Variável {nome} inserida!');
+        }
+      });
+    });
+
+    // 5. Botões Salvar e Cancelar do Bloco de Texto
+    bodyEl.querySelectorAll('.btn-conteudo-save').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const itemId = btn.getAttribute('data-item-id');
+        const card = bodyEl.querySelector(`.conteudo-item-card[data-item-id="${itemId}"]`);
+        const item = node.data.items.find(i => i.id === itemId);
+        const txtArea = card?.querySelector('.conteudo-textarea');
+        if (item && txtArea) {
+          item.text = txtArea.value.trim();
+          item.saved = true;
+          card.classList.remove('editing');
+          renderCanvasNodes();
+          renderAllCables();
+          if (window.showToast) window.showToast('Mensagem salva com sucesso!');
+        }
+      });
+    });
+
+    bodyEl.querySelectorAll('.btn-conteudo-cancel').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const itemId = btn.getAttribute('data-item-id');
+        const item = node.data.items.find(i => i.id === itemId);
+        if (item) {
+          if (!item.text || !item.text.trim()) {
+            node.data.items = node.data.items.filter(i => i.id !== itemId);
+            renderCanvasNodes();
+            renderAllCables();
+            populateInspector(node);
+          } else {
+            const card = bodyEl.querySelector(`.conteudo-item-card[data-item-id="${itemId}"]`);
+            const txtArea = card?.querySelector('.conteudo-textarea');
+            if (txtArea) txtArea.value = item.text;
+            card?.classList.remove('editing');
+            if (window.showToast) window.showToast('Edição cancelada.');
+          }
+        }
+      });
+    });
+
+    // 6. Atualização em Tempo Real do Textarea
+    bodyEl.querySelectorAll('.conteudo-textarea').forEach(txt => {
+      txt.addEventListener('input', () => {
+        const itemId = txt.getAttribute('data-item-id');
+        const item = node.data.items.find(i => i.id === itemId);
+        const card = txt.closest('.conteudo-item-card');
+        if (card) card.classList.add('editing');
+        if (item) {
+          item.text = txt.value;
+          item.saved = false;
+          // Sync directly to first text on node for compatibility
+          const firstText = node.data.items.find(i => i.type === 'text');
+          if (firstText) node.data.text = firstText.text;
+          renderCanvasNodes();
+        }
+      });
+    });
+
+    // 7. Gatilho de Upload para Imagem, Vídeo, Arquivo e Áudio
+    bodyEl.querySelectorAll('.btn-upload-trigger').forEach(trigger => {
+      trigger.addEventListener('click', () => {
+        const itemId = trigger.getAttribute('data-item-id');
+        const fileInput = bodyEl.querySelector(`.conteudo-file-input[data-item-id="${itemId}"]`);
+        if (fileInput) fileInput.click();
+      });
+    });
+
+    bodyEl.querySelectorAll('.conteudo-file-input').forEach(input => {
+      input.addEventListener('change', (e) => {
+        const itemId = input.getAttribute('data-item-id');
+        const item = node.data.items.find(i => i.id === itemId);
+        const file = e.target.files && e.target.files[0];
+        if (!file || !item) return;
+
+        item.fileName = file.name;
+        item.fileSize = (file.size / 1024 / 1024).toFixed(1) + 'MB';
+
+        if (item.type === 'image') {
+          const reader = new FileReader();
+          reader.onload = (loadEvt) => {
+            item.url = loadEvt.target.result;
+            renderCanvasNodes();
+            renderAllCables();
+            populateInspector(node);
+            if (window.showToast) window.showToast('Imagem carregada com sucesso!');
+          };
+          reader.readAsDataURL(file);
+        } else {
+          renderCanvasNodes();
+          renderAllCables();
+          populateInspector(node);
+          if (window.showToast) window.showToast(`${item.type.toUpperCase()}: ${file.name} carregado!`);
+        }
+      });
+    });
+
+    // 8. Legendas de Mídias e Atraso em Tempo Real
+    bodyEl.querySelectorAll('.conteudo-caption-input').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const itemId = inp.getAttribute('data-item-id');
+        const item = node.data.items.find(i => i.id === itemId);
+        if (item) {
+          item.caption = inp.value;
+          renderCanvasNodes();
+        }
+      });
+    });
+
+    bodyEl.querySelectorAll('.conteudo-delay-seconds').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const itemId = inp.getAttribute('data-item-id');
+        const item = node.data.items.find(i => i.id === itemId);
+        if (item) {
+          item.seconds = Math.max(1, parseInt(inp.value) || 3);
+          renderCanvasNodes();
+        }
+      });
+    });
+
+    bodyEl.querySelectorAll('.conteudo-delay-typing').forEach(chk => {
+      chk.addEventListener('change', () => {
+        const itemId = chk.getAttribute('data-item-id');
+        const item = node.data.items.find(i => i.id === itemId);
+        if (item) {
+          item.typing = chk.checked;
+          renderCanvasNodes();
+        }
+      });
+    });
+
+    bodyEl.querySelectorAll('.conteudo-audio-ptt').forEach(chk => {
+      chk.addEventListener('change', () => {
+        const itemId = chk.getAttribute('data-item-id');
+        const item = node.data.items.find(i => i.id === itemId);
+        if (item) {
+          item.simulatedVoice = chk.checked;
         }
       });
     });
@@ -1782,18 +2904,11 @@ function applyInspectorChanges() {
   if (titleInput) node.title = titleInput.value.trim();
 
   if (node.type === 'start') {
-    const triggerSelect = document.getElementById('insp-input-trigger');
-    const channelSelect = document.getElementById('insp-input-channel');
     const descInput = document.getElementById('insp-input-desc');
     if (!node.data) node.data = {};
-    if (triggerSelect) node.data.trigger = triggerSelect.value;
-    if (channelSelect) node.data.channel = channelSelect.value;
     if (descInput) node.data.subtitle = descInput.value.trim();
   } else if (node.type === 'ai_agent') {
     const agentSelect = document.getElementById('insp-input-agent');
-    const modelSelect = document.getElementById('insp-input-ai-model');
-    const modeSelect = document.getElementById('insp-input-ai-mode');
-    const instrInput = document.getElementById('insp-input-instructions');
     const timeoutSelect = document.getElementById('insp-input-timeout');
     if (!node.data) node.data = {};
     if (agentSelect) {
@@ -1802,9 +2917,6 @@ function applyInspectorChanges() {
         currentBot.integratedAiAgents.push(agentSelect.value);
       }
     }
-    if (modelSelect) node.data.model = modelSelect.value;
-    if (modeSelect) node.data.mode = modeSelect.value;
-    if (instrInput) node.data.instructions = instrInput.value.trim();
     if (timeoutSelect) node.data.timeout = timeoutSelect.value;
 
     document.querySelectorAll('.insp-branch-input').forEach(inp => {
@@ -1813,39 +2925,87 @@ function applyInspectorChanges() {
       if (b) b.label = inp.value.trim();
     });
   } else if (node.type === 'action') {
-    const typeSelect = document.getElementById('insp-input-action-type');
     const labelInput = document.getElementById('insp-input-action-label');
-    const targetSelect = document.getElementById('insp-input-target-person');
-    const stageSelect = document.getElementById('insp-input-stage');
-    const tagSelect = document.getElementById('insp-input-tag');
+    const targetSelect = document.getElementById('insp-input-transfer-target');
     if (!node.data) node.data = {};
-    if (typeSelect) node.actionType = typeSelect.value;
+    node.actionType = 'transfer';
     if (labelInput) node.actionLabel = labelInput.value.trim();
-    if (targetSelect) node.targetPerson = targetSelect.value.trim();
-    if (stageSelect) node.data.stage = stageSelect.value;
-    if (tagSelect) node.data.tag = tagSelect.value;
+    if (targetSelect) {
+      const parts = targetSelect.value.split(':');
+      node.transferType = parts[0];
+      node.transferTarget = parts.slice(1).join(':');
+    }
   } else if (node.type === 'menu') {
-    const msgInput = document.getElementById('insp-input-message');
-    const timeoutSelect = document.getElementById('insp-input-timeout');
-    const invalidInput = document.getElementById('insp-input-invalid-msg');
     if (!node.data) node.data = {};
-    if (msgInput) node.data.message = msgInput.value.trim();
-    if (timeoutSelect) node.data.timeout = timeoutSelect.value;
+    const formatRadio = document.querySelector('input[name="menu-format"]:checked');
+    if (formatRadio) node.data.format = formatRadio.value;
+
+    const questionInput = document.getElementById('insp-menu-question') || document.getElementById('insp-input-message');
+    if (questionInput) {
+      node.data.question = questionInput.value.trim();
+      node.data.message = questionInput.value.trim();
+    }
+
+    const btnTitleInput = document.getElementById('insp-menu-button-title');
+    if (btnTitleInput) node.data.buttonTitle = btnTitleInput.value.trim();
+
+    const invalidInput = document.getElementById('insp-menu-invalid-msg') || document.getElementById('insp-input-invalid-msg');
     if (invalidInput) node.data.invalidMessage = invalidInput.value.trim();
 
-    document.querySelectorAll('.insp-option-input').forEach(inp => {
+    const maxErrorsSelect = document.getElementById('insp-menu-max-errors');
+    if (maxErrorsSelect) node.data.maxErrors = parseInt(maxErrorsSelect.value) || 3;
+
+    const timeoutDaysSelect = document.getElementById('insp-menu-timeout-days') || document.getElementById('insp-input-timeout');
+    if (timeoutDaysSelect) node.data.timeoutDays = timeoutDaysSelect.value;
+
+    document.querySelectorAll('.insp-menu-opt-input, .insp-option-input').forEach(inp => {
       const optId = inp.getAttribute('data-opt-id');
       const opt = node.data?.options?.find(item => item.id === optId);
       if (opt) opt.label = inp.value.trim();
     });
+
+    document.querySelectorAll('.insp-menu-desc-input').forEach(inp => {
+      const optId = inp.getAttribute('data-opt-id');
+      const opt = node.data?.options?.find(item => item.id === optId);
+      if (opt) opt.description = inp.value.trim();
+    });
+
+    document.querySelectorAll('.chk-menu-desc').forEach(chk => {
+      const optId = chk.getAttribute('data-opt-id');
+      const opt = node.data?.options?.find(item => item.id === optId);
+      if (opt && !chk.checked) opt.description = '';
+    });
   } else if (node.type === 'message') {
-    const msgTypeSelect = document.getElementById('insp-input-msg-type');
-    const textInput = document.getElementById('insp-input-message-text');
-    const typingSelect = document.getElementById('insp-input-typing-delay');
     if (!node.data) node.data = {};
-    if (msgTypeSelect) node.data.msgType = msgTypeSelect.value;
-    if (textInput) node.data.text = textInput.value.trim();
-    if (typingSelect) node.data.typingDelay = typingSelect.value;
+    if (!node.data.items) node.data.items = [];
+
+    document.querySelectorAll('.conteudo-item-card[data-item-id]').forEach(card => {
+      const itemId = card.getAttribute('data-item-id');
+      const item = node.data.items.find(i => i.id === itemId);
+      if (!item) return;
+
+      if (item.type === 'text') {
+        const txtArea = card.querySelector('.conteudo-textarea');
+        if (txtArea) {
+          item.text = txtArea.value;
+          item.saved = true;
+        }
+      } else if (item.type === 'image' || item.type === 'video') {
+        const captionInp = card.querySelector('.conteudo-caption-input');
+        if (captionInp) item.caption = captionInp.value;
+      } else if (item.type === 'audio') {
+        const pttChk = card.querySelector('.conteudo-audio-ptt');
+        if (pttChk) item.simulatedVoice = pttChk.checked;
+      } else if (item.type === 'delay') {
+        const secInp = card.querySelector('.conteudo-delay-seconds');
+        const typChk = card.querySelector('.conteudo-delay-typing');
+        if (secInp) item.seconds = parseInt(secInp.value) || 3;
+        if (typChk) item.typing = typChk.checked;
+      }
+    });
+
+    const firstText = node.data.items.find(i => i.type === 'text');
+    if (firstText) node.data.text = firstText.text;
   } else if (node.type === 'human') {
     const targetSelect = document.getElementById('insp-input-target-person');
     const prioritySelect = document.getElementById('insp-input-priority');
@@ -1932,18 +3092,20 @@ function spawnNewNode(type, x, y) {
   let newNode = null;
 
   if (type === 'ai_agent') {
+    const agentsList = zapChatData?.agentes?.list || [];
+    const defaultAgent = agentsList.length > 0 ? agentsList[0] : { name: 'Pedro', role: 'Atendimento geral' };
+
     newNode = {
       id: newId,
       type: 'ai_agent',
-      title: 'Assistente de IA',
-      agentName: 'Carla Menezes',
-      agentRole: 'Triagem e Qualificação',
+      title: 'Agente de IA',
+      agentName: defaultAgent.name,
+      agentRole: defaultAgent.role || 'Atendimento Geral',
       executions: 0,
       x,
       y,
       data: {
         method: 'Agente de IA Conversacional',
-        instructions: 'Você é a Assistente Virtual. Tire dúvidas e conduza o cliente.',
         branches: [
           { id: 'b-success', label: 'Resposta bem-sucedida', ctr: '100%' },
           { id: 'b-inactivity', label: 'Inatividade (15 min)', ctr: '0%' },
@@ -1955,26 +3117,34 @@ function spawnNewNode(type, x, y) {
     newNode = {
       id: newId,
       type: 'action',
-      title: 'Ação CRM',
-      actionType: 'crm_deal',
-      actionLabel: 'Atribuir e abrir atendimento',
-      targetPerson: 'Equipe de Vendas',
+      title: 'Transferir Atendimento',
+      actionType: 'transfer',
+      actionLabel: 'Transferir atendimento',
+      transferType: 'human',
+      transferTarget: 'Carlos Félix',
       x,
       y,
-      data: { description: 'Ação executada no CRM' }
+      data: { description: 'Transferência de atendimento' }
     };
   } else if (type === 'menu') {
     newNode = {
       id: newId,
       type: 'menu',
-      title: 'Menu de Opções',
+      title: 'Menu',
+      executions: 0,
+      clickRate: '0%',
       x,
       y,
       data: {
-        message: 'Como podemos te ajudar hoje?',
+        format: 'list_button',
+        question: 'Texto da pergunta',
+        message: 'Texto da pergunta',
+        buttonTitle: 'VER OPÇÕES',
+        invalidMessage: 'Opção inválida. Por favor, escolha um dos números acima.',
+        maxErrors: 3,
+        timeoutDays: '1',
         options: [
-          { id: `opt-${Date.now()}-1`, label: 'Quero comprar um plano' },
-          { id: `opt-${Date.now()}-2`, label: 'Preciso de suporte técnico' }
+          { id: `opt-${Date.now().toString(36)}-1`, label: 'Resposta 1', description: '', ctr: 'CTR 0%' }
         ]
       }
     };
@@ -1982,10 +3152,19 @@ function spawnNewNode(type, x, y) {
     newNode = {
       id: newId,
       type: 'message',
-      title: 'Mensagem',
+      title: 'Conteúdo',
       x,
       y,
-      data: { text: 'Olá! Seja muito bem-vindo ao nosso atendimento.' }
+      data: {
+        items: [
+          {
+            id: `item-${Date.now().toString(36)}-1`,
+            type: 'text',
+            text: 'Olá! Seja muito bem-vindo ao nosso atendimento.',
+            saved: true
+          }
+        ]
+      }
     };
   } else if (type === 'human') {
     newNode = {
@@ -2044,6 +3223,22 @@ function spawnNewNode(type, x, y) {
 function saveCanvasFlow() {
   if (!currentBot) return;
 
+  const inputEl = document.getElementById('builder-bot-name-input');
+  const wrapper = document.getElementById('builder-title-wrapper');
+  if (wrapper?.classList.contains('is-editing') && inputEl) {
+    const newName = inputEl.value.trim();
+    if (newName) {
+      currentBot.name = newName;
+      const nameEl = document.getElementById('builder-bot-name');
+      if (nameEl) nameEl.textContent = newName;
+      const botInList = zapChatData?.chatbots?.list?.find(b => b.id === currentBot.id);
+      if (botInList) botInList.name = newName;
+      if (window.renderChatbotsList) window.renderChatbotsList();
+    }
+    wrapper.classList.remove('is-editing');
+    inputEl.style.display = 'none';
+  }
+
   currentBot.updatedAt = 'Agora mesmo';
   currentBot.stepsCount = currentBot.canvasFlow.nodes.length;
 
@@ -2058,7 +3253,7 @@ function getNodeTypeLabel(type) {
     ai_agent: 'Agente de Inteligência Artificial',
     menu: 'Menu Interativo',
     action: 'Ação Automatizada',
-    message: 'Mensagem de Texto',
+    message: 'Conteúdo (Texto, Mídia e Atraso)',
     human: 'Fila Humana',
     condition: 'Condição Lógica',
     delay: 'Atraso / Espera'

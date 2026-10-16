@@ -72,6 +72,32 @@
   align-items: center;
   gap: 10px;
   text-decoration: none;
+  min-height: 38px;
+}
+
+.brand-logo-img {
+  height: 32px;
+  width: auto;
+  max-width: 165px;
+  object-fit: contain;
+  display: block;
+  transition: opacity 0.2s ease;
+}
+
+/* Tema Claro: Exibe logo dark na interface clara */
+.logo-dark-theme-target {
+  display: block;
+}
+.logo-light-theme-target {
+  display: none !important;
+}
+
+/* Tema Escuro: Exibe logo light na interface escura */
+[data-theme="dark"] .logo-dark-theme-target {
+  display: none !important;
+}
+[data-theme="dark"] .logo-light-theme-target {
+  display: block !important;
 }
 
 .brand-icon {
@@ -709,6 +735,11 @@
     display: flex !important;
     align-items: center;
     gap: 8px;
+  }
+
+  .mobile-brand-logo .brand-logo-img {
+    height: 26px;
+    max-width: 135px;
   }
 
   .mobile-brand-icon {

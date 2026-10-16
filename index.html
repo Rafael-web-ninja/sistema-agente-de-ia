@@ -32,15 +32,9 @@
     <aside class="app-sidebar" id="app-sidebar">
       <div>
         <div class="sidebar-header">
-          <a href="#dashboard" class="brand-logo" data-target="dashboard">
-            <div class="brand-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                <circle cx="9" cy="10" r="1"></circle>
-                <circle cx="15" cy="10" r="1"></circle>
-              </svg>
-            </div>
-            <span class="brand-name">ZapChat</span>
+          <a href="#dashboard" class="brand-logo" data-target="dashboard" title="ZapChat">
+            <img src="src/imagens/logo-dark.png" alt="ZapChat" class="brand-logo-img logo-dark-theme-target">
+            <img src="src/imagens/logo-light.png" alt="ZapChat" class="brand-logo-img logo-light-theme-target">
           </a>
           <button class="sidebar-close-btn" id="sidebar-close-btn" title="Fechar menu" aria-label="Fechar menu">
             <i data-lucide="x"></i>
@@ -142,14 +136,8 @@
             </span>
           </button>
           <div class="mobile-brand-logo">
-            <div class="brand-icon mobile-brand-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                <circle cx="9" cy="10" r="1"></circle>
-                <circle cx="15" cy="10" r="1"></circle>
-              </svg>
-            </div>
-            <span class="brand-name mobile-brand-title">ZapChat</span>
+            <img src="src/imagens/logo-dark.png" alt="ZapChat" class="brand-logo-img logo-dark-theme-target">
+            <img src="src/imagens/logo-light.png" alt="ZapChat" class="brand-logo-img logo-light-theme-target">
           </div>
         </div>
 
@@ -659,7 +647,13 @@
               <div class="builder-breadcrumb-divider">/</div>
               <div class="builder-title-group">
                 <span class="builder-title-badge">Chatbot</span>
-                <h2 class="builder-title" id="builder-bot-name">Boas-vindas & Triagem Inteligente</h2>
+                <div class="builder-title-wrapper" id="builder-title-wrapper" title="Clique para editar o nome do fluxo">
+                  <h2 class="builder-title" id="builder-bot-name">Boas-vindas & Triagem Inteligente</h2>
+                  <button type="button" class="btn-builder-edit-title" id="btn-edit-flow-name" title="Editar nome do fluxo" aria-label="Editar nome do fluxo">
+                    <i data-lucide="pencil" style="width: 12px; height: 12px;"></i>
+                  </button>
+                  <input type="text" class="builder-title-input" id="builder-bot-name-input" maxlength="60" placeholder="Nome do fluxo..." style="display: none;" />
+                </div>
               </div>
               <span class="chatbot-channel-badge whatsapp" id="builder-channel-badge">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="#00A868"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2z"/></svg>
@@ -756,12 +750,12 @@
               </div>
               <div class="dock-items-list">
                 <!-- Draggable Block Types -->
-                <div class="dock-item" draggable="true" data-node-type="ai_agent" title="Assistente de IA conversacional integrado ao fluxo">
+                <div class="dock-item" draggable="true" data-node-type="ai_agent" title="Agente de IA conversacional integrado ao fluxo">
                   <div class="dock-item-icon ai">
                     <i data-lucide="bot" style="width: 16px; height: 16px;"></i>
                   </div>
                   <div class="dock-item-info">
-                    <span class="dock-item-name">Assistente IA</span>
+                    <span class="dock-item-name">Agente de IA</span>
                     <span class="dock-item-desc">Agente conversacional</span>
                   </div>
                   <i data-lucide="grip-vertical" class="dock-item-grip"></i>
@@ -778,24 +772,24 @@
                   <i data-lucide="grip-vertical" class="dock-item-grip"></i>
                 </div>
 
-                <div class="dock-item" draggable="true" data-node-type="message" title="Mensagem de texto simples">
-                  <div class="dock-item-icon message">
-                    <i data-lucide="message-square" style="width: 16px; height: 16px;"></i>
+                <div class="dock-item" draggable="true" data-node-type="message" title="Adicionar sequência de mensagens de texto, mídia ou atraso">
+                  <div class="dock-item-icon message" style="background: rgba(0, 168, 104, 0.1); color: var(--primary);">
+                    <i data-lucide="star" style="width: 16px; height: 16px; fill: var(--primary); color: var(--primary);"></i>
                   </div>
                   <div class="dock-item-info">
-                    <span class="dock-item-name">Conteúdo / Texto</span>
-                    <span class="dock-item-desc">Mensagem automática</span>
+                    <span class="dock-item-name">Conteúdo</span>
+                    <span class="dock-item-desc">Texto, Mídia e Atraso</span>
                   </div>
                   <i data-lucide="grip-vertical" class="dock-item-grip"></i>
                 </div>
 
-                <div class="dock-item" draggable="true" data-node-type="action" title="Ação no CRM, tag ou notificação">
+                <div class="dock-item" draggable="true" data-node-type="action" title="Ação de transferência de atendimento">
                   <div class="dock-item-icon action">
-                    <i data-lucide="zap" style="width: 16px; height: 16px;"></i>
+                    <i data-lucide="corner-up-right" style="width: 16px; height: 16px;"></i>
                   </div>
                   <div class="dock-item-info">
-                    <span class="dock-item-name">Ação / CRM</span>
-                    <span class="dock-item-desc">Lead, Tag ou Etapa</span>
+                    <span class="dock-item-name">Ação</span>
+                    <span class="dock-item-desc">Transferir atendimento</span>
                   </div>
                   <i data-lucide="grip-vertical" class="dock-item-grip"></i>
                 </div>
@@ -3809,37 +3803,6 @@
         <!-- Destination Cards List -->
         <div class="transfer-dest-list" id="transfer-dest-list">
           <!-- Populated dynamically by JS -->
-        </div>
-
-        <!-- Transfer Options Box -->
-        <div class="transfer-options-card">
-          <div class="transfer-options-header">
-            <i data-lucide="sliders" style="width: 14px; height: 14px; color: var(--primary);"></i>
-            <span>Opções de transferência</span>
-          </div>
-          
-          <label class="transfer-checkbox-label">
-            <input type="checkbox" id="transfer-opt-summary" checked>
-            <div>
-              <strong>Anexar resumo inteligente da IA</strong>
-              <p>Transmite o histórico resumido e pontos-chave da conversa diretamente ao novo atendente.</p>
-            </div>
-          </label>
-
-          <label class="transfer-checkbox-label">
-            <input type="checkbox" id="transfer-opt-notify-client" checked>
-            <div>
-              <strong>Notificar cliente sobre a transferência</strong>
-              <p>Envia mensagem automática informando que a conversa foi transferida.</p>
-            </div>
-          </label>
-
-          <div class="transfer-note-wrap">
-            <label class="transfer-note-label" for="transfer-internal-note">
-              <span>Nota interna / Orientação de transferência (opcional)</span>
-            </label>
-            <textarea id="transfer-internal-note" class="transfer-note-textarea" rows="2" placeholder="Ex: Cliente tem interesse no plano Pro e gostaria de negociar desconto no plano anual..."></textarea>
-          </div>
         </div>
 
         <!-- Modal Footer Actions -->

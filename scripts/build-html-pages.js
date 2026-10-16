@@ -304,15 +304,9 @@ function renderShell(contentHtml, activePage, pageTitle, extraScripts = '') {
     <aside class="app-sidebar" id="app-sidebar">
       <div>
         <div class="sidebar-header">
-          <a href="dashboard.html" class="brand-logo">
-            <div class="brand-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                <circle cx="9" cy="10" r="1"></circle>
-                <circle cx="15" cy="10" r="1"></circle>
-              </svg>
-            </div>
-            <span class="brand-name">ZapChat</span>
+          <a href="dashboard.html" class="brand-logo" title="ZapChat">
+            <img src="../src/imagens/logo-dark.png" alt="ZapChat" class="brand-logo-img logo-dark-theme-target">
+            <img src="../src/imagens/logo-light.png" alt="ZapChat" class="brand-logo-img logo-light-theme-target">
           </a>
           <button class="sidebar-close-btn" id="sidebar-close-btn" title="Fechar menu" aria-label="Fechar menu">
             <i data-lucide="x"></i>
@@ -360,14 +354,8 @@ function renderShell(contentHtml, activePage, pageTitle, extraScripts = '') {
             </span>
           </button>
           <div class="mobile-brand-logo">
-            <div class="brand-icon mobile-brand-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                <circle cx="9" cy="10" r="1"></circle>
-                <circle cx="15" cy="10" r="1"></circle>
-              </svg>
-            </div>
-            <span class="brand-name mobile-brand-title">ZapChat</span>
+            <img src="../src/imagens/logo-dark.png" alt="ZapChat" class="brand-logo-img logo-dark-theme-target">
+            <img src="../src/imagens/logo-light.png" alt="ZapChat" class="brand-logo-img logo-light-theme-target">
           </div>
         </div>
 
@@ -989,17 +977,29 @@ const editAgentPageScript = `
     });
 
     // 6. Client Data Chips
-    document.querySelectorAll('#client-data-chips-container .btn-data-chip').forEach(chip => {
-      chip.addEventListener('click', (e) => {
-        e.preventDefault();
-        const isActive = chip.classList.toggle('active');
-        const checkIcon = chip.querySelector('.chip-check-icon');
-        if (checkIcon) {
-          checkIcon.setAttribute('data-lucide', isActive ? 'check-square' : 'square');
-          if (window.lucide) window.lucide.createIcons();
+    const clientChipsBox = document.getElementById('client-data-chips-container');
+    if (clientChipsBox) {
+      clientChipsBox.addEventListener('click', (e) => {
+        const delBtn = e.target.closest('.chip-delete-btn');
+        if (delBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          const chip = delBtn.closest('.btn-data-chip');
+          if (chip) chip.remove();
+          return;
+        }
+        const chip = e.target.closest('.btn-data-chip');
+        if (chip) {
+          e.preventDefault();
+          const isActive = chip.classList.toggle('active');
+          const checkIcon = chip.querySelector('.chip-check-icon');
+          if (checkIcon) {
+            checkIcon.setAttribute('data-lucide', isActive ? 'check-square' : 'square');
+            if (window.lucide) window.lucide.createIcons();
+          }
         }
       });
-    });
+    }
 
     // 7. Safety Checkboxes
     document.querySelectorAll('.safety-check-item input[type="checkbox"]').forEach(input => {
@@ -1700,8 +1700,12 @@ const arenaHeaderHtml = `
       <span>Encerrar</span>
     </button>
     <div class="chat-header-divider"></div>
-    <button class="btn-action-round chat-icon-btn" id="btn-toggle-chat-profile" title="Ocultar painel lateral" aria-label="Ocultar painel lateral">
-      <i data-lucide="panel-right-close" style="width: 15px; height: 15px;"></i>
+    <button class="btn-action-round chat-icon-btn active" id="btn-toggle-chat-profile" title="Ocultar detalhes do contato" aria-label="Ocultar detalhes do contato" aria-expanded="true">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="sidebar-toggle-svg">
+        <rect width="18" height="18" x="3" y="3" rx="3"></rect>
+        <path d="M15 3v18"></path>
+        <path d="M15 3h3a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-3V3z" fill="currentColor" fill-opacity="0.32" stroke="none"></path>
+      </svg>
     </button>
   </div>
 `;
@@ -1917,12 +1921,11 @@ const conversasScript = `
       }
       if (toggleProfileBtn) {
         toggleProfileBtn.classList.toggle('active', isProfileOpen);
-        const iconName = isProfileOpen ? 'panel-right-close' : 'panel-right-open';
-        const tooltip = isProfileOpen ? 'Ocultar painel lateral' : 'Exibir painel lateral';
+        const tooltip = isProfileOpen ? 'Ocultar detalhes do contato' : 'Exibir detalhes do contato';
         toggleProfileBtn.title = tooltip;
         toggleProfileBtn.setAttribute('aria-label', tooltip);
-        toggleProfileBtn.innerHTML = '<i data-lucide="' + iconName + '" style="width: 15px; height: 15px;"></i>';
-        if (window.lucide) window.lucide.createIcons();
+        toggleProfileBtn.setAttribute('aria-expanded', isProfileOpen ? 'true' : 'false');
+        toggleProfileBtn.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="sidebar-toggle-svg"><rect width="18" height="18" x="3" y="3" rx="3"></rect><path d="M15 3v18"></path>' + (isProfileOpen ? '<path d="M15 3h3a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-3V3z" fill="currentColor" fill-opacity="0.32" stroke="none"></path>' : '') + '</svg>';
       }
     }
 
@@ -2037,9 +2040,53 @@ const conversasScript = `
       }
     }
 
-    // Tabs filter
+    // Tabs filter & drag-to-scroll
+    const tabsCont = document.querySelector('.chat-simplified-tabs');
+    let isDragTabs = false;
+    let tabsMoved = false;
+    let startXTabs = 0;
+    let scrollLeftTabs = 0;
+
+    if (tabsCont) {
+      tabsCont.addEventListener('mousedown', (e) => {
+        isDragTabs = true;
+        tabsMoved = false;
+        startXTabs = e.pageX - tabsCont.offsetLeft;
+        scrollLeftTabs = tabsCont.scrollLeft;
+        tabsCont.classList.add('is-dragging');
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (isDragTabs) {
+          isDragTabs = false;
+          tabsCont.classList.remove('is-dragging');
+          setTimeout(() => { tabsMoved = false; }, 50);
+        }
+      });
+
+      tabsCont.addEventListener('mousemove', (e) => {
+        if (!isDragTabs) return;
+        e.preventDefault();
+        const x = e.pageX - tabsCont.offsetLeft;
+        const walk = (x - startXTabs);
+        if (Math.abs(walk) > 4) tabsMoved = true;
+        tabsCont.scrollLeft = scrollLeftTabs - walk;
+      });
+
+      tabsCont.addEventListener('wheel', (e) => {
+        if (e.deltaY !== 0) {
+          e.preventDefault();
+          tabsCont.scrollLeft += e.deltaY;
+        }
+      }, { passive: false });
+    }
+
     document.querySelectorAll('.chat-tab-pill').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        if (tabsMoved) {
+          e.preventDefault();
+          return;
+        }
         document.querySelectorAll('.chat-tab-pill').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         filterState.tab = btn.getAttribute('data-tab');

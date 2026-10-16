@@ -215,6 +215,14 @@ export function openChatThread(threadId) {
 
 let isChatProfileOpen = (typeof window !== 'undefined' ? window.innerWidth > 1360 : true);
 
+export function getSidebarToggleIconSvg(isOpen) {
+  return `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="sidebar-toggle-svg">
+    <rect width="18" height="18" x="3" y="3" rx="3"></rect>
+    <path d="M15 3v18"></path>
+    ${isOpen ? '<path d="M15 3h3a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-3V3z" fill="currentColor" fill-opacity="0.32" stroke="none"></path>' : ''}
+  </svg>`;
+}
+
 export function applyChatProfileState() {
   const layout = document.querySelector('.conversas-simplified-layout');
   const btn = document.getElementById('btn-toggle-chat-profile');
@@ -240,13 +248,11 @@ export function applyChatProfileState() {
 
   if (btn) {
     btn.classList.toggle('active', isChatProfileOpen);
-    const iconName = isChatProfileOpen ? 'panel-right-close' : 'panel-right-open';
-    const tooltipText = isChatProfileOpen ? 'Ocultar painel lateral' : 'Exibir painel lateral';
+    const tooltipText = isChatProfileOpen ? 'Ocultar detalhes do contato' : 'Exibir detalhes do contato';
     btn.title = tooltipText;
     btn.setAttribute('aria-label', tooltipText);
     btn.setAttribute('aria-expanded', isChatProfileOpen ? 'true' : 'false');
-    btn.innerHTML = `<i data-lucide="${iconName}" style="width: 15px; height: 15px;"></i>`;
-    if (window.lucide) window.lucide.createIcons();
+    btn.innerHTML = getSidebarToggleIconSvg(isChatProfileOpen);
   }
 }
 
@@ -772,8 +778,8 @@ export function renderActiveChat() {
           <span>Encerrar</span>
         </button>
         <div class="chat-header-divider"></div>
-        <button class="btn-action-round chat-icon-btn ${isChatProfileOpen ? 'active' : ''}" id="btn-toggle-chat-profile" title="${isChatProfileOpen ? 'Ocultar painel lateral' : 'Exibir painel lateral'}" aria-label="${isChatProfileOpen ? 'Ocultar painel lateral' : 'Exibir painel lateral'}" aria-expanded="${isChatProfileOpen ? 'true' : 'false'}">
-          <i data-lucide="${isChatProfileOpen ? 'panel-right-close' : 'panel-right-open'}" style="width: 15px; height: 15px;"></i>
+        <button class="btn-action-round chat-icon-btn ${isChatProfileOpen ? 'active' : ''}" id="btn-toggle-chat-profile" title="${isChatProfileOpen ? 'Ocultar detalhes do contato' : 'Exibir detalhes do contato'}" aria-label="${isChatProfileOpen ? 'Ocultar detalhes do contato' : 'Exibir detalhes do contato'}" aria-expanded="${isChatProfileOpen ? 'true' : 'false'}">
+          ${getSidebarToggleIconSvg(isChatProfileOpen)}
         </button>
       </div>
     `;
@@ -1297,10 +1303,65 @@ function setupChatInputs() {
 }
 
 function setupThreadFilters() {
-  // Tabs
+  // Tabs drag-to-scroll & click handling
+  const tabsContainer = document.querySelector('.chat-simplified-tabs');
+  let isDraggingTabs = false;
+  let tabsHasMoved = false;
+  let tabsStartX = 0;
+  let tabsScrollLeft = 0;
+
+  if (tabsContainer) {
+    tabsContainer.addEventListener('mousedown', (e) => {
+      isDraggingTabs = true;
+      tabsHasMoved = false;
+      tabsStartX = e.pageX - tabsContainer.offsetLeft;
+      tabsScrollLeft = tabsContainer.scrollLeft;
+      tabsContainer.classList.add('is-dragging');
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isDraggingTabs) {
+        isDraggingTabs = false;
+        tabsContainer.classList.remove('is-dragging');
+        setTimeout(() => {
+          tabsHasMoved = false;
+        }, 50);
+      }
+    });
+
+    tabsContainer.addEventListener('mousemove', (e) => {
+      if (!isDraggingTabs) return;
+      e.preventDefault();
+      const x = e.pageX - tabsContainer.offsetLeft;
+      const walk = (x - tabsStartX);
+      if (Math.abs(walk) > 4) {
+        tabsHasMoved = true;
+      }
+      tabsContainer.scrollLeft = tabsScrollLeft - walk;
+    });
+
+    tabsContainer.addEventListener('mouseleave', () => {
+      if (isDraggingTabs) {
+        isDraggingTabs = false;
+        tabsContainer.classList.remove('is-dragging');
+      }
+    });
+
+    tabsContainer.addEventListener('wheel', (e) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        tabsContainer.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
+  }
+
   const tabs = document.querySelectorAll('.chat-tab-pill');
   tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
+    tab.addEventListener('click', (e) => {
+      if (tabsHasMoved) {
+        e.preventDefault();
+        return;
+      }
       tabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       chatFilterState.tab = tab.getAttribute('data-tab') || 'all';

@@ -5,6 +5,7 @@ dist
 html/
 prints/
 *.png
+!src/imagens/*.png
 scripts/*.png
 scripts/test-*.js
 scripts/capture-*.js
