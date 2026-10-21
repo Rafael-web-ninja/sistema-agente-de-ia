@@ -720,8 +720,6 @@ export function renderActiveChat() {
     if (cardContato) cardContato.innerHTML = '';
     const cardAtendimento = document.getElementById('chat-attendance-card');
     if (cardAtendimento) cardAtendimento.innerHTML = '';
-    const cardResumo = document.getElementById('chat-ai-summary-card');
-    if (cardResumo) cardResumo.innerHTML = '';
     const strip = document.getElementById('ai-attending-strip');
     if (strip) strip.style.display = 'none';
     const header = document.getElementById('chat-arena-header');
@@ -1115,12 +1113,6 @@ function renderRightColumnCards(thread) {
           <span>${thread.email || 'Sem e-mail'}</span>
         </div>
       </div>
-
-      ${tags.length > 0 ? `
-        <div class="contact-tags-display" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-light);">
-          ${tags.map(t => `<span class="contact-tag-pill"><i data-lucide="tag" style="width: 10px; height: 10px;"></i>${t}</span>`).join('')}
-        </div>
-      ` : ''}
     `;
 
     setupContactActions(thread);
@@ -1154,20 +1146,6 @@ function renderRightColumnCards(thread) {
           </div>
         </div>
       </div>
-    `;
-  }
-
-  // Card 3: Resumo da IA
-  const cardResumo = document.getElementById('chat-ai-summary-card');
-  if (cardResumo) {
-    cardResumo.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13.5px; color: var(--text-main);">
-        <i data-lucide="sparkles" style="width: 15px; height: 15px; color: var(--primary);"></i>
-        <span>Resumo da IA</span>
-      </div>
-      <ul class="ai-summary-points-simplified">
-        ${thread.aiSummary.map(pt => `<li>${pt}</li>`).join('')}
-      </ul>
     `;
   }
 }
@@ -2203,12 +2181,14 @@ function setupContactModals() {
       if (nameVal) thread.name = nameVal;
       if (phoneVal) thread.phone = phoneVal;
       if (emailVal) thread.email = emailVal;
-      thread.notes = notesVal;
+      if (notesVal !== undefined) thread.notes = notesVal;
 
-      if (tagsVal) {
-        thread.tags = tagsVal.split(',').map(s => s.trim()).filter(Boolean);
-      } else {
-        thread.tags = [];
+      if (tagsVal !== undefined) {
+        if (tagsVal) {
+          thread.tags = tagsVal.split(',').map(s => s.trim()).filter(Boolean);
+        } else {
+          thread.tags = [];
+        }
       }
 
       closeAllModals();

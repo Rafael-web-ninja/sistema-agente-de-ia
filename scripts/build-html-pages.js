@@ -1803,10 +1803,6 @@ const profileCardHtml = `
       <span id="side-profile-email">${activeThread.email}</span>
     </div>
   </div>
-
-  <div class="contact-tags-display" id="side-profile-tags" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-light);">
-    ${(activeThread.tags || []).map(t => `<span class="contact-tag-pill"><i data-lucide="tag" style="width: 10px; height: 10px;"></i>${t}</span>`).join('')}
-  </div>
 `;
 conversasSection = conversasSection.replace('<div class="profile-section-card" id="chat-profile-card"></div>', `<div class="profile-section-card" id="chat-profile-card">${profileCardHtml}</div>`);
 
@@ -1833,22 +1829,6 @@ const attendanceCardHtml = `
   </div>
 `;
 conversasSection = conversasSection.replace('<div class="profile-section-card" id="chat-attendance-card"></div>', `<div class="profile-section-card" id="chat-attendance-card">${attendanceCardHtml}</div>`);
-
-const aiSummaryHtml = `
-  <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13.5px; color: var(--text-main);">
-    <i data-lucide="sparkles" style="width: 15px; height: 15px; color: var(--primary);"></i>
-    <span>Resumo da IA</span>
-  </div>
-  <ul class="ai-summary-points-simplified" id="side-ai-summary-list">
-    ${(activeThread.aiSummary || []).map(p => `
-      <li>
-        <span class="point-bullet-star">✦</span>
-        <span>${p}</span>
-      </li>
-    `).join('')}
-  </ul>
-`;
-conversasSection = conversasSection.replace('<div class="profile-section-card" id="chat-ai-summary-card"></div>', `<div class="profile-section-card" id="chat-ai-summary-card">${aiSummaryHtml}</div>`);
 
 const conversasScript = `
   <script>
