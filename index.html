@@ -2407,9 +2407,18 @@
 
                 <div class="chat-input-strip" id="chat-input-strip">
                   <input type="text" id="chat-input-textarea" class="chat-input-field" placeholder="A IA está respondendo. Você pode assumir o atendimento para enviar mensagens.">
+                  <input type="file" id="chat-file-upload-input" style="display: none;">
                   <div class="chat-input-actions">
-                    <button class="tool-icon-btn" title="Emojis"><i data-lucide="smile" style="width: 18px; height: 18px;"></i></button>
-                    <button class="send-simplified-btn" id="btn-send-chat-msg" title="Enviar Mensagem">
+                    <button type="button" class="tool-icon-btn" id="btn-chat-attach" title="Anexar arquivo" aria-label="Anexar arquivo">
+                      <i data-lucide="paperclip" style="width: 18px; height: 18px;"></i>
+                    </button>
+                    <button type="button" class="tool-icon-btn" id="btn-chat-mic" title="Gravar áudio" aria-label="Gravar áudio">
+                      <i data-lucide="mic" style="width: 18px; height: 18px;"></i>
+                    </button>
+                    <button type="button" class="tool-icon-btn" id="btn-chat-emoji" title="Emojis" aria-label="Emojis">
+                      <i data-lucide="smile" style="width: 18px; height: 18px;"></i>
+                    </button>
+                    <button type="button" class="send-simplified-btn" id="btn-send-chat-msg" title="Enviar Mensagem" aria-label="Enviar Mensagem">
                       <i data-lucide="send" style="width: 15px; height: 15px;"></i>
                     </button>
                   </div>

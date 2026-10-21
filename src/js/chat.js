@@ -1278,6 +1278,47 @@ function setupChatInputs() {
       assumeAttendance(thread);
     }
   });
+
+  // Attach button
+  const attachBtn = document.getElementById('btn-chat-attach');
+  const fileInput = document.getElementById('chat-file-upload-input');
+  if (attachBtn && fileInput) {
+    attachBtn.addEventListener('click', () => {
+      fileInput.click();
+    });
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files && fileInput.files[0]) {
+        showToast(`Arquivo "${fileInput.files[0].name}" anexado!`);
+      }
+    });
+  }
+
+  // Mic button (audio recording)
+  const micBtn = document.getElementById('btn-chat-mic');
+  let isRecording = false;
+  if (micBtn) {
+    micBtn.addEventListener('click', () => {
+      isRecording = !isRecording;
+      if (isRecording) {
+        micBtn.style.color = 'var(--status-danger)';
+        showToast('Gravando áudio... Clique novamente para concluir.');
+      } else {
+        micBtn.style.color = '';
+        showToast('Áudio gravado com sucesso e anexado!');
+      }
+    });
+  }
+
+  // Emoji button
+  const emojiBtn = document.getElementById('btn-chat-emoji');
+  if (emojiBtn) {
+    emojiBtn.addEventListener('click', () => {
+      const emojis = ['😊', '👍', '🚀', '👋', '⭐', '🤝'];
+      const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+      input.value += (input.value ? ' ' : '') + randomEmoji;
+      input.focus();
+    });
+  }
 }
 
 function setupThreadFilters() {
