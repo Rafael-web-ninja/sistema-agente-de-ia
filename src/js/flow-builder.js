@@ -392,6 +392,50 @@ export function renderCanvasNodes() {
 }
 
 /**
+ * Normalize AI Agent branches so generic "Condição X" labels become intuitive
+ */
+function normalizeAiAgentBranches(branches) {
+  const smartDefaults = [
+    { triggerType: 'goal_reached', label: 'Atendimento concluído pela IA' },
+    { triggerType: 'human_handoff', label: 'Pediu atendente humano' },
+    { triggerType: 'custom_intent', label: 'Cliente quer fechar / Orçamento' },
+    { triggerType: 'inactivity', label: 'Cliente parou de responder' }
+  ];
+
+  return branches.map((b, idx) => {
+    const rawLabel = (b.label || '').trim();
+    const isGeneric = /^condi[çc][aã]o\s*\d*$/i.test(rawLabel) || !rawLabel;
+    const fallback = smartDefaults[idx % smartDefaults.length];
+
+    if (isGeneric) {
+      b.label = fallback.label;
+      b.triggerType = b.triggerType || fallback.triggerType;
+    } else if (!b.triggerType) {
+      const lower = rawLabel.toLowerCase();
+      if (lower.includes('humano') || lower.includes('atendente') || lower.includes('transbordo')) {
+        b.triggerType = 'human_handoff';
+      } else if (lower.includes('inativ') || lower.includes('parou') || lower.includes('tempo') || lower.includes('min')) {
+        b.triggerType = 'inactivity';
+      } else if (lower.includes('fechar') || lower.includes('proposta') || lower.includes('agend') || lower.includes('orçamento')) {
+        b.triggerType = 'custom_intent';
+      } else {
+        b.triggerType = 'goal_reached';
+      }
+    }
+    return b;
+  });
+}
+
+function getBranchTriggerMeta(triggerType) {
+  const map = {
+    goal_reached: { icon: 'check-circle-2', color: '#00A868', badge: 'Concluído', hint: 'Quando a IA responder tudo e concluir o objetivo' },
+    human_handoff: { icon: 'user-check', color: '#EC4899', badge: 'Humano', hint: 'Quando o cliente pedir uma pessoa ou a IA não souber responder' },
+    custom_intent: { icon: 'sparkles', color: '#8B5CF6', badge: 'Intenção', hint: 'Quando a IA identificar um interesse específico na conversa' },
+    inactivity: { icon: 'clock', color: '#F59E0B', badge: 'Ausência', hint: 'Quando o cliente ficar sem responder pelo tempo limite' }
+  };
+  return map[triggerType] || map.custom_intent;
+}
+/**
  * Create HTML element for a node
  */
 function createNodeElement(node) {
@@ -422,12 +466,15 @@ function createNodeElement(node) {
       </div>
     `;
   } else if (node.type === 'ai_agent') {
-    const branches = node.data?.branches || [
-      { id: 'b-success', label: 'Resposta bem-sucedida', ctr: '82%' },
-      { id: 'b-inactivity', label: 'Inatividade (30 min)', ctr: '0%' },
-      { id: 'b-human', label: 'Solicitação de atendente', ctr: '12%' },
-      { id: 'b-stop', label: 'Condição de parada', ctr: '6%' }
-    ];
+    if (!node.data) node.data = {};
+    if (!node.data.branches || node.data.branches.length === 0) {
+      node.data.branches = [
+        { id: 'b-success', triggerType: 'goal_reached', label: 'Atendimento concluído pela IA' },
+        { id: 'b-human', triggerType: 'human_handoff', label: 'Pediu atendente humano' },
+        { id: 'b-inactivity', triggerType: 'inactivity', label: 'Cliente parou de responder' }
+      ];
+    }
+    const branches = normalizeAiAgentBranches(node.data.branches);
 
     const agentName = node.agentName || node.title || 'Agente de IA';
     const agentsList = zapChatData?.agentes?.list || [];
@@ -445,33 +492,43 @@ function createNodeElement(node) {
           </div>
           <div class="node-header-title-wrap">
             <span class="node-header-title">${agentName}</span>
-            <span class="node-header-badge">${node.executions || 1240} Enviado</span>
+            <span class="node-header-badge">IA Conversacional 24/7</span>
           </div>
         </div>
 
         <div class="node-body">
-          <div class="node-meta-row">
-            <span class="node-meta-label">Método</span>
-            <span class="node-meta-val">${node.data?.method || 'Agente de IA Conversacional'}</span>
-          </div>
           <div class="node-meta-block">
-            <span class="node-meta-label">Agente Integrado</span>
-            <p class="node-instructions-preview" style="display:flex; align-items:center; gap:6px;">
+            <span class="node-meta-label">Agente responsável pelo atendimento</span>
+            <p class="node-instructions-preview" style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
               <strong style="color:var(--text-main);">${agentName}</strong>
-              <span style="font-size:10px; color:var(--text-muted);">${matchedAgent ? `(${matchedAgent.role})` : '(Configurado em Agentes)'}</span>
+              <span style="font-size:10px; color:var(--text-muted);">${matchedAgent ? matchedAgent.role : 'Ativo'}</span>
             </p>
           </div>
 
+          <div class="node-branches-section-label">
+            <span>Caminhos de saída (Quando avançar):</span>
+          </div>
+
           <div class="node-branches-list">
-            ${branches.map(b => `
-              <div class="node-branch-item">
-                <span class="branch-label">${b.label}</span>
-                <span class="branch-ctr">${b.ctr || '0%'}</span>
-                <div class="node-port port-out-branch" data-node-id="${node.id}" data-port-id="${b.id}" data-port-type="out" title="Conectar saída: ${b.label}">
-                  <i data-lucide="chevron-right" style="width: 10px; height: 10px;"></i>
+            ${branches.map(b => {
+              const meta = getBranchTriggerMeta(b.triggerType);
+              const conn = currentBot?.canvasFlow?.connections?.find(c => c.fromNode === node.id && c.fromPort === b.id);
+              const targetNode = conn ? currentBot?.canvasFlow?.nodes?.find(n => n.id === conn.toNode) : null;
+              return `
+                <div class="node-branch-item">
+                  <div class="node-branch-left">
+                    <i data-lucide="${meta.icon}" style="width: 12px; height: 12px; color: ${meta.color}; flex-shrink: 0;"></i>
+                    <span class="branch-label">${b.label}</span>
+                  </div>
+                  <span class="branch-target-pill ${targetNode ? 'connected' : ''}" title="${targetNode ? `Conectado a: ${targetNode.title}` : 'Arraste o ponto ao lado para conectar'}">
+                    ${targetNode ? targetNode.title : 'Conectar →'}
+                  </span>
+                  <div class="node-port port-out-branch" data-node-id="${node.id}" data-port-id="${b.id}" data-port-type="out" title="Arraste para conectar a saída: ${b.label}">
+                    <i data-lucide="chevron-right" style="width: 10px; height: 10px;"></i>
+                  </div>
                 </div>
-              </div>
-            `).join('')}
+              `;
+            }).join('')}
           </div>
         </div>
       </div>
@@ -622,6 +679,27 @@ function createNodeElement(node) {
             <div class="node-media-preview delay">
               <i data-lucide="clock" style="width: 12px; height: 12px;"></i>
               <span>Aguardar ${item.seconds || 3}s (Digitando...)</span>
+            </div>
+          `;
+        } else if (item.type === 'link') {
+          return `
+            <div class="node-media-preview link">
+              <i data-lucide="link" style="width: 12px; height: 12px;"></i>
+              <span>${item.buttonText || item.url || 'Link / Botão'}</span>
+            </div>
+          `;
+        } else if (item.type === 'location') {
+          return `
+            <div class="node-media-preview location">
+              <i data-lucide="map-pin" style="width: 12px; height: 12px;"></i>
+              <span>${item.locationName || item.address || 'Localização'}</span>
+            </div>
+          `;
+        } else if (item.type === 'contact') {
+          return `
+            <div class="node-media-preview contact">
+              <i data-lucide="user-check" style="width: 12px; height: 12px;"></i>
+              <span>${item.contactName || item.contactPhone || 'Cartão de Contato'}</span>
             </div>
           `;
         }
@@ -1381,7 +1459,13 @@ function createConnection(fromNode, fromPort, toNode, toPort) {
       toPort
     };
     currentBot.canvasFlow.connections.push(newConn);
+    renderCanvasNodes();
+    if (window.lucide) window.lucide.createIcons();
     renderAllCables();
+    if (selectedNodeId) {
+      const selNode = currentBot.canvasFlow.nodes.find(n => n.id === selectedNodeId);
+      if (selNode) populateInspector(selNode);
+    }
     if (window.showToast) window.showToast('Blocos conectados com sucesso!');
   }
 }
@@ -1642,6 +1726,90 @@ function renderConteudoItemHtml(item, index, total) {
         </div>
       </div>
     `;
+  } else if (item.type === 'link') {
+    return `
+      <div class="conteudo-item-card" data-item-id="${item.id}" data-item-type="link">
+        <div class="conteudo-item-header">
+          <span class="conteudo-type-badge link">
+            <i data-lucide="link" style="width: 11px; height: 11px;"></i> Link / Botão ${total > 1 ? `#${index + 1}` : ''}
+          </span>
+          <div class="conteudo-item-actions">
+            ${index > 0 ? `<button type="button" class="conteudo-btn-action btn-move-item-up" data-item-id="${item.id}" title="Mover para cima"><i data-lucide="arrow-up" style="width:12px;height:12px;"></i></button>` : ''}
+            ${index < total - 1 ? `<button type="button" class="conteudo-btn-action btn-move-item-down" data-item-id="${item.id}" title="Mover para baixo"><i data-lucide="arrow-down" style="width:12px;height:12px;"></i></button>` : ''}
+            <button type="button" class="conteudo-btn-action delete btn-delete-conteudo-item" data-item-id="${item.id}" title="Excluir Link / Botão">
+              <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div>
+            <label style="font-size:11px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:3px;">Texto do Botão / Chamada</label>
+            <input type="text" class="form-input conteudo-link-text" data-item-id="${item.id}" value="${item.buttonText || ''}" placeholder="Ex: Acessar Catálogo / Site" />
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:3px;">URL de Destino</label>
+            <input type="url" class="form-input conteudo-link-url" data-item-id="${item.id}" value="${item.url || ''}" placeholder="https://seusite.com.br" />
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (item.type === 'location') {
+    return `
+      <div class="conteudo-item-card" data-item-id="${item.id}" data-item-type="location">
+        <div class="conteudo-item-header">
+          <span class="conteudo-type-badge location">
+            <i data-lucide="map-pin" style="width: 11px; height: 11px;"></i> Localização ${total > 1 ? `#${index + 1}` : ''}
+          </span>
+          <div class="conteudo-item-actions">
+            ${index > 0 ? `<button type="button" class="conteudo-btn-action btn-move-item-up" data-item-id="${item.id}" title="Mover para cima"><i data-lucide="arrow-up" style="width:12px;height:12px;"></i></button>` : ''}
+            ${index < total - 1 ? `<button type="button" class="conteudo-btn-action btn-move-item-down" data-item-id="${item.id}" title="Mover para baixo"><i data-lucide="arrow-down" style="width:12px;height:12px;"></i></button>` : ''}
+            <button type="button" class="conteudo-btn-action delete btn-delete-conteudo-item" data-item-id="${item.id}" title="Excluir Localização">
+              <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div>
+            <label style="font-size:11px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:3px;">Nome do Local / Estabelecimento</label>
+            <input type="text" class="form-input conteudo-loc-name" data-item-id="${item.id}" value="${item.locationName || ''}" placeholder="Ex: Matriz São Paulo" />
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:3px;">Endereço ou Link do Google Maps</label>
+            <input type="text" class="form-input conteudo-loc-address" data-item-id="${item.id}" value="${item.address || ''}" placeholder="Ex: Av. Paulista, 1000 - São Paulo, SP" />
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (item.type === 'contact') {
+    return `
+      <div class="conteudo-item-card" data-item-id="${item.id}" data-item-type="contact">
+        <div class="conteudo-item-header">
+          <span class="conteudo-type-badge contact">
+            <i data-lucide="user-check" style="width: 11px; height: 11px;"></i> Contato ${total > 1 ? `#${index + 1}` : ''}
+          </span>
+          <div class="conteudo-item-actions">
+            ${index > 0 ? `<button type="button" class="conteudo-btn-action btn-move-item-up" data-item-id="${item.id}" title="Mover para cima"><i data-lucide="arrow-up" style="width:12px;height:12px;"></i></button>` : ''}
+            ${index < total - 1 ? `<button type="button" class="conteudo-btn-action btn-move-item-down" data-item-id="${item.id}" title="Mover para baixo"><i data-lucide="arrow-down" style="width:12px;height:12px;"></i></button>` : ''}
+            <button type="button" class="conteudo-btn-action delete btn-delete-conteudo-item" data-item-id="${item.id}" title="Excluir Contato">
+              <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div>
+            <label style="font-size:11px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:3px;">Nome do Contato (Cartão vCard)</label>
+            <input type="text" class="form-input conteudo-contact-name" data-item-id="${item.id}" value="${item.contactName || ''}" placeholder="Ex: Consultor Comercial ZapChat" />
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:3px;">Telefone / WhatsApp</label>
+            <input type="text" class="form-input conteudo-contact-phone" data-item-id="${item.id}" value="${item.contactPhone || ''}" placeholder="Ex: +55 11 99999-9999" />
+          </div>
+        </div>
+      </div>
+    `;
   }
   return '';
 }
@@ -1718,14 +1886,14 @@ function populateInspector(node) {
     const currentAgent = agentsList.find(ag => ag.name === node.agentName || ag.id === node.agentId) || agentsList[0];
 
     if (!node.data) node.data = {};
-    if (!node.data.branches) {
+    if (!node.data.branches || node.data.branches.length === 0) {
       node.data.branches = [
-        { id: `b-${Date.now().toString(36)}-1`, label: 'Resposta bem-sucedida', ctr: '82%' },
-        { id: `b-${Date.now().toString(36)}-2`, label: 'Inatividade (15 min)', ctr: '0%' },
-        { id: `b-${Date.now().toString(36)}-3`, label: 'Transbordo Humano', ctr: '12%' },
-        { id: `b-${Date.now().toString(36)}-4`, label: 'Condição de parada', ctr: '6%' }
+        { id: `b-${Date.now().toString(36)}-1`, triggerType: 'goal_reached', label: 'Atendimento concluído pela IA' },
+        { id: `b-${Date.now().toString(36)}-2`, triggerType: 'human_handoff', label: 'Pediu atendente humano' },
+        { id: `b-${Date.now().toString(36)}-3`, triggerType: 'inactivity', label: 'Cliente parou de responder' }
       ];
     }
+    node.data.branches = normalizeAiAgentBranches(node.data.branches);
 
     formHtml = `
       <div class="form-group">
@@ -1734,7 +1902,7 @@ function populateInspector(node) {
       </div>
 
       <div class="form-group">
-        <label class="form-label">Agente de IA Integrado</label>
+        <label class="form-label">Qual Agente de IA vai atender?</label>
         <select class="form-select" id="insp-input-agent">
           ${agentsList.map(ag => `
             <option value="${ag.name}" ${ag.name === node.agentName ? 'selected' : ''}>
@@ -1742,7 +1910,7 @@ function populateInspector(node) {
             </option>
           `).join('')}
         </select>
-        <span class="form-hint">Selecione o agente configurado na aba Agentes.</span>
+        <span class="form-hint">O agente usará o treinamento e instruções definidos na aba <strong>Agentes</strong>.</span>
       </div>
 
       <!-- Preview do Agente Selecionado -->
@@ -1761,40 +1929,81 @@ function populateInspector(node) {
         </div>
         <div style="font-size:11px; color:var(--text-secondary); line-height:1.4; padding-top:6px; border-top:1px dashed var(--border); display:flex; align-items:center; justify-content:space-between;">
           <span>Canal: <strong>${currentAgent?.channel || 'WhatsApp'}</strong></span>
-          <span style="color:var(--text-muted); font-size:10px;">Instruções definidas em Agentes</span>
+          <span style="color:var(--text-muted); font-size:10px;">Responde dúvidas livremente</span>
         </div>
       </div>
 
+      <!-- Seção Intuitiva de Caminhos de Saída da IA -->
       <div class="form-group">
-        <div class="insp-list-header">
-          <label class="form-label" style="margin:0;">Ramificações & Saídas (${node.data.branches.length})</label>
+        <div class="insp-list-header" style="margin-bottom: 6px;">
+          <div>
+            <label class="form-label" style="margin:0; display:flex; align-items:center; gap:5px;">
+              <i data-lucide="git-branch" style="width: 14px; height: 14px; color: var(--ai-purple);"></i>
+              <span>Caminhos de Saída da IA (${node.data.branches.length})</span>
+            </label>
+          </div>
           <button type="button" class="btn btn-secondary btn-xs" id="btn-insp-add-branch">
             <i data-lucide="plus" style="width: 12px; height: 12px;"></i>
-            <span>Nova Saída</span>
+            <span>Adicionar Saída</span>
           </button>
         </div>
-        <div id="insp-branches-container" class="insp-items-list">
-          ${node.data.branches.map((b) => `
-            <div class="insp-item-row" data-branch-id="${b.id}">
-              <span class="insp-item-dot ai"></span>
-              <input type="text" class="form-input insp-branch-input" data-branch-id="${b.id}" value="${b.label}" placeholder="Condição de saída" />
-              <button type="button" class="insp-btn-delete-item insp-btn-delete-branch" data-branch-id="${b.id}" title="Excluir Condição">
-                <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
-              </button>
-            </div>
-          `).join('')}
+
+        <div class="ai-exit-explainer-box">
+          <i data-lucide="info" style="width: 14px; height: 14px; color: #7C3AED; flex-shrink: 0; margin-top: 1px;"></i>
+          <span>Defina <strong>quando a IA deve encerrar sua participação</strong> e encaminhar o cliente para outro bloco (ex: transferir para humano ou criar negócio no CRM).</span>
         </div>
-        <span class="form-hint">Cada ramificação cria um ponto de conexão no card.</span>
+
+        <div id="insp-branches-container" class="ai-exit-cards-list">
+          ${node.data.branches.map((b, idx) => {
+            const tType = b.triggerType || 'custom_intent';
+            const meta = getBranchTriggerMeta(tType);
+            const conn = currentBot?.canvasFlow?.connections?.find(c => c.fromNode === node.id && c.fromPort === b.id);
+            const targetNode = conn ? currentBot?.canvasFlow?.nodes?.find(n => n.id === conn.toNode) : null;
+
+            return `
+              <div class="ai-exit-card" data-branch-id="${b.id}">
+                <div class="ai-exit-card-top">
+                  <span class="ai-exit-step-badge" style="color: ${meta.color}; background: ${meta.color}18;">
+                    <i data-lucide="${meta.icon}" style="width: 11px; height: 11px;"></i>
+                    Saída ${idx + 1}
+                  </span>
+                  <span class="ai-exit-conn-status ${targetNode ? 'is-connected' : ''}">
+                    ${targetNode ? `🔗 Vai para: <strong>${targetNode.title}</strong>` : '⚪ Ponto disponível no card'}
+                  </span>
+                  <button type="button" class="insp-btn-delete-item insp-btn-delete-branch" data-branch-id="${b.id}" title="Remover este caminho de saída">
+                    <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+                  </button>
+                </div>
+
+                <div class="ai-exit-field">
+                  <label class="ai-exit-mini-label">Quando acionar esta saída?</label>
+                  <select class="form-select insp-branch-trigger-select" data-branch-id="${b.id}">
+                    <option value="goal_reached" ${tType === 'goal_reached' ? 'selected' : ''}>✅ Quando a IA concluir o atendimento / objetivo</option>
+                    <option value="human_handoff" ${tType === 'human_handoff' ? 'selected' : ''}>👤 Quando o cliente pedir atendente humano</option>
+                    <option value="custom_intent" ${tType === 'custom_intent' ? 'selected' : ''}>🎯 Quando o cliente demonstrar uma intenção específica</option>
+                    <option value="inactivity" ${tType === 'inactivity' ? 'selected' : ''}>⏰ Quando o cliente parar de responder (Inatividade)</option>
+                  </select>
+                </div>
+
+                <div class="ai-exit-field">
+                  <label class="ai-exit-mini-label">Nome da saída / O que identificar:</label>
+                  <input type="text" class="form-input insp-branch-input" data-branch-id="${b.id}" value="${b.label}" placeholder="Ex: Cliente quer fechar plano Pro..." />
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
       </div>
 
       <div class="form-group">
         <label class="form-label">Tempo Limite de Inatividade</label>
         <select class="form-select" id="insp-input-timeout">
-          <option value="15" ${(!node.data?.timeout || node.data?.timeout === '15') ? 'selected' : ''}>15 minutos (Padrão)</option>
-          <option value="30" ${node.data?.timeout === '30' ? 'selected' : ''}>30 minutos</option>
-          <option value="60" ${node.data?.timeout === '60' ? 'selected' : ''}>1 hora</option>
-          <option value="1440" ${node.data?.timeout === '1440' ? 'selected' : ''}>24 horas</option>
+          <option value="15" ${(!node.data?.timeout || node.data?.timeout === '15') ? 'selected' : ''}>15 minutos sem resposta (Padrão)</option>
+          <option value="30" ${node.data?.timeout === '30' ? 'selected' : ''}>30 minutos sem resposta</option>
+          <option value="60" ${node.data?.timeout === '60' ? 'selected' : ''}>1 hora sem resposta</option>
+          <option value="1440" ${node.data?.timeout === '1440' ? 'selected' : ''}>24 horas sem resposta</option>
         </select>
+        <span class="form-hint">Tempo que a IA aguarda caso você utilize uma saída por inatividade.</span>
       </div>
     `;
   } else if (node.type === 'action') {
@@ -2126,6 +2335,27 @@ function populateInspector(node) {
                 <i data-lucide="clock" style="width: 20px; height: 20px;"></i>
               </div>
               <span class="conteudo-add-label">Atraso</span>
+            </button>
+
+            <button type="button" class="conteudo-add-btn btn-add-conteudo-type" data-add-type="link" title="Adicionar Link ou Botão">
+              <div class="conteudo-add-icon">
+                <i data-lucide="link" style="width: 20px; height: 20px;"></i>
+              </div>
+              <span class="conteudo-add-label">Link/Botão</span>
+            </button>
+
+            <button type="button" class="conteudo-add-btn btn-add-conteudo-type" data-add-type="location" title="Adicionar Localização">
+              <div class="conteudo-add-icon">
+                <i data-lucide="map-pin" style="width: 20px; height: 20px;"></i>
+              </div>
+              <span class="conteudo-add-label">Localização</span>
+            </button>
+
+            <button type="button" class="conteudo-add-btn btn-add-conteudo-type" data-add-type="contact" title="Adicionar Cartão de Contato">
+              <div class="conteudo-add-icon">
+                <i data-lucide="contact" style="width: 20px; height: 20px;"></i>
+              </div>
+              <span class="conteudo-add-label">Contato</span>
             </button>
           </div>
         </div>
@@ -2475,20 +2705,58 @@ function populateInspector(node) {
       node.data.timeout = e.target.value;
     });
 
-    // Add Branch
+    // Add Branch with smart presets instead of "Condição X"
     document.getElementById('btn-insp-add-branch')?.addEventListener('click', () => {
       if (!node.data) node.data = {};
       if (!node.data.branches) node.data.branches = [];
       const newBranchId = `b-${Date.now().toString(36)}`;
+
+      const presets = [
+        { triggerType: 'custom_intent', label: 'Cliente quer orçamento / fechar' },
+        { triggerType: 'human_handoff', label: 'Pediu atendente humano' },
+        { triggerType: 'goal_reached', label: 'Atendimento concluído pela IA' },
+        { triggerType: 'inactivity', label: 'Cliente parou de responder' }
+      ];
+      const existingTypes = node.data.branches.map(b => b.triggerType);
+      const nextPreset = presets.find(p => !existingTypes.includes(p.triggerType)) || {
+        triggerType: 'custom_intent',
+        label: 'Intenção específica identificada'
+      };
+
       node.data.branches.push({
         id: newBranchId,
-        label: `Condição ${node.data.branches.length + 1}`,
+        triggerType: nextPreset.triggerType,
+        label: nextPreset.label,
         ctr: '0%'
       });
       renderCanvasNodes();
       renderAllCables();
       populateInspector(node);
-      if (window.showToast) window.showToast('Nova condição de saída adicionada!');
+      if (window.showToast) window.showToast('Novo caminho de saída adicionado!');
+    });
+
+    // Trigger Type Select change
+    bodyEl.querySelectorAll('.insp-branch-trigger-select').forEach(select => {
+      select.addEventListener('change', () => {
+        const branchId = select.getAttribute('data-branch-id');
+        const branch = node.data?.branches?.find(b => b.id === branchId);
+        if (!branch) return;
+
+        branch.triggerType = select.value;
+        const defaultLabelsByType = {
+          goal_reached: 'Atendimento concluído pela IA',
+          human_handoff: 'Pediu atendente humano',
+          custom_intent: 'Cliente quer orçamento / fechar',
+          inactivity: 'Cliente parou de responder'
+        };
+        if (defaultLabelsByType[select.value]) {
+          branch.label = defaultLabelsByType[select.value];
+        }
+
+        renderCanvasNodes();
+        renderAllCables();
+        populateInspector(node);
+      });
     });
 
     // Delete Branch
@@ -2592,6 +2860,15 @@ function populateInspector(node) {
         } else if (addType === 'delay') {
           newItem.seconds = 3;
           newItem.typing = true;
+        } else if (addType === 'link') {
+          newItem.buttonText = 'Acessar Site';
+          newItem.url = 'https://';
+        } else if (addType === 'location') {
+          newItem.locationName = 'Nossa Unidade';
+          newItem.address = '';
+        } else if (addType === 'contact') {
+          newItem.contactName = 'Consultor ZapChat';
+          newItem.contactPhone = '+55 11 99999-9999';
         }
 
         node.data.items.push(newItem);
@@ -2852,6 +3129,44 @@ function populateInspector(node) {
         if (item) {
           item.simulatedVoice = chk.checked;
         }
+      });
+    });
+
+    // 9. Link/Botão, Localização e Contato em Tempo Real
+    bodyEl.querySelectorAll('.conteudo-link-text').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const item = node.data.items.find(i => i.id === inp.getAttribute('data-item-id'));
+        if (item) { item.buttonText = inp.value; renderCanvasNodes(); if (window.lucide) window.lucide.createIcons(); }
+      });
+    });
+    bodyEl.querySelectorAll('.conteudo-link-url').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const item = node.data.items.find(i => i.id === inp.getAttribute('data-item-id'));
+        if (item) { item.url = inp.value; renderCanvasNodes(); if (window.lucide) window.lucide.createIcons(); }
+      });
+    });
+    bodyEl.querySelectorAll('.conteudo-loc-name').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const item = node.data.items.find(i => i.id === inp.getAttribute('data-item-id'));
+        if (item) { item.locationName = inp.value; renderCanvasNodes(); if (window.lucide) window.lucide.createIcons(); }
+      });
+    });
+    bodyEl.querySelectorAll('.conteudo-loc-address').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const item = node.data.items.find(i => i.id === inp.getAttribute('data-item-id'));
+        if (item) { item.address = inp.value; renderCanvasNodes(); if (window.lucide) window.lucide.createIcons(); }
+      });
+    });
+    bodyEl.querySelectorAll('.conteudo-contact-name').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const item = node.data.items.find(i => i.id === inp.getAttribute('data-item-id'));
+        if (item) { item.contactName = inp.value; renderCanvasNodes(); if (window.lucide) window.lucide.createIcons(); }
+      });
+    });
+    bodyEl.querySelectorAll('.conteudo-contact-phone').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const item = node.data.items.find(i => i.id === inp.getAttribute('data-item-id'));
+        if (item) { item.contactPhone = inp.value; renderCanvasNodes(); if (window.lucide) window.lucide.createIcons(); }
       });
     });
   }

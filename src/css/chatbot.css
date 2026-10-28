@@ -1962,34 +1962,155 @@
 }
 
 /* Branches list in AI Agent / Menu */
+.node-branches-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
 .node-branches-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .node-branch-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 6px;
   background: var(--bg-main);
   border: 1px solid var(--border);
-  padding: 6px 10px;
+  padding: 7px 10px;
   border-radius: 8px;
   position: relative;
   font-size: 11.5px;
 }
 
+.node-branch-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
 .branch-label {
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.branch-target-pill {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  padding: 2px 6px;
+  border-radius: 999px;
+  margin-right: 10px;
+  white-space: nowrap;
+  max-width: 95px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.branch-target-pill.connected {
+  color: #7C3AED;
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.25);
 }
 
 .branch-ctr {
   font-size: 10.5px;
   color: var(--text-muted);
   margin-right: 14px;
+}
+
+/* Intuitive AI Exit Cards in Inspector */
+.ai-exit-explainer-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(124, 58, 237, 0.07);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  border-radius: 9px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.ai-exit-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-exit-card {
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.15s ease;
+}
+
+.ai-exit-card:hover {
+  border-color: rgba(124, 58, 237, 0.4);
+}
+
+.ai-exit-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ai-exit-step-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.ai-exit-conn-status {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  flex: 1;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-exit-conn-status.is-connected {
+  color: var(--primary);
+}
+
+.ai-exit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ai-exit-mini-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .node-action-card {
@@ -2625,6 +2746,21 @@
 .conteudo-type-badge.delay {
   background: rgba(249, 115, 22, 0.1);
   color: #EA580C;
+}
+
+.conteudo-type-badge.link {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563EB;
+}
+
+.conteudo-type-badge.location {
+  background: rgba(225, 29, 72, 0.1);
+  color: #E11D48;
+}
+
+.conteudo-type-badge.contact {
+  background: rgba(13, 148, 136, 0.1);
+  color: #0D9488;
 }
 
 .conteudo-item-actions {
