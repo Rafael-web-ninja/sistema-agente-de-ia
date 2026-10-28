@@ -8,7 +8,16 @@
   flex-direction: column;
   gap: 20px;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   padding-bottom: 30px;
+}
+
+#crm-content-area {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  position: relative;
 }
 
 /* 4 KPI Cards Grid - Cohesive with .leads-kpi-row */
@@ -95,13 +104,66 @@
 /* ==========================================================================
    KANBAN BOARD PIPELINE
    ========================================================================== */
+.crm-pipeline-wrapper {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
 .crm-pipeline-board {
   display: flex;
   gap: 16px;
   overflow-x: auto;
-  padding-bottom: 16px;
+  overflow-y: hidden;
+  padding-bottom: 12px;
   min-height: calc(100vh - 380px);
   align-items: flex-start;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.crm-pipeline-board::-webkit-scrollbar {
+  display: none;
+}
+
+/* Floating Left / Right Navigation Buttons */
+.crm-board-nav-btn {
+  position: absolute;
+  top: 240px;
+  z-index: 20;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.crm-board-nav-btn:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  transform: scale(1.06);
+}
+
+.crm-board-nav-btn.prev {
+  left: -14px;
+}
+
+.crm-board-nav-btn.next {
+  right: -14px;
+}
+
+.crm-board-nav-btn.disabled {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Kanban Column */
@@ -622,90 +684,77 @@
 /* ==========================================================================
    MODAL CRM: DETALHES DA OPORTUNIDADE
    ========================================================================== */
-.crm-deal-modal-body {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 24px;
+.crm-deal-modal-dialog {
+  max-width: 660px !important;
+  width: 94% !important;
+  padding: 22px 24px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
 
-.crm-deal-modal-stepper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: relative;
-  margin-bottom: 6px;
+.crm-deal-modal-dialog::-webkit-scrollbar {
+  display: none;
 }
 
-.crm-deal-modal-stepper::before {
-  content: '';
-  position: absolute;
-  top: 15px;
-  left: 24px;
-  right: 24px;
-  height: 2px;
-  background: var(--border);
-  z-index: 1;
+.crm-deal-modal-header {
+  margin-bottom: 16px !important;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
 }
 
-.crm-stepper-step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  position: relative;
-  z-index: 2;
-  cursor: pointer;
-  transition: transform 0.15s ease;
-}
-
-.crm-stepper-step:hover {
-  transform: translateY(-1px);
-}
-
-.crm-stepper-circle {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--bg-card);
-  border: 2px solid var(--border);
-  color: var(--text-muted);
+.crm-deal-modal-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--primary-light);
+  color: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.crm-deal-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0;
+}
+
+.crm-deal-top-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.crm-deal-sub-row {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 0.9fr;
+  gap: 12px;
+}
+
+.crm-value-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.crm-currency-prefix {
+  position: absolute;
+  left: 11px;
+  font-size: 13px;
   font-weight: 700;
-  transition: var(--transition);
-}
-
-.crm-stepper-step.completed .crm-stepper-circle {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-}
-
-.crm-stepper-step.active .crm-stepper-circle {
-  border-color: var(--primary);
   color: var(--primary);
-  box-shadow: 0 0 0 4px var(--primary-glow);
-}
-
-.crm-stepper-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.crm-stepper-step.active .crm-stepper-label {
-  color: var(--primary);
+  pointer-events: none;
 }
 
 .crm-modal-grid-info {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 12px 14px;
   background: var(--bg-card-alt);
-  padding: 18px;
+  padding: 15px 16px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
 }
@@ -713,7 +762,8 @@
 .crm-info-item {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+  min-width: 0;
 }
 
 .crm-info-label {
@@ -721,12 +771,80 @@
   color: var(--text-muted);
   font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .crm-info-val {
   font-size: 13.5px;
   font-weight: 600;
   color: var(--text-main);
+}
+
+.crm-inline-edit-input,
+.crm-inline-edit-select {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 11px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+  height: 36px;
+  box-sizing: border-box;
+}
+
+.crm-inline-edit-input:hover,
+.crm-inline-edit-select:hover {
+  border-color: var(--border-focus);
+}
+
+.crm-inline-edit-input:focus,
+.crm-inline-edit-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-glow);
+}
+
+.crm-inline-edit-input.title-input {
+  font-size: 15px;
+  font-weight: 700;
+  height: 38px;
+}
+
+.crm-inline-edit-input.value-input {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary);
+  text-align: right;
+  padding-left: 34px;
+  height: 38px;
+}
+
+/* Remove number input spinners */
+.crm-inline-edit-input.value-input::-webkit-outer-spin-button,
+.crm-inline-edit-input.value-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.crm-deal-modal-footer {
+  margin-top: 18px;
+  padding: 14px 0 0 0 !important;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.crm-deal-modal-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .crm-modal-timeline {

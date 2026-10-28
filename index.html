@@ -5080,101 +5080,125 @@
     </div>
   </div>
 
-  <!-- Modal 17: Visualizar Detalhes da Oportunidade CRM -->
+  <!-- Modal 17: Visualizar / Editar Detalhes da Oportunidade CRM -->
   <div class="modal-backdrop" id="modal-view-deal">
-    <div class="modal-dialog" style="max-width: 620px;">
-      <div class="modal-header">
-        <h3 class="modal-title">Detalhes da Oportunidade</h3>
+    <div class="modal-dialog crm-deal-modal-dialog">
+      <div class="modal-header crm-deal-modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="crm-deal-modal-icon">
+            <i data-lucide="briefcase" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 16px;">Detalhes da Oportunidade</h3>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">Visualize e edite todas as informações deste negócio</p>
+          </div>
+        </div>
         <button type="button" class="modal-close" aria-label="Fechar">&times;</button>
       </div>
-      <div class="crm-deal-modal-body">
-        <!-- Visual Funnel Stepper -->
-        <div class="crm-deal-modal-stepper" id="view-deal-stepper">
-          <!-- Populated dynamically by crm.js -->
-        </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-          <div>
-            <h2 id="view-deal-title" style="font-size: 18px; font-weight: 700; color: var(--text-main); margin: 0 0 4px 0;">-</h2>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span id="view-deal-company" style="font-size: 13px; color: var(--text-muted);">-</span>
-              <span style="font-size: 11px; padding: 2px 8px; border-radius: 6px; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-muted);" id="view-deal-channel">-</span>
+      <div class="crm-deal-modal-body">
+        <!-- Row 1: Title & Value -->
+        <div class="crm-deal-top-row">
+          <div class="crm-info-item" style="flex: 1;">
+            <label class="crm-info-label" for="view-deal-title">Título da Oportunidade</label>
+            <input type="text" id="view-deal-title" class="crm-inline-edit-input title-input" placeholder="Título da oportunidade" />
+          </div>
+          <div class="crm-info-item" style="width: 175px; flex-shrink: 0;">
+            <label class="crm-info-label" for="view-deal-value">Valor Estimado</label>
+            <div class="crm-value-input-wrap">
+              <span class="crm-currency-prefix">R$</span>
+              <input type="number" id="view-deal-value" class="crm-inline-edit-input value-input" placeholder="0" step="100" />
             </div>
           </div>
-          <div style="text-align: right;">
-            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Valor Estimado</span>
-            <div id="view-deal-value" style="font-size: 22px; font-weight: 700; color: var(--primary-color);">-</div>
+        </div>
+
+        <!-- Row 2: Company, Stage & Channel -->
+        <div class="crm-deal-sub-row">
+          <div class="crm-info-item">
+            <label class="crm-info-label" for="view-deal-company">Empresa / Negócio</label>
+            <input type="text" id="view-deal-company" class="crm-inline-edit-input" placeholder="Empresa ou negócio" />
+          </div>
+          <div class="crm-info-item">
+            <label class="crm-info-label" for="view-deal-stage">Status no Funil</label>
+            <select id="view-deal-stage" class="crm-inline-edit-select">
+              <option value="prospeccao">Prospecção</option>
+              <option value="qualificacao">Qualificação</option>
+              <option value="proposta">Proposta Enviada</option>
+              <option value="negociacao">Negociação</option>
+              <option value="ganho">Fechado Ganho</option>
+            </select>
+          </div>
+          <div class="crm-info-item">
+            <label class="crm-info-label" for="view-deal-channel">Canal de Origem</label>
+            <select id="view-deal-channel" class="crm-inline-edit-select">
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Instagram">Instagram</option>
+              <option value="Site">Site</option>
+            </select>
           </div>
         </div>
 
-        <!-- Info Grid -->
+        <!-- Info Grid (Editable Fields) -->
         <div class="crm-modal-grid-info">
           <div class="crm-info-item">
-            <span class="crm-info-label">Contato Principal</span>
-            <span class="crm-info-val" id="view-deal-contact">-</span>
+            <label class="crm-info-label" for="view-deal-contact">Contato Principal</label>
+            <input type="text" class="crm-inline-edit-input" id="view-deal-contact" placeholder="Nome do contato" />
           </div>
           <div class="crm-info-item">
-            <span class="crm-info-label">Telefone</span>
-            <span class="crm-info-val" id="view-deal-phone">-</span>
+            <label class="crm-info-label" for="view-deal-phone">Telefone / WhatsApp</label>
+            <input type="text" class="crm-inline-edit-input" id="view-deal-phone" placeholder="+55 11 99999-9999" />
           </div>
           <div class="crm-info-item">
-            <span class="crm-info-label">E-mail</span>
-            <span class="crm-info-val" id="view-deal-email">-</span>
+            <label class="crm-info-label" for="view-deal-email">E-mail</label>
+            <input type="email" class="crm-inline-edit-input" id="view-deal-email" placeholder="contato@empresa.com" />
           </div>
           <div class="crm-info-item">
-            <span class="crm-info-label">Responsável</span>
-            <span class="crm-info-val" id="view-deal-agent">-</span>
+            <label class="crm-info-label" for="view-deal-agent">Responsável</label>
+            <select class="crm-inline-edit-select" id="view-deal-agent">
+              <option value="Carla Menezes">Carla Menezes</option>
+              <option value="Juliana Santos">Juliana Santos</option>
+              <option value="Rodrigo Almeida">Rodrigo Almeida</option>
+              <option value="Felipe Costa">Felipe Costa</option>
+            </select>
           </div>
           <div class="crm-info-item">
-            <span class="crm-info-label">Prioridade</span>
-            <span class="crm-info-val" id="view-deal-priority">-</span>
+            <label class="crm-info-label" for="view-deal-priority">Prioridade</label>
+            <select class="crm-inline-edit-select" id="view-deal-priority">
+              <option value="Alta">Alta</option>
+              <option value="Média">Média</option>
+              <option value="Baixa">Baixa</option>
+            </select>
           </div>
           <div class="crm-info-item">
-            <span class="crm-info-label">Previsão de Fechamento</span>
-            <span class="crm-info-val" id="view-deal-expected">-</span>
+            <label class="crm-info-label" for="view-deal-expected">Previsão de Fechamento</label>
+            <input type="text" class="crm-inline-edit-input" id="view-deal-expected" placeholder="Ex: 25/10/2026" />
           </div>
         </div>
 
-        <!-- Activity Timeline -->
-        <div class="crm-modal-timeline">
-          <span class="crm-timeline-header">Histórico de Atividades Recentes</span>
-          <div class="crm-timeline-item">
-            <i data-lucide="message-circle" class="crm-timeline-icon" style="width: 16px; height: 16px;"></i>
-            <div class="crm-timeline-content">
-              <strong>Atendimento Inicial via IA:</strong> Lead qualificado automaticamente e transferido para negociação.
-              <div class="crm-timeline-time">Ontem às 14:20</div>
-            </div>
-          </div>
-          <div class="crm-timeline-item">
-            <i data-lucide="file-text" class="crm-timeline-icon" style="width: 16px; height: 16px;"></i>
-            <div class="crm-timeline-content">
-              <strong>Proposta Comercial Gerada:</strong> Condições personalizadas enviadas ao decisor.
-              <div class="crm-timeline-time">Hoje às 09:15</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Notes -->
-        <div>
-          <span class="crm-timeline-header" style="display:block; margin-bottom: 6px;">Observações Internas</span>
-          <div id="view-deal-notes" style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 9px; padding: 12px; font-size: 13px; color: var(--text-main); line-height: 1.4;">
-            -
-          </div>
+        <!-- Notes (Editable) -->
+        <div class="crm-info-item">
+          <label for="view-deal-notes" class="crm-info-label">Observações Internas</label>
+          <textarea id="view-deal-notes" class="form-textarea" rows="3" placeholder="Adicione observações internas sobre esta oportunidade..." style="font-size: 13px; line-height: 1.45; resize: none;"></textarea>
         </div>
       </div>
-      <div class="modal-footer" style="padding: 14px 20px; display:flex; justify-content:space-between; align-items:center;">
+
+      <div class="modal-footer crm-deal-modal-footer">
         <button type="button" class="btn btn-secondary modal-close item-danger" id="btn-deal-modal-delete" style="color: #DC2626;">
           <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
           <span>Excluir</span>
         </button>
-        <div style="display: flex; gap: 8px;">
+        <div class="crm-deal-modal-footer-right">
           <button type="button" class="btn btn-secondary" id="btn-deal-modal-chat">
             <i data-lucide="message-square" style="width: 14px; height: 14px;"></i>
             <span>Abrir Conversa</span>
           </button>
-          <button type="button" class="btn btn-primary" id="btn-deal-modal-mark-won">
+          <button type="button" class="btn btn-secondary" id="btn-deal-modal-mark-won">
+            <i data-lucide="check-circle-2" style="width: 14px; height: 14px; color: var(--primary);"></i>
+            <span>Marcar Ganho</span>
+          </button>
+          <button type="button" class="btn btn-primary" id="btn-deal-modal-save">
             <i data-lucide="check" style="width: 14px; height: 14px;"></i>
-            <span>Marcar como Ganho</span>
+            <span>Salvar Alterações</span>
           </button>
         </div>
       </div>

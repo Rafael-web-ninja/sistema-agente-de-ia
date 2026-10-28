@@ -41,6 +41,15 @@ function syncStageDropdowns() {
       newDealStageEl.value = curVal;
     }
   }
+
+  const viewDealStageEl = document.getElementById('view-deal-stage');
+  if (viewDealStageEl) {
+    const curVal = viewDealStageEl.value;
+    viewDealStageEl.innerHTML = stages.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    if (stages.some(s => s.id === curVal)) {
+      viewDealStageEl.value = curVal;
+    }
+  }
 }
 
 /**
@@ -132,49 +141,59 @@ function renderCrmKanbanView(container, deals) {
   const stages = zapChatData.crm.stages;
 
   const boardHtml = `
-    <div class="crm-pipeline-board" id="crm-kanban-board">
-      ${stages.map(stage => {
-        const stageDeals = deals.filter(d => d.stage === stage.id);
-        const stageTotal = stageDeals.reduce((acc, d) => acc + (d.value || 0), 0);
-        const stageColor = stage.color || '#2563EB';
+    <div class="crm-pipeline-wrapper">
+      <button type="button" class="crm-board-nav-btn prev" id="crm-board-scroll-left" title="Navegar para a esquerda" aria-label="Navegar para a esquerda">
+        <i data-lucide="chevron-left" style="width: 18px; height: 18px;"></i>
+      </button>
 
-        return `
-          <div class="crm-column" data-stage-id="${stage.id}" style="--stage-color: ${stageColor};">
-            <div class="crm-col-header">
-              <div class="crm-col-header-left">
-                <span class="crm-stage-dot ${stage.id}" style="background-color: ${stageColor};"></span>
-                <span class="crm-col-title" data-stage-id="${stage.id}" title="Clique para alterar o nome do status">${stage.name}</span>
-                <span class="crm-col-badge-count">${stageDeals.length}</span>
-              </div>
-              <div class="crm-col-header-right">
-                <span class="crm-col-total-value">${formatCurrency(stageTotal)}</span>
-                <button type="button" class="crm-btn-col-action crm-btn-rename-stage" title="Alterar status" data-stage-id="${stage.id}">
-                  <i data-lucide="pencil" style="width: 12px; height: 12px;"></i>
-                </button>
-                <button type="button" class="crm-btn-col-action delete crm-btn-delete-stage" title="Deletar status" data-stage-id="${stage.id}">
-                  <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
-                </button>
-                <button type="button" class="crm-btn-add-deal-mini" title="Nova oportunidade nesta coluna" data-stage="${stage.id}">
-                  <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-                </button>
-              </div>
-            </div>
+      <div class="crm-pipeline-board" id="crm-kanban-board">
+        ${stages.map(stage => {
+          const stageDeals = deals.filter(d => d.stage === stage.id);
+          const stageTotal = stageDeals.reduce((acc, d) => acc + (d.value || 0), 0);
+          const stageColor = stage.color || '#2563EB';
 
-            <div class="crm-deals-list" data-stage-id="${stage.id}">
-              ${stageDeals.length === 0 ? `
-                <div class="crm-empty-col-message">
-                  <i data-lucide="inbox" style="width: 24px; height: 24px; stroke-width: 1.5; color: var(--text-muted);"></i>
-                  <span>Nenhum negócio nesta etapa</span>
+          return `
+            <div class="crm-column" data-stage-id="${stage.id}" style="--stage-color: ${stageColor};">
+              <div class="crm-col-header">
+                <div class="crm-col-header-left">
+                  <span class="crm-stage-dot ${stage.id}" style="background-color: ${stageColor};"></span>
+                  <span class="crm-col-title" data-stage-id="${stage.id}" title="Clique para alterar o nome do status">${stage.name}</span>
+                  <span class="crm-col-badge-count">${stageDeals.length}</span>
                 </div>
-              ` : stageDeals.map(deal => renderDealCard(deal)).join('')}
-            </div>
-          </div>
-        `;
-      }).join('')}
+                <div class="crm-col-header-right">
+                  <span class="crm-col-total-value">${formatCurrency(stageTotal)}</span>
+                  <button type="button" class="crm-btn-col-action crm-btn-rename-stage" title="Alterar status" data-stage-id="${stage.id}">
+                    <i data-lucide="pencil" style="width: 12px; height: 12px;"></i>
+                  </button>
+                  <button type="button" class="crm-btn-col-action delete crm-btn-delete-stage" title="Deletar status" data-stage-id="${stage.id}">
+                    <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+                  </button>
+                  <button type="button" class="crm-btn-add-deal-mini" title="Nova oportunidade nesta coluna" data-stage="${stage.id}">
+                    <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                  </button>
+                </div>
+              </div>
 
-      <button type="button" class="crm-add-stage-col" id="btn-crm-inline-add-stage" title="Adicionar novo status ao funil">
-        <i data-lucide="plus-circle" style="width: 22px; height: 22px;"></i>
-        <span style="font-size: 13px; font-weight: 600;">Adicionar Status</span>
+              <div class="crm-deals-list" data-stage-id="${stage.id}">
+                ${stageDeals.length === 0 ? `
+                  <div class="crm-empty-col-message">
+                    <i data-lucide="inbox" style="width: 24px; height: 24px; stroke-width: 1.5; color: var(--text-muted);"></i>
+                    <span>Nenhum negócio nesta etapa</span>
+                  </div>
+                ` : stageDeals.map(deal => renderDealCard(deal)).join('')}
+              </div>
+            </div>
+          `;
+        }).join('')}
+
+        <button type="button" class="crm-add-stage-col" id="btn-crm-inline-add-stage" title="Adicionar novo status ao funil">
+          <i data-lucide="plus-circle" style="width: 22px; height: 22px;"></i>
+          <span style="font-size: 13px; font-weight: 600;">Adicionar Status</span>
+        </button>
+      </div>
+
+      <button type="button" class="crm-board-nav-btn next" id="crm-board-scroll-right" title="Navegar para a direita" aria-label="Navegar para a direita">
+        <i data-lucide="chevron-right" style="width: 18px; height: 18px;"></i>
       </button>
     </div>
   `;
@@ -183,6 +202,7 @@ function renderCrmKanbanView(container, deals) {
   setupDragAndDrop();
   setupCardActionEvents();
   setupColumnStageEvents();
+  setupBoardHorizontalScroll();
 }
 
 /**
@@ -238,9 +258,6 @@ function renderDealCard(deal) {
           </button>
           <button type="button" class="crm-btn-card-action btn-action-view-deal" data-deal-id="${deal.id}" title="Ver detalhes do negócio">
             <i data-lucide="eye" style="width: 13px; height: 13px;"></i>
-          </button>
-          <button type="button" class="crm-btn-card-action btn-action-advance-deal" data-deal-id="${deal.id}" title="Avançar etapa">
-            <i data-lucide="chevron-right" style="width: 13px; height: 13px;"></i>
           </button>
         </div>
       </div>
@@ -577,47 +594,33 @@ function openDealDetailsModal(dealId) {
   const modal = document.getElementById('modal-view-deal');
   if (!modal) return;
 
-  const stages = zapChatData.crm.stages;
-  const currentStageIdx = stages.findIndex(s => s.id === deal.stage);
+  // Populate editable fields in modal
+  syncStageDropdowns();
+  const titleEl = document.getElementById('view-deal-title');
+  const valEl = document.getElementById('view-deal-value');
+  const stageEl = document.getElementById('view-deal-stage');
+  const contactEl = document.getElementById('view-deal-contact');
+  const companyEl = document.getElementById('view-deal-company');
+  const phoneEl = document.getElementById('view-deal-phone');
+  const emailEl = document.getElementById('view-deal-email');
+  const agentEl = document.getElementById('view-deal-agent');
+  const channelEl = document.getElementById('view-deal-channel');
+  const priorityEl = document.getElementById('view-deal-priority');
+  const expectedEl = document.getElementById('view-deal-expected');
+  const notesEl = document.getElementById('view-deal-notes');
 
-  // Set modal elements
-  document.getElementById('view-deal-title').textContent = deal.title;
-  document.getElementById('view-deal-value').textContent = formatCurrency(deal.value);
-  document.getElementById('view-deal-contact').textContent = deal.contactName;
-  document.getElementById('view-deal-company').textContent = deal.company || 'Não informado';
-  document.getElementById('view-deal-phone').textContent = deal.phone || 'Não informado';
-  document.getElementById('view-deal-email').textContent = deal.email || 'Não informado';
-  document.getElementById('view-deal-agent').textContent = deal.agent;
-  document.getElementById('view-deal-channel').textContent = deal.channel;
-  document.getElementById('view-deal-priority').textContent = deal.priority;
-  document.getElementById('view-deal-expected').textContent = deal.expectedClose || 'Não definida';
-  document.getElementById('view-deal-notes').textContent = deal.notes || 'Sem observações adicionais.';
-
-  // Render Stepper
-  const stepperEl = document.getElementById('view-deal-stepper');
-  if (stepperEl) {
-    stepperEl.innerHTML = stages.map((s, idx) => {
-      let state = '';
-      if (idx < currentStageIdx) state = 'completed';
-      else if (idx === currentStageIdx) state = 'active';
-
-      return `
-        <div class="crm-stepper-step ${state}" data-stage-id="${s.id}" title="Clique para mudar para ${s.name}">
-          <div class="crm-stepper-circle">${idx + 1}</div>
-          <span class="crm-stepper-label">${s.name}</span>
-        </div>
-      `;
-    }).join('');
-
-    // Clicking step inside modal changes stage
-    stepperEl.querySelectorAll('.crm-stepper-step').forEach(stepBtn => {
-      stepBtn.addEventListener('click', () => {
-        const targetStage = stepBtn.getAttribute('data-stage-id');
-        moveDealToStage(deal.id, targetStage);
-        openDealDetailsModal(deal.id);
-      });
-    });
-  }
+  if (titleEl) titleEl.value = deal.title || '';
+  if (valEl) valEl.value = deal.value || 0;
+  if (stageEl) stageEl.value = deal.stage || (zapChatData.crm.stages[0]?.id || 'prospeccao');
+  if (contactEl) contactEl.value = deal.contactName || '';
+  if (companyEl) companyEl.value = deal.company || '';
+  if (phoneEl) phoneEl.value = deal.phone || '';
+  if (emailEl) emailEl.value = deal.email || '';
+  if (agentEl) agentEl.value = deal.agent || 'Carla Menezes';
+  if (channelEl) channelEl.value = deal.channel || 'WhatsApp';
+  if (priorityEl) priorityEl.value = deal.priority || 'Média';
+  if (expectedEl) expectedEl.value = deal.expectedClose || '';
+  if (notesEl) notesEl.value = deal.notes || '';
 
   if (window.openModal) {
     window.openModal('modal-view-deal');
@@ -680,10 +683,69 @@ function setupNewDealModal() {
  * Setup View Deal Modal Actions
  */
 function setupViewDealModal() {
+  const saveDealChangesFromModal = (showFeedback = false) => {
+    if (!currentViewDeal) return;
+
+    const titleEl = document.getElementById('view-deal-title');
+    const valEl = document.getElementById('view-deal-value');
+    const stageEl = document.getElementById('view-deal-stage');
+    const contactEl = document.getElementById('view-deal-contact');
+    const companyEl = document.getElementById('view-deal-company');
+    const phoneEl = document.getElementById('view-deal-phone');
+    const emailEl = document.getElementById('view-deal-email');
+    const agentEl = document.getElementById('view-deal-agent');
+    const channelEl = document.getElementById('view-deal-channel');
+    const priorityEl = document.getElementById('view-deal-priority');
+    const expectedEl = document.getElementById('view-deal-expected');
+    const notesEl = document.getElementById('view-deal-notes');
+
+    if (titleEl && titleEl.value.trim()) currentViewDeal.title = titleEl.value.trim();
+    if (valEl) currentViewDeal.value = parseFloat(valEl.value) || 0;
+    if (stageEl && stageEl.value) currentViewDeal.stage = stageEl.value;
+    if (contactEl && contactEl.value.trim()) currentViewDeal.contactName = contactEl.value.trim();
+    if (companyEl) currentViewDeal.company = companyEl.value.trim();
+    if (phoneEl) currentViewDeal.phone = phoneEl.value.trim();
+    if (emailEl) currentViewDeal.email = emailEl.value.trim();
+    if (agentEl) currentViewDeal.agent = agentEl.value;
+    if (channelEl) currentViewDeal.channel = channelEl.value;
+    if (priorityEl) {
+      currentViewDeal.priority = priorityEl.value;
+      currentViewDeal.priorityClass = priorityEl.value === 'Alta'
+        ? 'priority-high'
+        : (priorityEl.value === 'Média' ? 'priority-medium' : 'priority-low');
+    }
+    if (expectedEl) currentViewDeal.expectedClose = expectedEl.value.trim();
+    if (notesEl) currentViewDeal.notes = notesEl.value.trim();
+
+    renderCrmKpis();
+    renderCrmBoard();
+
+    if (showFeedback && window.showToast) {
+      window.showToast(`Oportunidade "${currentViewDeal.title}" atualizada com sucesso!`);
+    }
+  };
+
+  const btnSave = document.getElementById('btn-deal-modal-save');
+  if (btnSave) {
+    btnSave.addEventListener('click', () => {
+      saveDealChangesFromModal(true);
+      if (window.closeAllModals) window.closeAllModals();
+    });
+  }
+
+  // Also auto-save when any field inside modal-view-deal changes
+  const modalEl = document.getElementById('modal-view-deal');
+  if (modalEl) {
+    modalEl.querySelectorAll('input, select, textarea').forEach(field => {
+      field.addEventListener('change', () => saveDealChangesFromModal(false));
+    });
+  }
+
   const btnChat = document.getElementById('btn-deal-modal-chat');
   if (btnChat) {
     btnChat.addEventListener('click', () => {
       if (currentViewDeal && window.switchView) {
+        saveDealChangesFromModal(false);
         if (window.closeAllModals) window.closeAllModals();
         window.switchView('conversas');
       }
@@ -694,6 +756,7 @@ function setupViewDealModal() {
   if (btnMarkWon) {
     btnMarkWon.addEventListener('click', () => {
       if (currentViewDeal) {
+        saveDealChangesFromModal(false);
         moveDealToStage(currentViewDeal.id, 'ganho');
         if (window.closeAllModals) window.closeAllModals();
       }
@@ -760,6 +823,34 @@ function setupColumnStageEvents() {
       openManageStagesModal();
     });
   }
+}
+
+/**
+ * Setup horizontal scroll navigation buttons for Kanban board
+ */
+function setupBoardHorizontalScroll() {
+  const board = document.getElementById('crm-kanban-board');
+  const btnLeft = document.getElementById('crm-board-scroll-left');
+  const btnRight = document.getElementById('crm-board-scroll-right');
+  if (!board || !btnLeft || !btnRight) return;
+
+  const updateNavButtons = () => {
+    const maxScroll = board.scrollWidth - board.clientWidth;
+    btnLeft.classList.toggle('disabled', board.scrollLeft <= 5);
+    btnRight.classList.toggle('disabled', board.scrollLeft >= maxScroll - 5);
+  };
+
+  btnLeft.addEventListener('click', () => {
+    board.scrollBy({ left: -380, behavior: 'smooth' });
+  });
+
+  btnRight.addEventListener('click', () => {
+    board.scrollBy({ left: 380, behavior: 'smooth' });
+  });
+
+  board.addEventListener('scroll', updateNavButtons, { passive: true });
+  window.addEventListener('resize', updateNavButtons);
+  setTimeout(updateNavButtons, 50);
 }
 
 /**
