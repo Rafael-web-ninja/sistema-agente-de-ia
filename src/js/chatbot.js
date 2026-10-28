@@ -624,22 +624,63 @@ function executeFlowNode(nodeId, bot) {
 
   switch (node.type) {
     case 'message': {
-      setSimulatorStatus('digitando...');
-      showTypingIndicator(true);
-      simSetTimeout(() => {
-        showTypingIndicator(false);
-        setSimulatorStatus('online');
-        const text = (node.data?.message || 'Olá! Como posso te ajudar hoje?').replace(/\n/g, '<br>');
-        appendBotBubble(text);
+      const items = (node.data?.items && node.data.items.length > 0)
+        ? node.data.items
+        : [{ type: 'text', text: node.data?.text || node.data?.message || 'Olá! Como posso te ajudar hoje?' }];
 
-        // Find outgoing connection
-        const nextConn = bot.canvasFlow?.connections?.find(c => c.fromNode === node.id && (c.fromPort === 'out' || !c.fromPort));
-        if (nextConn) {
+      let cumulativeDelay = 0;
+      items.forEach((item, idx) => {
+        if (item.type === 'delay') {
+          const waitMs = Math.min((Number(item.seconds) || 2) * 400, 1500);
           simSetTimeout(() => {
-            executeFlowNode(nextConn.toNode, bot);
-          }, 800);
+            setSimulatorStatus(item.typing !== false ? 'digitando...' : 'online');
+            if (item.typing !== false) showTypingIndicator(true);
+          }, cumulativeDelay);
+          cumulativeDelay += waitMs;
+          simSetTimeout(() => {
+            showTypingIndicator(false);
+            setSimulatorStatus('online');
+          }, cumulativeDelay);
+        } else {
+          simSetTimeout(() => {
+            setSimulatorStatus(item.type === 'audio' ? 'gravando áudio...' : 'digitando...');
+            showTypingIndicator(true);
+          }, cumulativeDelay);
+          cumulativeDelay += 550;
+          simSetTimeout(() => {
+            showTypingIndicator(false);
+            setSimulatorStatus('online');
+            if (item.type === 'text') {
+              const formatted = (item.text || 'Olá! Como posso te ajudar hoje?')
+                .replace(/\{nome\}/gi, 'Visitante')
+                .replace(/\n/g, '<br>');
+              appendBotBubble(formatted);
+            } else if (item.type === 'audio') {
+              appendVoiceNoteBubble(false, '0:07');
+            } else if (item.type === 'image') {
+              appendBotBubble(`🖼️ <strong>${item.fileName || 'Imagem enviada'}</strong>${item.caption ? `<br><span style="font-size:12px;">${item.caption}</span>` : ''}`);
+            } else if (item.type === 'video') {
+              appendBotBubble(`🎬 <strong>${item.fileName || 'Vídeo enviado'}</strong>${item.caption ? `<br><span style="font-size:12px;">${item.caption}</span>` : ''}`);
+            } else if (item.type === 'file') {
+              appendBotBubble(`📄 <strong>${item.fileName || 'Documento PDF'}</strong>`);
+            } else if (item.type === 'link') {
+              appendBotBubble(`🔗 <strong>${item.buttonText || 'Acessar Link'}</strong><br><span style="color:#0284C7; font-size:12px; text-decoration:underline;">${item.url || 'https://zapchat.com.br'}</span>`);
+            } else if (item.type === 'location') {
+              appendBotBubble(`📍 <strong>${item.locationName || 'Nossa Localização'}</strong><br><span style="font-size:12px; color:#667781;">${item.address || 'Ver no mapa'}</span>`);
+            } else if (item.type === 'contact') {
+              appendBotBubble(`👤 <strong>${item.contactName || 'Contato Comercial'}</strong><br><span style="font-size:12px; color:#667781;">${item.contactPhone || '+55 11 99999-9999'}</span>`);
+            }
+          }, cumulativeDelay);
+          cumulativeDelay += 250;
         }
-      }, 700);
+      });
+
+      const nextConn = bot.canvasFlow?.connections?.find(c => c.fromNode === node.id && (c.fromPort === 'out' || !c.fromPort));
+      if (nextConn) {
+        simSetTimeout(() => {
+          executeFlowNode(nextConn.toNode, bot);
+        }, cumulativeDelay + 400);
+      }
       break;
     }
 
@@ -733,7 +774,8 @@ function executeFlowNode(nodeId, bot) {
     case 'ai_agent': {
       activeSimAiNode = node;
       const agentName = node.agentName || 'Juliana Santos';
-      const agentRole = node.agentRole || 'Especialista em Vendas';
+      const matchedAgent = zapChatData?.agentes?.list?.find(a => a.name === agentName);
+      const agentRole = matchedAgent?.role || node.agentRole || 'Especialista em Atendimento';
 
       // 1. Alert that AI took over
       appendSystemAlert(`🤖 Agente de IA <strong>${agentName}</strong> assumiu o atendimento!`);
@@ -745,7 +787,7 @@ function executeFlowNode(nodeId, bot) {
         showTypingIndicator(false);
         setSimulatorStatus('online');
 
-        const greeting = `Olá! Sou <strong>${agentName}</strong>, ${agentRole} do ZapChat. Estou à disposição para te auxiliar em tudo o que precisar!`;
+        const greeting = `Olá! Sou <strong>${agentName}</strong> (${agentRole}). Como posso te ajudar agora?`;
         const branches = node.data?.branches || [];
 
         let branchesHtml = '';
@@ -753,13 +795,13 @@ function executeFlowNode(nodeId, bot) {
           branchesHtml = `
             <div class="sim-ai-branches-tray">
               <span class="sim-branches-tray-label">
-                <i data-lucide="zap" style="width:12px; height:12px;"></i>
-                Ramificações Inteligentes para testar:
+                <i data-lucide="git-branch" style="width:12px; height:12px;"></i>
+                Simular caminho de saída da IA:
               </span>
               ${branches.map(b => `
                 <button type="button" class="sim-ai-branch-btn" data-node-id="${node.id}" data-branch-id="${b.id}">
                   <span>${b.label}</span>
-                  <span class="sim-branch-ctr">${b.ctr || '85%'}</span>
+                  <i data-lucide="arrow-right" style="width:12px; height:12px; opacity:0.7;"></i>
                 </button>
               `).join('')}
             </div>
@@ -796,24 +838,26 @@ function executeFlowNode(nodeId, bot) {
               }, 500);
             } else {
               simSetTimeout(() => {
-                appendSystemAlert(`Caminho <strong>${branch.label}</strong> concluído com sucesso!`);
+                appendSystemAlert(`Caminho <strong>${branch.label}</strong> acionado (nenhum bloco conectado a esta saída).`);
               }, 400);
             }
           });
         });
-      }, 800);
+      }, 700);
       break;
     }
 
     case 'action': {
-      const actionType = node.actionType || 'action';
-      const target = node.targetPerson ? ` • Atribuído a <strong>${node.targetPerson}</strong>` : '';
-      let alertText = `⚡ Ação executada: <strong>${node.actionLabel || node.title || 'Ação Automática'}</strong>`;
+      const actionType = node.actionType || 'transfer';
+      const transferDest = node.transferTarget || node.targetPerson || 'Fila Geral';
+      let alertText = `↪️ Atendimento transferido para <strong>${transferDest}</strong>`;
 
-      if (actionType === 'crm_deal') {
-        alertText = `💼 Oportunidade registrada no CRM${target}`;
+      if (actionType === 'finish') {
+        alertText = `✅ <strong>${node.actionLabel || 'Atendimento finalizado'}</strong> • Conversa encerrada`;
+      } else if (actionType === 'crm_deal') {
+        alertText = `💼 Oportunidade registrada no CRM`;
       } else if (actionType === 'restart') {
-        alertText = `🔄 Fluxo reiniciado automaticamente após período de inatividade`;
+        alertText = `🔄 Fluxo reiniciado automaticamente`;
       } else if (actionType === 'tag') {
         alertText = `🏷️ Tag <strong>${node.actionLabel || 'Lead Qualificado'}</strong> aplicada ao contato`;
       }

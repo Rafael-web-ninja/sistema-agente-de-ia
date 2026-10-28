@@ -534,8 +534,10 @@ function createNodeElement(node) {
       </div>
     `;
   } else if (node.type === 'action') {
-    const label = node.actionLabel || 'Transferir atendimento';
-    const target = node.transferTarget || node.targetPerson || '';
+    const isFinish = node.actionType === 'finish';
+    const label = node.actionLabel || (isFinish ? 'Finalizar atendimento' : 'Transferir atendimento');
+    const target = isFinish ? 'Encerrar conversa' : (node.transferTarget || node.targetPerson || '');
+    const iconName = isFinish ? 'check-circle-2' : 'corner-up-right';
     contentHtml = `
       <div class="flow-node-inner">
         <div class="node-port port-in" data-node-id="${node.id}" data-port-id="in" data-port-type="in" title="Entrada">
@@ -544,9 +546,9 @@ function createNodeElement(node) {
 
         <div class="node-header">
           <div class="node-header-icon action">
-            <i data-lucide="corner-up-right" style="width: 14px; height: 14px;"></i>
+            <i data-lucide="${iconName}" style="width: 14px; height: 14px;"></i>
           </div>
-          <span class="node-header-title">${node.title || 'Ação'}</span>
+          <span class="node-header-title">${node.title || (isFinish ? 'Finalizar Atendimento' : 'Ação')}</span>
         </div>
 
         <div class="node-body">
@@ -2009,9 +2011,10 @@ function populateInspector(node) {
   } else if (node.type === 'action') {
     if (!node.data) node.data = {};
     if (!node.actionType) node.actionType = 'transfer';
+    const isFinish = node.actionType === 'finish';
     if (!node.transferType) node.transferType = 'human';
     if (!node.transferTarget) node.transferTarget = 'Carlos Félix';
-    if (!node.actionLabel) node.actionLabel = 'Transferir atendimento';
+    if (!node.actionLabel) node.actionLabel = isFinish ? 'Finalizar atendimento' : 'Transferir atendimento';
 
     const aiAgents = (zapChatData?.agentes?.list && zapChatData.agentes.list.length > 0)
       ? zapChatData.agentes.list
@@ -2043,18 +2046,19 @@ function populateInspector(node) {
     formHtml = `
       <div class="form-group">
         <label class="form-label">Título do Bloco</label>
-        <input type="text" class="form-input" id="insp-input-title" value="${node.title || 'Ação'}" />
+        <input type="text" class="form-input" id="insp-input-title" value="${node.title || (isFinish ? 'Finalizar Atendimento' : 'Ação')}" />
       </div>
 
       <div class="form-group">
         <label class="form-label">Tipo de Ação</label>
         <select class="form-select" id="insp-input-action-type">
-          <option value="transfer" selected>Transferir atendimento</option>
+          <option value="transfer" ${!isFinish ? 'selected' : ''}>Transferir atendimento</option>
+          <option value="finish" ${isFinish ? 'selected' : ''}>Finalizar atendimento</option>
         </select>
         <span class="form-hint">Ação executada quando o contato passar por este bloco.</span>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" id="insp-transfer-target-group" style="${isFinish ? 'display: none;' : ''}">
         <label class="form-label">Destino da Transferência</label>
         <select class="form-select" id="insp-input-transfer-target">
           <optgroup label="🤖 Agentes de IA">
@@ -2081,7 +2085,7 @@ function populateInspector(node) {
 
       <div class="form-group">
         <label class="form-label">Rótulo Exibido no Bloco</label>
-        <input type="text" class="form-input" id="insp-input-action-label" value="${node.actionLabel || 'Transferir atendimento'}" />
+        <input type="text" class="form-input" id="insp-input-action-label" value="${node.actionLabel || (isFinish ? 'Finalizar atendimento' : 'Transferir atendimento')}" />
       </div>
     `;
   } else if (node.type === 'menu') {
@@ -2486,6 +2490,56 @@ function populateInspector(node) {
       if (!node.data) node.data = {};
       node.data.subtitle = e.target.value;
       renderCanvasNodes();
+    });
+  }
+
+  if (node.type === 'action') {
+    document.getElementById('insp-input-action-type')?.addEventListener('change', (e) => {
+      const val = e.target.value;
+      node.actionType = val;
+      const targetGroup = document.getElementById('insp-transfer-target-group');
+      const titleInput = document.getElementById('insp-input-title');
+      const labelInput = document.getElementById('insp-input-action-label');
+
+      if (val === 'finish') {
+        if (targetGroup) targetGroup.style.display = 'none';
+        if (!node.title || node.title === 'Transferir Atendimento' || node.title === 'Ação') {
+          node.title = 'Finalizar Atendimento';
+          if (titleInput) titleInput.value = node.title;
+          if (titleEl) titleEl.textContent = node.title;
+        }
+        if (!node.actionLabel || node.actionLabel === 'Transferir atendimento') {
+          node.actionLabel = 'Finalizar atendimento';
+          if (labelInput) labelInput.value = node.actionLabel;
+        }
+      } else {
+        if (targetGroup) targetGroup.style.display = '';
+        if (!node.title || node.title === 'Finalizar Atendimento') {
+          node.title = 'Transferir Atendimento';
+          if (titleInput) titleInput.value = node.title;
+          if (titleEl) titleEl.textContent = node.title;
+        }
+        if (!node.actionLabel || node.actionLabel === 'Finalizar atendimento') {
+          node.actionLabel = 'Transferir atendimento';
+          if (labelInput) labelInput.value = node.actionLabel;
+        }
+      }
+      renderCanvasNodes();
+      if (window.lucide) window.lucide.createIcons();
+    });
+
+    document.getElementById('insp-input-transfer-target')?.addEventListener('change', (e) => {
+      const parts = e.target.value.split(':');
+      node.transferType = parts[0];
+      node.transferTarget = parts.slice(1).join(':');
+      renderCanvasNodes();
+      if (window.lucide) window.lucide.createIcons();
+    });
+
+    document.getElementById('insp-input-action-label')?.addEventListener('input', (e) => {
+      node.actionLabel = e.target.value;
+      renderCanvasNodes();
+      if (window.lucide) window.lucide.createIcons();
     });
   }
 
@@ -3240,12 +3294,13 @@ function applyInspectorChanges() {
       if (b) b.label = inp.value.trim();
     });
   } else if (node.type === 'action') {
+    const actionTypeSelect = document.getElementById('insp-input-action-type');
     const labelInput = document.getElementById('insp-input-action-label');
     const targetSelect = document.getElementById('insp-input-transfer-target');
     if (!node.data) node.data = {};
-    node.actionType = 'transfer';
+    node.actionType = actionTypeSelect ? actionTypeSelect.value : (node.actionType || 'transfer');
     if (labelInput) node.actionLabel = labelInput.value.trim();
-    if (targetSelect) {
+    if (node.actionType === 'transfer' && targetSelect) {
       const parts = targetSelect.value.split(':');
       node.transferType = parts[0];
       node.transferTarget = parts.slice(1).join(':');
