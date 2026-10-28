@@ -10,11 +10,37 @@ let currentDraggedDealId = null;
 let currentViewDeal = null;
 
 export function initCrmView() {
+  syncStageDropdowns();
   renderCrmKpis();
   renderCrmBoard();
   setupCrmEvents();
   setupNewDealModal();
   setupViewDealModal();
+  setupManageStagesModal();
+}
+
+/**
+ * Synchronize stage select dropdowns across Filter and New Deal modal
+ */
+function syncStageDropdowns() {
+  const stages = zapChatData.crm.stages;
+  const filterStageEl = document.getElementById('crm-filter-stage');
+  if (filterStageEl) {
+    const curVal = filterStageEl.value || 'all';
+    filterStageEl.innerHTML = `<option value="all">Todas</option>` +
+      stages.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    filterStageEl.value = stages.some(s => s.id === curVal) ? curVal : 'all';
+    if (filterStageEl.value === 'all') stageFilter = 'all';
+  }
+
+  const newDealStageEl = document.getElementById('new-deal-input-stage');
+  if (newDealStageEl) {
+    const curVal = newDealStageEl.value;
+    newDealStageEl.innerHTML = stages.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    if (stages.some(s => s.id === curVal)) {
+      newDealStageEl.value = curVal;
+    }
+  }
 }
 
 /**
@@ -110,17 +136,24 @@ function renderCrmKanbanView(container, deals) {
       ${stages.map(stage => {
         const stageDeals = deals.filter(d => d.stage === stage.id);
         const stageTotal = stageDeals.reduce((acc, d) => acc + (d.value || 0), 0);
+        const stageColor = stage.color || '#2563EB';
 
         return `
-          <div class="crm-column" data-stage-id="${stage.id}">
+          <div class="crm-column" data-stage-id="${stage.id}" style="--stage-color: ${stageColor};">
             <div class="crm-col-header">
               <div class="crm-col-header-left">
-                <span class="crm-stage-dot ${stage.id}"></span>
-                <span class="crm-col-title">${stage.name}</span>
+                <span class="crm-stage-dot ${stage.id}" style="background-color: ${stageColor};"></span>
+                <span class="crm-col-title" data-stage-id="${stage.id}" title="Clique para alterar o nome do status">${stage.name}</span>
                 <span class="crm-col-badge-count">${stageDeals.length}</span>
               </div>
               <div class="crm-col-header-right">
                 <span class="crm-col-total-value">${formatCurrency(stageTotal)}</span>
+                <button type="button" class="crm-btn-col-action crm-btn-rename-stage" title="Alterar status" data-stage-id="${stage.id}">
+                  <i data-lucide="pencil" style="width: 12px; height: 12px;"></i>
+                </button>
+                <button type="button" class="crm-btn-col-action delete crm-btn-delete-stage" title="Deletar status" data-stage-id="${stage.id}">
+                  <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+                </button>
                 <button type="button" class="crm-btn-add-deal-mini" title="Nova oportunidade nesta coluna" data-stage="${stage.id}">
                   <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
                 </button>
@@ -138,12 +171,18 @@ function renderCrmKanbanView(container, deals) {
           </div>
         `;
       }).join('')}
+
+      <button type="button" class="crm-add-stage-col" id="btn-crm-inline-add-stage" title="Adicionar novo status ao funil">
+        <i data-lucide="plus-circle" style="width: 22px; height: 22px;"></i>
+        <span style="font-size: 13px; font-weight: 600;">Adicionar Status</span>
+      </button>
     </div>
   `;
 
   container.innerHTML = boardHtml;
   setupDragAndDrop();
   setupCardActionEvents();
+  setupColumnStageEvents();
 }
 
 /**
@@ -661,19 +700,309 @@ function setupViewDealModal() {
     });
   }
 
-  const btnDelete = document.getElementById('btn-deal-modal-delete');
-  if (btnDelete) {
-    btnDelete.addEventListener('click', () => {
-      if (!currentViewDeal) return;
-      const idx = zapChatData.crm.deals.findIndex(d => d.id === currentViewDeal.id);
-      if (idx !== -1) {
-        const title = currentViewDeal.title;
-        zapChatData.crm.deals.splice(idx, 1);
-        renderCrmKpis();
-        renderCrmBoard();
-        if (window.closeAllModals) window.closeAllModals();
-        if (window.showToast) window.showToast(`Oportunidade "${title}" excluída.`);
+    const btnDelete = document.getElementById('btn-deal-modal-delete');
+    if (btnDelete) {
+      btnDelete.addEventListener('click', () => {
+        if (!currentViewDeal) return;
+        const idx = zapChatData.crm.deals.findIndex(d => d.id === currentViewDeal.id);
+        if (idx !== -1) {
+          const title = currentViewDeal.title;
+          zapChatData.crm.deals.splice(idx, 1);
+          renderCrmKpis();
+          renderCrmBoard();
+          if (window.closeAllModals) window.closeAllModals();
+          if (window.showToast) window.showToast(`Oportunidade "${title}" excluída.`);
+        }
+      });
+    }
+  }
+
+/**
+ * Setup inline column header events for renaming, editing, deleting, and adding statuses
+ */
+function setupColumnStageEvents() {
+  // Click on title to inline edit name
+  document.querySelectorAll('.crm-col-title').forEach(titleEl => {
+    titleEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startInlineStageRename(titleEl);
+    });
+  });
+
+  // Pencil button in column header -> start inline rename
+  document.querySelectorAll('.crm-btn-rename-stage').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const stageId = btn.getAttribute('data-stage-id');
+      const col = btn.closest('.crm-column');
+      const titleEl = col ? col.querySelector('.crm-col-title') : null;
+      if (titleEl) {
+        startInlineStageRename(titleEl);
+      } else {
+        openManageStagesModal(stageId);
       }
+    });
+  });
+
+  // Trash button in column header -> delete stage
+  document.querySelectorAll('.crm-btn-delete-stage').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const stageId = btn.getAttribute('data-stage-id');
+      deleteCrmStage(stageId);
+    });
+  });
+
+  // Add Stage button at end of Kanban board
+  const btnInlineAdd = document.getElementById('btn-crm-inline-add-stage');
+  if (btnInlineAdd) {
+    btnInlineAdd.addEventListener('click', () => {
+      openManageStagesModal();
+    });
+  }
+}
+
+/**
+ * Inline rename a stage directly in the Kanban column header
+ */
+function startInlineStageRename(titleEl) {
+  const stageId = titleEl.getAttribute('data-stage-id');
+  const stage = zapChatData.crm.stages.find(s => s.id === stageId);
+  if (!stage) return;
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'crm-col-title-input';
+  input.value = stage.name;
+  input.maxLength = 40;
+
+  titleEl.replaceWith(input);
+  input.focus();
+  input.select();
+
+  let saved = false;
+  const finishRename = (commit) => {
+    if (saved) return;
+    saved = true;
+    const newName = input.value.trim();
+    if (commit && newName && newName !== stage.name) {
+      stage.name = newName;
+      syncStageDropdowns();
+      renderManageStagesList();
+      if (window.showToast) window.showToast(`Status renomeado para "${newName}"!`);
+    }
+    renderCrmBoard();
+  };
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      finishRename(true);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      finishRename(false);
+    }
+  });
+
+  input.addEventListener('blur', () => finishRename(true));
+}
+
+/**
+ * Delete a CRM stage and reassign any deals in it
+ */
+function deleteCrmStage(stageId) {
+  const stages = zapChatData.crm.stages;
+  if (stages.length <= 1) {
+    if (window.showToast) window.showToast('O funil precisa ter pelo menos 1 status.');
+    return;
+  }
+
+  const idx = stages.findIndex(s => s.id === stageId);
+  if (idx === -1) return;
+
+  const removedStage = stages[idx];
+  stages.splice(idx, 1);
+
+  // Move deals from deleted stage to the first available stage
+  const fallbackStage = stages[0];
+  let movedCount = 0;
+  zapChatData.crm.deals.forEach(d => {
+    if (d.stage === stageId && fallbackStage) {
+      d.stage = fallbackStage.id;
+      movedCount++;
+    }
+  });
+
+  syncStageDropdowns();
+  renderCrmKpis();
+  renderCrmBoard();
+  renderManageStagesList();
+
+  if (window.showToast) {
+    const extraMsg = movedCount > 0 ? ` (${movedCount} negócio(s) movido(s) para ${fallbackStage.name})` : '';
+    window.showToast(`Status "${removedStage.name}" removido!${extraMsg}`);
+  }
+}
+
+/**
+ * Open Manage Stages Modal (optionally pre-filling a stage to edit)
+ */
+function openManageStagesModal(editStageId = null) {
+  renderManageStagesList();
+  resetStageForm();
+
+  if (editStageId) {
+    populateStageFormForEdit(editStageId);
+  }
+
+  if (window.openModal) {
+    window.openModal('modal-crm-stages');
+  }
+  setTimeout(() => {
+    document.getElementById('crm-stage-input-name')?.focus();
+  }, 80);
+}
+
+function resetStageForm() {
+  const idInput = document.getElementById('crm-stage-edit-id');
+  const nameInput = document.getElementById('crm-stage-input-name');
+  const colorInput = document.getElementById('crm-stage-input-color');
+  const formTitle = document.getElementById('crm-stage-form-title');
+  const submitLabel = document.getElementById('btn-submit-crm-stage-label');
+  const cancelBtn = document.getElementById('btn-cancel-stage-edit');
+
+  if (idInput) idInput.value = '';
+  if (nameInput) nameInput.value = '';
+  if (colorInput) colorInput.value = '#2563EB';
+  if (formTitle) formTitle.textContent = 'Adicionar novo status';
+  if (submitLabel) submitLabel.textContent = 'Adicionar';
+  if (cancelBtn) cancelBtn.style.display = 'none';
+}
+
+function populateStageFormForEdit(stageId) {
+  const stage = zapChatData.crm.stages.find(s => s.id === stageId);
+  if (!stage) return;
+
+  const idInput = document.getElementById('crm-stage-edit-id');
+  const nameInput = document.getElementById('crm-stage-input-name');
+  const colorInput = document.getElementById('crm-stage-input-color');
+  const formTitle = document.getElementById('crm-stage-form-title');
+  const submitLabel = document.getElementById('btn-submit-crm-stage-label');
+  const cancelBtn = document.getElementById('btn-cancel-stage-edit');
+
+  if (idInput) idInput.value = stage.id;
+  if (nameInput) {
+    nameInput.value = stage.name;
+    nameInput.focus();
+  }
+  if (colorInput && stage.color) colorInput.value = stage.color;
+  if (formTitle) formTitle.textContent = `Editando status: ${stage.name}`;
+  if (submitLabel) submitLabel.textContent = 'Salvar';
+  if (cancelBtn) cancelBtn.style.display = 'inline-block';
+}
+
+/**
+ * Render list of stages inside Manage Stages Modal
+ */
+function renderManageStagesList() {
+  const listEl = document.getElementById('crm-stages-manage-list');
+  if (!listEl) return;
+
+  const stages = zapChatData.crm.stages;
+  const deals = zapChatData.crm.deals;
+
+  listEl.innerHTML = stages.map(stage => {
+    const count = deals.filter(d => d.stage === stage.id).length;
+    const color = stage.color || '#2563EB';
+    return `
+      <div class="crm-stage-manage-item" data-stage-id="${stage.id}">
+        <div class="crm-stage-manage-left">
+          <span class="crm-stage-dot" style="background-color: ${color}; width: 11px; height: 11px;"></span>
+          <span class="crm-stage-manage-name">${stage.name}</span>
+          <span class="crm-stage-manage-count">${count} negócio${count === 1 ? '' : 's'}</span>
+        </div>
+        <div class="crm-stage-manage-actions">
+          <button type="button" class="crm-btn-col-action btn-modal-edit-stage" data-stage-id="${stage.id}" title="Editar nome e cor">
+            <i data-lucide="pencil" style="width: 13px; height: 13px;"></i>
+          </button>
+          <button type="button" class="crm-btn-col-action delete btn-modal-delete-stage" data-stage-id="${stage.id}" title="Excluir status">
+            <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+
+  listEl.querySelectorAll('.btn-modal-edit-stage').forEach(btn => {
+    btn.addEventListener('click', () => {
+      populateStageFormForEdit(btn.getAttribute('data-stage-id'));
+    });
+  });
+
+  listEl.querySelectorAll('.btn-modal-delete-stage').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-stage-id');
+      deleteCrmStage(targetId);
+      resetStageForm();
+    });
+  });
+}
+
+/**
+ * Setup Manage Stages Modal events
+ */
+function setupManageStagesModal() {
+  const btnManage = document.getElementById('btn-crm-manage-stages');
+  if (btnManage) {
+    btnManage.addEventListener('click', () => {
+      renderManageStagesList();
+      resetStageForm();
+    });
+  }
+
+  const cancelBtn = document.getElementById('btn-cancel-stage-edit');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      resetStageForm();
+    });
+  }
+
+  const form = document.getElementById('form-crm-stage');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const editId = document.getElementById('crm-stage-edit-id')?.value;
+      const name = document.getElementById('crm-stage-input-name')?.value.trim();
+      const color = document.getElementById('crm-stage-input-color')?.value || '#2563EB';
+
+      if (!name) return;
+
+      if (editId) {
+        const stage = zapChatData.crm.stages.find(s => s.id === editId);
+        if (stage) {
+          stage.name = name;
+          stage.color = color;
+          if (window.showToast) window.showToast(`Status "${name}" atualizado!`);
+        }
+      } else {
+        const newId = 'stage_' + Date.now();
+        zapChatData.crm.stages.push({
+          id: newId,
+          name,
+          color,
+          badgeClass: `stage-${newId}`
+        });
+        if (window.showToast) window.showToast(`Novo status "${name}" adicionado!`);
+      }
+
+      resetStageForm();
+      syncStageDropdowns();
+      renderCrmBoard();
+      renderManageStagesList();
     });
   }
 }

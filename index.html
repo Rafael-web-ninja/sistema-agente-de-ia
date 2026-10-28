@@ -994,6 +994,10 @@
                 <p class="page-subtitle">Acompanhe suas oportunidades, valores em negociação e feche mais negócios</p>
               </div>
               <div class="header-actions">
+                <button type="button" class="btn btn-secondary" id="btn-crm-manage-stages" data-modal-target="modal-crm-stages" title="Adicionar, editar ou excluir status do funil">
+                  <i data-lucide="columns" style="width: 15px; height: 15px;"></i>
+                  <span>Gerenciar status</span>
+                </button>
                 <button type="button" class="btn btn-secondary" id="btn-crm-export" title="Exportar oportunidades para CSV" onclick="window.showToast ? window.showToast('Exportando oportunidades em CSV...') : null">
                   <i data-lucide="download" style="width: 15px; height: 15px;"></i>
                   <span>Exportar CSV</span>
@@ -5173,6 +5177,61 @@
             <span>Marcar como Ganho</span>
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 17.1: Gerenciar Status do CRM (Adicionar, Editar, Excluir) -->
+  <div class="modal-backdrop" id="modal-crm-stages">
+    <div class="modal-dialog" style="max-width: 540px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" style="margin: 0;">Gerenciar Status do CRM</h3>
+          <span style="font-size: 12px; color: var(--text-muted);">Adicione, renomeie, altere as cores ou remova etapas do funil</span>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 18px;">
+        <!-- Form to Add or Edit Stage -->
+        <form id="form-crm-stage" class="crm-stage-form-box">
+          <input type="hidden" id="crm-stage-edit-id" value="">
+          <div class="crm-stage-form-header">
+            <span id="crm-stage-form-title">Adicionar novo status</span>
+            <button type="button" id="btn-cancel-stage-edit" class="crm-stage-cancel-edit-btn" style="display: none;">Cancelar edição</button>
+          </div>
+          <div class="crm-stage-form-row">
+            <div class="form-group" style="flex: 1; margin: 0;">
+              <input type="text" id="crm-stage-input-name" class="form-input" placeholder="Nome do status (ex: Em fechamento)" required maxlength="40">
+            </div>
+            <div class="form-group" style="width: 135px; margin: 0;">
+              <select id="crm-stage-input-color" class="form-select" aria-label="Cor do status">
+                <option value="#2563EB">🔵 Azul</option>
+                <option value="#7C3AED">🟣 Roxo</option>
+                <option value="#F59E0B">🟡 Âmbar</option>
+                <option value="#EC4899">🩷 Rosa</option>
+                <option value="#00A868">🟢 Verde</option>
+                <option value="#EF4444">🔴 Vermelho</option>
+                <option value="#06B6D4">🩵 Ciano</option>
+                <option value="#64748B">⚪ Cinza</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary" id="btn-submit-crm-stage">
+              <i data-lucide="plus" style="width: 15px; height: 15px;"></i>
+              <span id="btn-submit-crm-stage-label">Adicionar</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Current Stages List -->
+        <div>
+          <span class="form-label" style="display: block; margin-bottom: 8px;">Status atuais do funil</span>
+          <div class="crm-stages-manage-list" id="crm-stages-manage-list">
+            <!-- Populated dynamically by crm.js -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: 14px 20px; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-primary modal-close">Concluído</button>
       </div>
     </div>
   </div>
