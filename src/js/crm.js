@@ -993,6 +993,21 @@ function populateStageFormForEdit(stageId) {
 }
 
 /**
+ * Move stage position in zapChatData.crm.stages
+ */
+function moveCrmStageOrder(fromIdx, toIdx) {
+  const stages = zapChatData.crm.stages;
+  if (fromIdx < 0 || fromIdx >= stages.length || toIdx < 0 || toIdx >= stages.length || fromIdx === toIdx) {
+    return;
+  }
+  const [moved] = stages.splice(fromIdx, 1);
+  stages.splice(toIdx, 0, moved);
+  syncStageDropdowns();
+  renderCrmBoard();
+  renderManageStagesList();
+}
+
+/**
  * Render list of stages inside Manage Stages Modal
  */
 function renderManageStagesList() {
@@ -1002,17 +1017,28 @@ function renderManageStagesList() {
   const stages = zapChatData.crm.stages;
   const deals = zapChatData.crm.deals;
 
-  listEl.innerHTML = stages.map(stage => {
+  listEl.innerHTML = stages.map((stage, idx) => {
     const count = deals.filter(d => d.stage === stage.id).length;
     const color = stage.color || '#2563EB';
+    const isFirst = idx === 0;
+    const isLast = idx === stages.length - 1;
     return `
-      <div class="crm-stage-manage-item" data-stage-id="${stage.id}">
+      <div class="crm-stage-manage-item" draggable="true" data-stage-id="${stage.id}" data-stage-index="${idx}">
         <div class="crm-stage-manage-left">
+          <span class="crm-stage-drag-handle" title="Arraste para reordenar">
+            <i data-lucide="grip-vertical" style="width: 14px; height: 14px;"></i>
+          </span>
           <span class="crm-stage-dot" style="background-color: ${color}; width: 11px; height: 11px;"></span>
           <span class="crm-stage-manage-name">${stage.name}</span>
           <span class="crm-stage-manage-count">${count} negócio${count === 1 ? '' : 's'}</span>
         </div>
         <div class="crm-stage-manage-actions">
+          <button type="button" class="crm-btn-col-action btn-modal-move-stage" data-dir="up" data-stage-index="${idx}" title="Mover para cima" ${isFirst ? 'disabled' : ''}>
+            <i data-lucide="arrow-up" style="width: 13px; height: 13px;"></i>
+          </button>
+          <button type="button" class="crm-btn-col-action btn-modal-move-stage" data-dir="down" data-stage-index="${idx}" title="Mover para baixo" ${isLast ? 'disabled' : ''}>
+            <i data-lucide="arrow-down" style="width: 13px; height: 13px;"></i>
+          </button>
           <button type="button" class="crm-btn-col-action btn-modal-edit-stage" data-stage-id="${stage.id}" title="Editar nome e cor">
             <i data-lucide="pencil" style="width: 13px; height: 13px;"></i>
           </button>
@@ -1027,6 +1053,51 @@ function renderManageStagesList() {
   if (window.lucide) {
     window.lucide.createIcons();
   }
+
+  // Up / Down buttons
+  listEl.querySelectorAll('.btn-modal-move-stage').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.getAttribute('data-stage-index'), 10);
+      const dir = btn.getAttribute('data-dir');
+      const targetIdx = dir === 'up' ? idx - 1 : idx + 1;
+      moveCrmStageOrder(idx, targetIdx);
+    });
+  });
+
+  // Drag & Drop reordering
+  let draggedStageIdx = null;
+  listEl.querySelectorAll('.crm-stage-manage-item').forEach(item => {
+    item.addEventListener('dragstart', (e) => {
+      draggedStageIdx = parseInt(item.getAttribute('data-stage-index'), 10);
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      listEl.querySelectorAll('.crm-stage-manage-item').forEach(el => el.classList.remove('drag-over'));
+    });
+
+    item.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      item.classList.add('drag-over');
+    });
+
+    item.addEventListener('dragleave', () => {
+      item.classList.remove('drag-over');
+    });
+
+    item.addEventListener('drop', (e) => {
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      const targetIdx = parseInt(item.getAttribute('data-stage-index'), 10);
+      if (draggedStageIdx !== null && draggedStageIdx !== targetIdx) {
+        moveCrmStageOrder(draggedStageIdx, targetIdx);
+      }
+      draggedStageIdx = null;
+    });
+  });
 
   listEl.querySelectorAll('.btn-modal-edit-stage').forEach(btn => {
     btn.addEventListener('click', () => {

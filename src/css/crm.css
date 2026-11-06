@@ -942,11 +942,39 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   gap: 10px;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
 }
 
 .crm-stage-manage-item:hover {
   border-color: var(--border-focus);
+}
+
+.crm-stage-manage-item.dragging {
+  opacity: 0.45;
+}
+
+.crm-stage-manage-item.drag-over {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.crm-stage-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: grab;
+  padding: 2px;
+}
+
+.crm-stage-drag-handle:active {
+  cursor: grabbing;
+}
+
+.crm-btn-col-action:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .crm-stage-manage-left {
