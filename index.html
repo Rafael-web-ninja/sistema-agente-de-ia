@@ -1241,12 +1241,37 @@
               <!-- LEFT SIDEBAR -->
               <aside class="edit-agent-sidebar-card">
                 <div class="agent-sidebar-profile">
-                  <div class="agent-avatar-container">
-                    <div class="agent-avatar-circle" id="edit-agent-avatar-circle">P</div>
+                  <div class="agent-avatar-container" id="agent-avatar-container">
+                    <div class="agent-avatar-circle" id="edit-agent-avatar-circle" title="Clique para alterar a foto do agente" style="cursor: pointer;">P</div>
                     <span class="agent-avatar-status-dot" title="Online"></span>
-                    <button type="button" class="agent-avatar-edit-badge" title="Alterar foto">
+                    <button type="button" class="agent-avatar-edit-badge" id="btn-edit-agent-avatar" title="Alterar foto do agente">
                       <i data-lucide="camera" style="width:13px;height:13px;"></i>
                     </button>
+                    <input type="file" id="input-agent-avatar-upload" accept="image/*" style="display: none;">
+
+                    <!-- Popover de escolha de Avatar (Upload + Pré-prontos) -->
+                    <div class="agent-avatar-picker-popover" id="agent-avatar-picker-popover" style="display: none;">
+                      <div class="avatar-picker-header">
+                        <span>Foto do Agente</span>
+                        <button type="button" class="avatar-picker-close" id="btn-close-avatar-picker" title="Fechar">
+                          <i data-lucide="x" style="width:14px;height:14px;"></i>
+                        </button>
+                      </div>
+
+                      <button type="button" class="btn-upload-custom-avatar" id="btn-trigger-avatar-upload">
+                        <i data-lucide="upload" style="width:14px;height:14px;"></i>
+                        <span>Enviar imagem do computador</span>
+                      </button>
+
+                      <div class="avatar-picker-section-label">Ou escolha um avatar pronto:</div>
+                      <div class="avatar-presets-grid" id="avatar-presets-grid">
+                        <!-- Preenchido via JS -->
+                      </div>
+
+                      <button type="button" class="btn-reset-initial-avatar" id="btn-reset-avatar-initial">
+                        Usar letra inicial do nome
+                      </button>
+                    </div>
                   </div>
                   <h3 class="agent-sidebar-name" id="edit-agent-name-display">Pedro</h3>
                   <span class="agent-sidebar-role" id="edit-agent-role-display">Vendedor em Loja Download</span>
@@ -2058,14 +2083,20 @@
                     <!-- Horário de atendimento da IA -->
                     <div class="agent-schedule-section" style="padding-top: 24px; border-top: 1px solid var(--border-light); margin-bottom: 24px;">
                       <!-- Header Switch Row -->
-                      <div class="switch-control-group" style="margin-bottom: 16px;">
+                      <div class="switch-control-group" style="margin-bottom: 14px;">
                         <div class="switch-info">
-                          <span class="switch-title" style="display: flex; align-items: center; gap: 8px;">
-                            <i data-lucide="clock" style="width:16px;height:16px;color:var(--primary);"></i>
-                            Horário de atendimento da IA
-                          </span>
+                          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <span class="switch-title" style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                              <i data-lucide="clock" style="width:16px;height:16px;color:var(--primary);"></i>
+                              Horário de atendimento da IA
+                            </span>
+                            <span class="schedule-tz-pill">
+                              <i data-lucide="globe" style="width:12px;height:12px;"></i>
+                              Brasília (GMT-3)
+                            </span>
+                          </div>
                           <span class="switch-desc">
-                            Se desativado, o agente atende 24h por dia. Ative para definir dias e horários em que a IA deve atuar (ex: apenas à noite ou fins de semana).
+                            Desativado = atende 24h por dia. Ative para restringir quando a IA deve responder.
                           </span>
                         </div>
                         <label class="switch-toggle">
@@ -2077,116 +2108,114 @@
                       <!-- Estado 1: 24/7 Ativo (quando o toggle está desmarcado) -->
                       <div class="schedule-banner-247" id="schedule-banner-247">
                         <div class="schedule-banner-icon">
-                          <i data-lucide="sparkles" style="width: 22px; height: 22px;"></i>
+                          <i data-lucide="sparkles" style="width: 20px; height: 20px;"></i>
                         </div>
                         <div class="schedule-banner-content">
                           <div class="schedule-banner-title">
-                            Atendimento Contínuo 24/7 Ativo
-                            <span class="badge badge-dot badge-active" style="margin-left: 8px; font-size: 11px;">Sempre Online</span>
+                            Atendimento 24/7 Ativo
+                            <span class="badge badge-dot badge-active" style="margin-left: 6px; font-size: 11px;">Sempre Online</span>
                           </div>
                           <p class="schedule-banner-desc">
-                            A IA responde às mensagens dos clientes a qualquer momento do dia ou da noite, em todos os 7 dias da semana.
+                            A IA responde imediatamente a qualquer hora, todos os dias da semana.
                           </p>
                         </div>
                       </div>
 
-                      <!-- Estado 2: Painel de Configuração Detalhada (quando o toggle está ativado) -->
+                      <!-- Estado 2: Painel de Configuração Simplificado (quando o toggle está ativado) -->
                       <div class="schedule-panel-custom" id="schedule-panel-custom" style="display: none;">
-                        
-                        <!-- Top Meta Bar: Timezone & Live Status -->
-                        <div class="schedule-meta-bar">
-                          <div class="schedule-timezone-info">
-                            <i data-lucide="globe" style="width:14px;height:14px;color:var(--text-muted);"></i>
-                            <span>Fuso horário: <strong>América/São Paulo (Horário de Brasília - GMT-3)</strong></span>
-                          </div>
-                        </div>
 
-                        <!-- Presets / Atalhos Rápidos -->
+                        <!-- 1. Escolha quando a IA deve atender -->
                         <div class="schedule-presets-box">
-                          <span class="schedule-presets-label">Atalhos rápidos de programação:</span>
+                          <span class="schedule-presets-label">Quando a IA deve atender?</span>
                           <div class="schedule-presets-grid">
                             <button type="button" class="schedule-preset-btn active" data-preset="night_weekend">
                               <span class="preset-icon">🌙</span>
                               <div class="preset-info">
-                                <span class="preset-name">Plantão Noturno & Fins de Semana</span>
-                                <span class="preset-desc">Seg a Sex (18h às 08h) + Sáb e Dom (24h)</span>
-                              </div>
-                            </button>
-                            <button type="button" class="schedule-preset-btn" data-preset="weekend_only">
-                              <span class="preset-icon">🏖️</span>
-                              <div class="preset-info">
-                                <span class="preset-name">Apenas Fins de Semana</span>
-                                <span class="preset-desc">Sábado e Domingo o dia todo (24h)</span>
+                                <span class="preset-name">Plantão Noturno & Fds</span>
+                                <span class="preset-desc">Seg–Sex (18h às 08h) + Sáb e Dom (24h)</span>
                               </div>
                             </button>
                             <button type="button" class="schedule-preset-btn" data-preset="business_hours">
                               <span class="preset-icon">💼</span>
                               <div class="preset-info">
                                 <span class="preset-name">Horário Comercial</span>
-                                <span class="preset-desc">Seg a Sex (08h às 18h)</span>
+                                <span class="preset-desc">Seg–Sex (08h às 18h)</span>
+                              </div>
+                            </button>
+                            <button type="button" class="schedule-preset-btn" data-preset="weekend_only">
+                              <span class="preset-icon">🏖️</span>
+                              <div class="preset-info">
+                                <span class="preset-name">Apenas Fins de Semana</span>
+                                <span class="preset-desc">Sábado e Domingo (24h)</span>
                               </div>
                             </button>
                             <button type="button" class="schedule-preset-btn" data-preset="custom">
                               <span class="preset-icon">⚙️</span>
                               <div class="preset-info">
                                 <span class="preset-name">Personalizado</span>
-                                <span class="preset-desc">Defina manualmente cada dia e horário</span>
+                                <span class="preset-desc">Escolher dias e horários manualmente</span>
                               </div>
                             </button>
                           </div>
                         </div>
 
-                        <!-- Grade Semanal (Segunda a Domingo) -->
-                        <div class="schedule-week-table-wrap">
+                        <!-- Resumo compacto quando um atalho pronto está selecionado -->
+                        <div class="schedule-preset-summary-bar" id="schedule-preset-summary-bar">
+                          <div class="schedule-summary-left">
+                            <i data-lucide="check-circle-2" style="width:16px;height:16px;color:var(--primary);flex-shrink:0;"></i>
+                            <span id="schedule-preset-summary-text">A IA atenderá de <strong>Segunda a Sexta das 18:00 às 08:00</strong> e <strong>Sábado e Domingo 24h</strong>.</span>
+                          </div>
+                          <button type="button" class="btn-schedule-customize-link" id="btn-expand-custom-schedule">
+                            <i data-lucide="sliders-horizontal" style="width:13px;height:13px;"></i>
+                            Ajustar horários
+                          </button>
+                        </div>
+
+                        <!-- Grade Semanal (Exibida apenas no modo Personalizado) -->
+                        <div class="schedule-week-table-wrap" id="schedule-week-table-wrap" style="display: none;">
                           <div class="schedule-week-header">
                             <h4 class="schedule-week-title">
                               <i data-lucide="calendar" style="width:15px;height:15px;color:var(--primary);"></i>
-                              Dias e Horários de Atuação
+                              Horários por Dia da Semana
                             </h4>
                             <div class="schedule-week-actions">
                               <button type="button" class="btn-schedule-action" id="btn-copy-weekdays">
                                 <i data-lucide="copy" style="width:13px;height:13px;"></i>
-                                Replicar Segunda para dias úteis (Ter-Sex)
+                                Copiar Segunda para Ter–Sex
                               </button>
                             </div>
                           </div>
 
                           <div class="schedule-days-list" id="schedule-days-container">
-                            <!-- Inserido dinamicamente via JS com fallbacks limpos -->
+                            <!-- Inserido dinamicamente via JS -->
                           </div>
                         </div>
 
-                        <!-- Ação fora do horário de atendimento -->
+                        <!-- 2. Comportamento fora do horário -->
                         <div class="schedule-out-behavior-box">
-                          <div class="schedule-out-header">
-                            <h4 class="schedule-out-title">
-                              <i data-lucide="moon" style="width:15px;height:15px;color:var(--text-muted);"></i>
-                              Quando um cliente chamar fora do horário de atendimento:
-                            </h4>
-                          </div>
+                          <span class="schedule-presets-label">Fora desse horário, o que a IA deve fazer?</span>
 
                           <div class="schedule-out-options">
                             <label class="schedule-radio-card active" id="label-action-silent">
                               <input type="radio" name="agent_out_action" value="silent" checked>
                               <div class="radio-card-content">
-                                <span class="radio-card-title">Não responder (Silencioso)</span>
-                                <span class="radio-card-desc">A IA não envia nenhuma mensagem. A conversa aguarda o atendente humano ou o próximo expediente.</span>
+                                <span class="radio-card-title">Ficar em silêncio (Recomendado)</span>
+                                <span class="radio-card-desc">A IA não responde e deixa a conversa para a equipe humana ou próximo turno.</span>
                               </div>
                             </label>
 
                             <label class="schedule-radio-card" id="label-action-reply">
                               <input type="radio" name="agent_out_action" value="auto_reply">
                               <div class="radio-card-content">
-                                <span class="radio-card-title">Enviar mensagem de ausência</span>
-                                <span class="radio-card-desc">Envia uma resposta automática avisando que o atendimento humano ou IA retornará em breve.</span>
+                                <span class="radio-card-title">Enviar aviso de ausência</span>
+                                <span class="radio-card-desc">Envia uma única mensagem informando que o atendimento retornará em breve.</span>
                               </div>
                             </label>
                           </div>
 
-                          <div class="schedule-auto-reply-box" id="schedule-auto-reply-box" style="display: none; margin-top: 14px;">
-                            <label class="form-label" for="schedule-out-message-text" style="font-size: 12.5px;">Mensagem de ausência personalizada</label>
-                            <textarea id="schedule-out-message-text" class="form-textarea" rows="3" placeholder="Mensagem enviada aos clientes fora do horário...">Olá! No momento nossa equipe e assistente virtual estão fora do horário de atendimento. Sua mensagem foi recebida com sucesso e responderemos assim que retornarmos!</textarea>
-                            <span style="font-size: 11.5px; color: var(--text-muted); display: block; margin-top: 4px;">Essa mensagem será enviada uma única vez quando o cliente chamar fora do horário.</span>
+                          <div class="schedule-auto-reply-box" id="schedule-auto-reply-box" style="display: none; margin-top: 8px;">
+                            <label class="form-label" for="schedule-out-message-text" style="font-size: 12px;">Mensagem automática de ausência</label>
+                            <textarea id="schedule-out-message-text" class="form-textarea" rows="2" placeholder="Mensagem enviada aos clientes fora do horário...">Olá! No momento estamos fora do nosso horário de atendimento. Recebemos sua mensagem e retornaremos assim que possível!</textarea>
                           </div>
 
                         </div>

@@ -16,11 +16,152 @@ export function initEditAgentView() {
   setupAgentSchedule();
   setupAgentHumanTransfer();
   setupAgentStatusToggle();
+  setupAgentAvatarPicker();
 
   // Expose globally
   window.openEditAgent = openEditAgent;
   window.toggleCurrentAgentStatus = toggleCurrentAgentStatus;
   window.switchAgentInternalTab = switchAgentInternalTab;
+}
+
+const PRESET_AGENT_AVATARS = [
+  { id: 'preset-f1', label: 'Consultora Sofia', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=180&auto=format&fit=crop&q=80' },
+  { id: 'preset-m1', label: 'Consultor Lucas', url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=180&auto=format&fit=crop&q=80' },
+  { id: 'preset-f2', label: 'Atendente Camila', url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=180&auto=format&fit=crop&q=80' },
+  { id: 'preset-m2', label: 'Especialista Rafael', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=180&auto=format&fit=crop&q=80' },
+  { id: 'preset-m3', label: 'Consultor Gabriel', url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=180&auto=format&fit=crop&q=80' },
+  { id: 'preset-f3', label: 'Atendente Mariana', url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=180&auto=format&fit=crop&q=80' },
+  {
+    id: 'preset-bot-green',
+    label: 'Robô ZapChat Verde',
+    url: `data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" rx="60" fill="#E8F8F0"/><rect x="28" y="36" width="64" height="52" rx="18" fill="#00A868"/><circle cx="48" cy="58" r="6" fill="#FFF"/><circle cx="72" cy="58" r="6" fill="#FFF"/><path d="M48 74c5 5 19 5 24 0" stroke="#FFF" stroke-width="4" stroke-linecap="round" fill="none"/><line x1="60" y1="20" x2="60" y2="36" stroke="#00A868" stroke-width="5" stroke-linecap="round"/><circle cx="60" cy="18" r="6" fill="#10B981"/></svg>')}`
+  },
+  {
+    id: 'preset-bot-purple',
+    label: 'IA Neural Roxa',
+    url: `data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" rx="60" fill="#F3E8FF"/><rect x="28" y="36" width="64" height="52" rx="18" fill="#7C3AED"/><circle cx="48" cy="58" r="6" fill="#FFF"/><circle cx="72" cy="58" r="6" fill="#FFF"/><path d="M48 74c5 5 19 5 24 0" stroke="#FFF" stroke-width="4" stroke-linecap="round" fill="none"/><line x1="60" y1="20" x2="60" y2="36" stroke="#7C3AED" stroke-width="5" stroke-linecap="round"/><circle cx="60" cy="18" r="6" fill="#A78BFA"/></svg>')}`
+  }
+];
+
+function renderAgentAvatarCircle(agent) {
+  const avatarEl = document.getElementById('edit-agent-avatar-circle');
+  if (!avatarEl || !agent) return;
+
+  const savedAvatar = localStorage.getItem(`zapchat_agent_avatar_${agent.id}`);
+  if (savedAvatar !== null) {
+    agent.avatarUrl = savedAvatar || '';
+  }
+
+  avatarEl.style.backgroundColor = agent.avatarBg || '#E9F7F1';
+  avatarEl.style.color = agent.avatarColor || '#00A868';
+
+  if (agent.avatarUrl) {
+    avatarEl.innerHTML = `<img src="${agent.avatarUrl}" alt="${agent.name}" />`;
+  } else {
+    avatarEl.innerHTML = (agent.name || 'A').charAt(0).toUpperCase();
+  }
+}
+
+function setupAgentAvatarPicker() {
+  const avatarCircle = document.getElementById('edit-agent-avatar-circle');
+  const editBadge = document.getElementById('btn-edit-agent-avatar');
+  const popover = document.getElementById('agent-avatar-picker-popover');
+  const closeBtn = document.getElementById('btn-close-avatar-picker');
+  const uploadBtn = document.getElementById('btn-trigger-avatar-upload');
+  const fileInput = document.getElementById('input-agent-avatar-upload');
+  const presetsGrid = document.getElementById('avatar-presets-grid');
+  const resetBtn = document.getElementById('btn-reset-avatar-initial');
+
+  if (!popover) return;
+
+  function renderPresetsSelection() {
+    if (!presetsGrid) return;
+    const agent = zapChatData.agentes.list.find(a => a.id === currentAgentId) || zapChatData.agentes.list[0];
+    const currentUrl = agent?.avatarUrl || '';
+    presetsGrid.innerHTML = PRESET_AGENT_AVATARS.map(p => `
+      <button type="button" class="avatar-preset-item ${currentUrl === p.url ? 'selected' : ''}" data-avatar-url="${p.url}" title="${p.label}">
+        <img src="${p.url}" alt="${p.label}" />
+      </button>
+    `).join('');
+
+    presetsGrid.querySelectorAll('.avatar-preset-item').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const url = btn.getAttribute('data-avatar-url');
+        applyAgentAvatarUrl(url);
+        popover.style.display = 'none';
+      });
+    });
+  }
+
+  function applyAgentAvatarUrl(url) {
+    const agent = zapChatData.agentes.list.find(a => a.id === currentAgentId) || zapChatData.agentes.list[0];
+    if (!agent) return;
+    agent.avatarUrl = url || '';
+    localStorage.setItem(`zapchat_agent_avatar_${agent.id}`, agent.avatarUrl);
+    renderAgentAvatarCircle(agent);
+    renderPresetsSelection();
+    if (window.refreshAgentsTable) window.refreshAgentsTable();
+    showToast(url ? 'Foto do agente atualizada!' : 'Avatar redefinido para a letra inicial.');
+  }
+
+  function togglePopover(e) {
+    e.stopPropagation();
+    const isHidden = popover.style.display === 'none' || !popover.style.display;
+    if (isHidden) {
+      renderPresetsSelection();
+      popover.style.display = 'block';
+      if (window.lucide) window.lucide.createIcons();
+    } else {
+      popover.style.display = 'none';
+    }
+  }
+
+  if (avatarCircle) avatarCircle.addEventListener('click', togglePopover);
+  if (editBadge) editBadge.addEventListener('click', togglePopover);
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      popover.style.display = 'none';
+    });
+  }
+
+  if (uploadBtn && fileInput) {
+    uploadBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const dataUrl = ev.target?.result;
+        if (typeof dataUrl === 'string') {
+          applyAgentAvatarUrl(dataUrl);
+          popover.style.display = 'none';
+        }
+      };
+      reader.readAsDataURL(file);
+      fileInput.value = '';
+    });
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      applyAgentAvatarUrl('');
+      popover.style.display = 'none';
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (popover.style.display === 'block' && !popover.contains(e.target) && e.target !== avatarCircle && !editBadge?.contains(e.target)) {
+      popover.style.display = 'none';
+    }
+  });
 }
 
 /**
@@ -34,7 +175,6 @@ export function openEditAgent(agentId = 'pedro') {
     // Populate header and sidebar details
     const nameEl = document.getElementById('edit-agent-name-display');
     const roleEl = document.getElementById('edit-agent-role-display');
-    const avatarEl = document.getElementById('edit-agent-avatar-circle');
     const inputNameEl = document.getElementById('input-agent-name');
     const inputRoleEl = document.getElementById('input-agent-role');
 
@@ -43,11 +183,7 @@ export function openEditAgent(agentId = 'pedro') {
     if (inputNameEl) inputNameEl.value = agent.name;
     if (inputRoleEl) inputRoleEl.value = agent.role || 'Vendedor em Loja Download';
 
-    if (avatarEl) {
-      avatarEl.style.backgroundColor = agent.avatarBg || '#E9F7F1';
-      avatarEl.style.color = agent.avatarColor || '#00A868';
-      avatarEl.innerHTML = agent.name.charAt(0).toUpperCase();
-    }
+    renderAgentAvatarCircle(agent);
 
     updateAgentStatusDisplay(agent);
   }
@@ -1575,7 +1711,10 @@ function setupBehaviorCounter() {
       const val = e.target.value.trim();
       if (nameDisplay) nameDisplay.textContent = val || 'Agente';
       const avatarCircle = document.getElementById('edit-agent-avatar-circle');
-      if (avatarCircle) avatarCircle.textContent = (val[0] || 'A').toUpperCase();
+      const agent = zapChatData.agentes.list.find(a => a.id === currentAgentId);
+      if (avatarCircle && !agent?.avatarUrl) {
+        avatarCircle.textContent = (val[0] || 'A').toUpperCase();
+      }
       const summaryEl = document.getElementById('agent-behavior-live-summary');
       if (summaryEl && typeof updateLiveSummary === 'function') {
         // Will be picked up on event
@@ -1673,7 +1812,11 @@ export function openTestAiModal(agentId) {
     if (avatarEl) {
       avatarEl.style.backgroundColor = agent.avatarBg || '#E9F7F1';
       avatarEl.style.color = agent.avatarColor || '#00A868';
-      avatarEl.textContent = agent.name.charAt(0).toUpperCase();
+      if (agent.avatarUrl) {
+        avatarEl.innerHTML = `<img src="${agent.avatarUrl}" alt="${agent.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+      } else {
+        avatarEl.textContent = agent.name.charAt(0).toUpperCase();
+      }
     }
     if (nameEl) nameEl.textContent = agent.name;
     if (roleEl) roleEl.textContent = agent.role || 'Vendedor em Loja Download';
@@ -2656,6 +2799,15 @@ function setupAgentSchedule() {
     });
   }
 
+  // Expand custom schedule button from summary bar
+  const expandCustomBtn = document.getElementById('btn-expand-custom-schedule');
+  if (expandCustomBtn) {
+    expandCustomBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      applySchedulePreset('custom');
+    });
+  }
+
   // Radio cards for out of hours action
   const radioSilent = document.querySelector('input[name="agent_out_action"][value="silent"]');
   const radioReply = document.querySelector('input[name="agent_out_action"][value="auto_reply"]');
@@ -2722,19 +2874,23 @@ function renderScheduleDays() {
           <span class="schedule-day-name">${day.name}</span>
         </div>
         <div class="schedule-day-right">
-          ${day.enabled ? `
-            <div class="schedule-time-box">
-              <input type="time" class="schedule-time-input input-time-start" data-day-idx="${idx}" value="${day.start}" ${day.allDay ? 'disabled' : ''}>
-              <span>até</span>
-              <input type="time" class="schedule-time-input input-time-end" data-day-idx="${idx}" value="${day.end}" ${day.allDay ? 'disabled' : ''}>
-            </div>
-            ${isOvernight ? `<span class="badge-overnight" title="O atendimento se estende até a manhã do dia seguinte"><i data-lucide="moon" style="width:12px;height:12px;"></i> Turno noturno (+1 dia)</span>` : ''}
-            ${day.allDay ? `<span class="badge-allday"><i data-lucide="sun" style="width:12px;height:12px;"></i> 24 Horas</span>` : ''}
-            <button type="button" class="btn-day-24h ${day.allDay ? 'active' : ''}" data-day-idx="${idx}" title="Configurar este dia para atender o dia todo">
-              ${day.allDay ? 'Definir horário' : '24h'}
+          ${day.enabled ? (day.allDay ? `
+            <span class="badge-allday"><i data-lucide="sun" style="width:12px;height:12px;"></i> Dia todo (24h)</span>
+            <button type="button" class="btn-day-24h active" data-day-idx="${idx}" title="Definir horário específico">
+              Definir horário
             </button>
           ` : `
-            <span class="schedule-inactive-label">IA não atende neste dia</span>
+            <div class="schedule-time-box">
+              <input type="time" class="schedule-time-input input-time-start" data-day-idx="${idx}" value="${day.start}">
+              <span>às</span>
+              <input type="time" class="schedule-time-input input-time-end" data-day-idx="${idx}" value="${day.end}">
+            </div>
+            ${isOvernight ? `<span class="badge-overnight" title="Encerra na manhã do dia seguinte"><i data-lucide="moon" style="width:11px;height:11px;"></i> +1 dia</span>` : ''}
+            <button type="button" class="btn-day-24h" data-day-idx="${idx}" title="Atender 24 horas neste dia">
+              Dia todo
+            </button>
+          `) : `
+            <span class="schedule-inactive-label">Sem atendimento da IA</span>
           `}
         </div>
       </div>
@@ -2874,6 +3030,25 @@ function updatePresetButtons() {
       btn.classList.remove('active');
     }
   });
+
+  const summaryBar = document.getElementById('schedule-preset-summary-bar');
+  const summaryText = document.getElementById('schedule-preset-summary-text');
+  const weekTableWrap = document.getElementById('schedule-week-table-wrap');
+  const isCustom = agentSchedule.preset === 'custom';
+
+  if (summaryBar) summaryBar.style.display = isCustom ? 'none' : 'flex';
+  if (weekTableWrap) weekTableWrap.style.display = isCustom ? 'block' : 'none';
+
+  if (summaryText && !isCustom) {
+    if (agentSchedule.preset === 'night_weekend') {
+      summaryText.innerHTML = 'A IA atenderá de <strong>Segunda a Sexta das 18:00 às 08:00</strong> e <strong>Sábado e Domingo 24h</strong>.';
+    } else if (agentSchedule.preset === 'business_hours') {
+      summaryText.innerHTML = 'A IA atenderá de <strong>Segunda a Sexta das 08:00 às 18:00</strong> (desativada nos fins de semana).';
+    } else if (agentSchedule.preset === 'weekend_only') {
+      summaryText.innerHTML = 'A IA atenderá <strong>apenas aos Sábados e Domingos (24h)</strong>.';
+    }
+  }
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function copyMondayToWeekdays() {

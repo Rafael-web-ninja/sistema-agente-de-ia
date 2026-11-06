@@ -421,13 +421,18 @@ function renderSimplifiedAgentsTable(agents) {
       statusClass = 'badge-paused';
     }
     const channelIcon = agent.channel === 'WhatsApp' ? '🟢' : (agent.channel === 'Instagram' ? '📷' : '💬');
+    const savedAvatar = localStorage.getItem(`zapchat_agent_avatar_${agent.id}`);
+    const avatarUrl = savedAvatar !== null ? savedAvatar : (agent.avatarUrl || '');
 
     return `
       <tr>
         <td>
           <div class="agent-cell-main">
-            <div class="agent-icon-avatar" style="background-color: ${agent.avatarBg}; color: ${agent.avatarColor};">
-              <i data-lucide="bot" style="width: 20px; height: 20px;"></i>
+            <div class="agent-icon-avatar" style="background-color: ${agent.avatarBg}; color: ${agent.avatarColor}; overflow: hidden;">
+              ${avatarUrl
+                ? `<img src="${avatarUrl}" alt="${agent.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" />`
+                : `<i data-lucide="bot" style="width: 20px; height: 20px;"></i>`
+              }
             </div>
             <div>
               <span class="agent-title-text">${agent.name}</span>
