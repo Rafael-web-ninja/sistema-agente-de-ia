@@ -2083,20 +2083,14 @@
                     <!-- Horário de atendimento da IA -->
                     <div class="agent-schedule-section" style="padding-top: 24px; border-top: 1px solid var(--border-light); margin-bottom: 24px;">
                       <!-- Header Switch Row -->
-                      <div class="switch-control-group" style="margin-bottom: 14px;">
+                      <div class="switch-control-group" style="margin-bottom: 16px;">
                         <div class="switch-info">
-                          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                            <span class="switch-title" style="display: flex; align-items: center; gap: 8px; margin: 0;">
-                              <i data-lucide="clock" style="width:16px;height:16px;color:var(--primary);"></i>
-                              Horário de atendimento da IA
-                            </span>
-                            <span class="schedule-tz-pill">
-                              <i data-lucide="globe" style="width:12px;height:12px;"></i>
-                              Brasília (GMT-3)
-                            </span>
-                          </div>
+                          <span class="switch-title" style="display: flex; align-items: center; gap: 8px;">
+                            <i data-lucide="clock" style="width:16px;height:16px;color:var(--primary);"></i>
+                            Horário de atendimento da IA
+                          </span>
                           <span class="switch-desc">
-                            Desativado = atende 24h por dia. Ative para restringir quando a IA deve responder.
+                            Se desativado, o agente atende 24h por dia. Ative para definir dias e horários em que a IA deve atuar (ex: apenas à noite ou fins de semana).
                           </span>
                         </div>
                         <label class="switch-toggle">
@@ -2108,114 +2102,116 @@
                       <!-- Estado 1: 24/7 Ativo (quando o toggle está desmarcado) -->
                       <div class="schedule-banner-247" id="schedule-banner-247">
                         <div class="schedule-banner-icon">
-                          <i data-lucide="sparkles" style="width: 20px; height: 20px;"></i>
+                          <i data-lucide="sparkles" style="width: 22px; height: 22px;"></i>
                         </div>
                         <div class="schedule-banner-content">
                           <div class="schedule-banner-title">
-                            Atendimento 24/7 Ativo
-                            <span class="badge badge-dot badge-active" style="margin-left: 6px; font-size: 11px;">Sempre Online</span>
+                            Atendimento Contínuo 24/7 Ativo
+                            <span class="badge badge-dot badge-active" style="margin-left: 8px; font-size: 11px;">Sempre Online</span>
                           </div>
                           <p class="schedule-banner-desc">
-                            A IA responde imediatamente a qualquer hora, todos os dias da semana.
+                            A IA responde às mensagens dos clientes a qualquer momento do dia ou da noite, em todos os 7 dias da semana.
                           </p>
                         </div>
                       </div>
 
-                      <!-- Estado 2: Painel de Configuração Simplificado (quando o toggle está ativado) -->
+                      <!-- Estado 2: Painel de Configuração Detalhada (quando o toggle está ativado) -->
                       <div class="schedule-panel-custom" id="schedule-panel-custom" style="display: none;">
+                        
+                        <!-- Top Meta Bar: Timezone & Live Status -->
+                        <div class="schedule-meta-bar">
+                          <div class="schedule-timezone-info">
+                            <i data-lucide="globe" style="width:14px;height:14px;color:var(--text-muted);"></i>
+                            <span>Fuso horário: <strong>América/São Paulo (Horário de Brasília - GMT-3)</strong></span>
+                          </div>
+                        </div>
 
-                        <!-- 1. Escolha quando a IA deve atender -->
+                        <!-- Presets / Atalhos Rápidos -->
                         <div class="schedule-presets-box">
-                          <span class="schedule-presets-label">Quando a IA deve atender?</span>
+                          <span class="schedule-presets-label">Atalhos rápidos de programação:</span>
                           <div class="schedule-presets-grid">
                             <button type="button" class="schedule-preset-btn active" data-preset="night_weekend">
                               <span class="preset-icon">🌙</span>
                               <div class="preset-info">
-                                <span class="preset-name">Plantão Noturno & Fds</span>
-                                <span class="preset-desc">Seg–Sex (18h às 08h) + Sáb e Dom (24h)</span>
-                              </div>
-                            </button>
-                            <button type="button" class="schedule-preset-btn" data-preset="business_hours">
-                              <span class="preset-icon">💼</span>
-                              <div class="preset-info">
-                                <span class="preset-name">Horário Comercial</span>
-                                <span class="preset-desc">Seg–Sex (08h às 18h)</span>
+                                <span class="preset-name">Plantão Noturno & Fins de Semana</span>
+                                <span class="preset-desc">Seg a Sex (18h às 08h) + Sáb e Dom (24h)</span>
                               </div>
                             </button>
                             <button type="button" class="schedule-preset-btn" data-preset="weekend_only">
                               <span class="preset-icon">🏖️</span>
                               <div class="preset-info">
                                 <span class="preset-name">Apenas Fins de Semana</span>
-                                <span class="preset-desc">Sábado e Domingo (24h)</span>
+                                <span class="preset-desc">Sábado e Domingo o dia todo (24h)</span>
+                              </div>
+                            </button>
+                            <button type="button" class="schedule-preset-btn" data-preset="business_hours">
+                              <span class="preset-icon">💼</span>
+                              <div class="preset-info">
+                                <span class="preset-name">Horário Comercial</span>
+                                <span class="preset-desc">Seg a Sex (08h às 18h)</span>
                               </div>
                             </button>
                             <button type="button" class="schedule-preset-btn" data-preset="custom">
                               <span class="preset-icon">⚙️</span>
                               <div class="preset-info">
                                 <span class="preset-name">Personalizado</span>
-                                <span class="preset-desc">Escolher dias e horários manualmente</span>
+                                <span class="preset-desc">Defina manualmente cada dia e horário</span>
                               </div>
                             </button>
                           </div>
                         </div>
 
-                        <!-- Resumo compacto quando um atalho pronto está selecionado -->
-                        <div class="schedule-preset-summary-bar" id="schedule-preset-summary-bar">
-                          <div class="schedule-summary-left">
-                            <i data-lucide="check-circle-2" style="width:16px;height:16px;color:var(--primary);flex-shrink:0;"></i>
-                            <span id="schedule-preset-summary-text">A IA atenderá de <strong>Segunda a Sexta das 18:00 às 08:00</strong> e <strong>Sábado e Domingo 24h</strong>.</span>
-                          </div>
-                          <button type="button" class="btn-schedule-customize-link" id="btn-expand-custom-schedule">
-                            <i data-lucide="sliders-horizontal" style="width:13px;height:13px;"></i>
-                            Ajustar horários
-                          </button>
-                        </div>
-
-                        <!-- Grade Semanal (Exibida apenas no modo Personalizado) -->
-                        <div class="schedule-week-table-wrap" id="schedule-week-table-wrap" style="display: none;">
+                        <!-- Grade Semanal (Segunda a Domingo) -->
+                        <div class="schedule-week-table-wrap">
                           <div class="schedule-week-header">
                             <h4 class="schedule-week-title">
                               <i data-lucide="calendar" style="width:15px;height:15px;color:var(--primary);"></i>
-                              Horários por Dia da Semana
+                              Dias e Horários de Atuação
                             </h4>
                             <div class="schedule-week-actions">
                               <button type="button" class="btn-schedule-action" id="btn-copy-weekdays">
                                 <i data-lucide="copy" style="width:13px;height:13px;"></i>
-                                Copiar Segunda para Ter–Sex
+                                Replicar Segunda para dias úteis (Ter-Sex)
                               </button>
                             </div>
                           </div>
 
                           <div class="schedule-days-list" id="schedule-days-container">
-                            <!-- Inserido dinamicamente via JS -->
+                            <!-- Inserido dinamicamente via JS com fallbacks limpos -->
                           </div>
                         </div>
 
-                        <!-- 2. Comportamento fora do horário -->
+                        <!-- Ação fora do horário de atendimento -->
                         <div class="schedule-out-behavior-box">
-                          <span class="schedule-presets-label">Fora desse horário, o que a IA deve fazer?</span>
+                          <div class="schedule-out-header">
+                            <h4 class="schedule-out-title">
+                              <i data-lucide="moon" style="width:15px;height:15px;color:var(--text-muted);"></i>
+                              Quando um cliente chamar fora do horário de atendimento:
+                            </h4>
+                          </div>
 
                           <div class="schedule-out-options">
                             <label class="schedule-radio-card active" id="label-action-silent">
                               <input type="radio" name="agent_out_action" value="silent" checked>
                               <div class="radio-card-content">
-                                <span class="radio-card-title">Ficar em silêncio (Recomendado)</span>
-                                <span class="radio-card-desc">A IA não responde e deixa a conversa para a equipe humana ou próximo turno.</span>
+                                <span class="radio-card-title">Não responder (Silencioso)</span>
+                                <span class="radio-card-desc">A IA não envia nenhuma mensagem. A conversa aguarda o atendente humano ou o próximo expediente.</span>
                               </div>
                             </label>
 
                             <label class="schedule-radio-card" id="label-action-reply">
                               <input type="radio" name="agent_out_action" value="auto_reply">
                               <div class="radio-card-content">
-                                <span class="radio-card-title">Enviar aviso de ausência</span>
-                                <span class="radio-card-desc">Envia uma única mensagem informando que o atendimento retornará em breve.</span>
+                                <span class="radio-card-title">Enviar mensagem de ausência</span>
+                                <span class="radio-card-desc">Envia uma resposta automática avisando que o atendimento humano ou IA retornará em breve.</span>
                               </div>
                             </label>
                           </div>
 
-                          <div class="schedule-auto-reply-box" id="schedule-auto-reply-box" style="display: none; margin-top: 8px;">
-                            <label class="form-label" for="schedule-out-message-text" style="font-size: 12px;">Mensagem automática de ausência</label>
-                            <textarea id="schedule-out-message-text" class="form-textarea" rows="2" placeholder="Mensagem enviada aos clientes fora do horário...">Olá! No momento estamos fora do nosso horário de atendimento. Recebemos sua mensagem e retornaremos assim que possível!</textarea>
+                          <div class="schedule-auto-reply-box" id="schedule-auto-reply-box" style="display: none; margin-top: 14px;">
+                            <label class="form-label" for="schedule-out-message-text" style="font-size: 12.5px;">Mensagem de ausência personalizada</label>
+                            <textarea id="schedule-out-message-text" class="form-textarea" rows="3" placeholder="Mensagem enviada aos clientes fora do horário...">Olá! No momento nossa equipe e assistente virtual estão fora do horário de atendimento. Sua mensagem foi recebida com sucesso e responderemos assim que retornarmos!</textarea>
+                            <span style="font-size: 11.5px; color: var(--text-muted); display: block; margin-top: 4px;">Essa mensagem será enviada uma única vez quando o cliente chamar fora do horário.</span>
                           </div>
 
                         </div>
@@ -2509,6 +2505,12 @@
                   <button type="button" class="settings-nav-btn" data-settings-tab="faturamento">
                     <i data-lucide="credit-card"></i>
                     <span>Plano e Faturamento</span>
+                  </button>
+                </li>
+                <li class="settings-nav-item">
+                  <button type="button" class="settings-nav-btn" data-settings-tab="integracoes">
+                    <i data-lucide="plug"></i>
+                    <span>Integrações</span>
                   </button>
                 </li>
                 <li class="settings-nav-item">
@@ -3007,6 +3009,121 @@
                     <i data-lucide="save" style="width: 15px; height: 15px;"></i>
                     Salvar preferências de notificações
                   </button>
+                </div>
+              </div>
+
+              <!-- ==========================================
+                   PANE 5: INTEGRAÇÕES (API KEYS & PROVEDORES)
+                   ========================================== -->
+              <div class="settings-pane" id="settings-pane-integracoes">
+                <div class="integrations-section-group">
+                  <div class="integrations-group-header">
+                    <h3 class="integrations-group-title">Inteligência Artificial & Voz</h3>
+                    <p class="integrations-group-subtitle">Conecte suas próprias chaves de API para habilitar modelos avançados de texto, áudio e voz realista nos Agentes e Fluxos.</p>
+                  </div>
+
+                  <!-- Card 1: OpenAI -->
+                  <div class="integration-provider-card" data-provider="openai">
+                    <div class="integration-provider-logo openai-logo">
+                      <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+                        <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-2.999l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3975.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/>
+                      </svg>
+                    </div>
+                    <div class="integration-provider-body">
+                      <div class="integration-provider-title-row">
+                        <h4 class="integration-provider-name">OpenAI</h4>
+                        <span class="integration-badge-status connected" id="badge-status-openai">Conectado</span>
+                      </div>
+                      <p class="integration-provider-desc">Insira a chave da API da sua conta OpenAI para usar o Assistente de IA nos Fluxos e Agentes.</p>
+
+                      <div class="integration-field-block">
+                        <label class="integration-field-label" for="input-api-key-openai">Chave API</label>
+                        <div class="integration-input-action-row">
+                          <div class="integration-input-wrap">
+                            <input type="password" class="form-input integration-key-input" id="input-api-key-openai" value="sk-proj-9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1fvWQA" placeholder="Ex: sk-proj-..." autocomplete="off">
+                            <button type="button" class="btn-toggle-key-vis" data-target="input-api-key-openai" title="Mostrar / Ocultar chave">
+                              <i data-lucide="eye" style="width:15px;height:15px;"></i>
+                            </button>
+                          </div>
+                          <button type="button" class="btn btn-primary btn-sm btn-save-integration-key" data-provider="openai" id="btn-save-key-openai">
+                            Salvar
+                          </button>
+                          <button type="button" class="btn-delete-integration-key" data-provider="openai" title="Remover chave OpenAI">
+                            <i data-lucide="trash-2" style="width:15px;height:15px;"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 2: ElevenLabs -->
+                  <div class="integration-provider-card" data-provider="elevenlabs">
+                    <div class="integration-provider-logo elevenlabs-logo">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                        <rect x="6" y="4" width="4" height="16" rx="1"/>
+                        <rect x="14" y="4" width="4" height="16" rx="1"/>
+                      </svg>
+                    </div>
+                    <div class="integration-provider-body">
+                      <div class="integration-provider-title-row">
+                        <h4 class="integration-provider-name">ElevenLabs</h4>
+                        <span class="integration-badge-status" id="badge-status-elevenlabs">Não configurado</span>
+                      </div>
+                      <p class="integration-provider-desc">Insira a chave da API da sua conta ElevenLabs para usar respostas por voz no Assistente de IA.</p>
+
+                      <div class="integration-field-block">
+                        <label class="integration-field-label" for="input-api-key-elevenlabs">Chave API</label>
+                        <div class="integration-input-action-row">
+                          <div class="integration-input-wrap">
+                            <input type="password" class="form-input integration-key-input" id="input-api-key-elevenlabs" value="" placeholder="Chave da API ElevenLabs (xi-api-key...)" autocomplete="off">
+                            <button type="button" class="btn-toggle-key-vis" data-target="input-api-key-elevenlabs" title="Mostrar / Ocultar chave">
+                              <i data-lucide="eye" style="width:15px;height:15px;"></i>
+                            </button>
+                          </div>
+                          <button type="button" class="btn btn-primary btn-sm btn-save-integration-key" data-provider="elevenlabs" id="btn-save-key-elevenlabs">
+                            Salvar
+                          </button>
+                          <button type="button" class="btn-delete-integration-key" data-provider="elevenlabs" title="Remover chave ElevenLabs">
+                            <i data-lucide="trash-2" style="width:15px;height:15px;"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 3: Google Gemini -->
+                  <div class="integration-provider-card" data-provider="gemini">
+                    <div class="integration-provider-logo gemini-logo">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+                        <path d="M12 2C12 7.52285 16.4772 12 22 12C16.4772 12 12 16.4772 12 22C12 16.4772 7.52285 12 2 12C7.52285 12 12 7.52285 12 2Z" fill="#4F46E5"/>
+                      </svg>
+                    </div>
+                    <div class="integration-provider-body">
+                      <div class="integration-provider-title-row">
+                        <h4 class="integration-provider-name">Google Gemini</h4>
+                        <span class="integration-badge-status" id="badge-status-gemini">Não configurado</span>
+                      </div>
+                      <p class="integration-provider-desc">Insira sua chave do Google AI Studio para utilizar os modelos Gemini Pro e Flash nos seus agentes.</p>
+
+                      <div class="integration-field-block">
+                        <label class="integration-field-label" for="input-api-key-gemini">Chave API</label>
+                        <div class="integration-input-action-row">
+                          <div class="integration-input-wrap">
+                            <input type="password" class="form-input integration-key-input" id="input-api-key-gemini" value="" placeholder="Chave da API Google Gemini (AIzaSy...)" autocomplete="off">
+                            <button type="button" class="btn-toggle-key-vis" data-target="input-api-key-gemini" title="Mostrar / Ocultar chave">
+                              <i data-lucide="eye" style="width:15px;height:15px;"></i>
+                            </button>
+                          </div>
+                          <button type="button" class="btn btn-primary btn-sm btn-save-integration-key" data-provider="gemini" id="btn-save-key-gemini">
+                            Salvar
+                          </button>
+                          <button type="button" class="btn-delete-integration-key" data-provider="gemini" title="Remover chave Gemini">
+                            <i data-lucide="trash-2" style="width:15px;height:15px;"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 

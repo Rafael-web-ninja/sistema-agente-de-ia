@@ -2799,15 +2799,6 @@ function setupAgentSchedule() {
     });
   }
 
-  // Expand custom schedule button from summary bar
-  const expandCustomBtn = document.getElementById('btn-expand-custom-schedule');
-  if (expandCustomBtn) {
-    expandCustomBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      applySchedulePreset('custom');
-    });
-  }
-
   // Radio cards for out of hours action
   const radioSilent = document.querySelector('input[name="agent_out_action"][value="silent"]');
   const radioReply = document.querySelector('input[name="agent_out_action"][value="auto_reply"]');
@@ -2874,23 +2865,19 @@ function renderScheduleDays() {
           <span class="schedule-day-name">${day.name}</span>
         </div>
         <div class="schedule-day-right">
-          ${day.enabled ? (day.allDay ? `
-            <span class="badge-allday"><i data-lucide="sun" style="width:12px;height:12px;"></i> Dia todo (24h)</span>
-            <button type="button" class="btn-day-24h active" data-day-idx="${idx}" title="Definir horário específico">
-              Definir horário
+          ${day.enabled ? `
+            <div class="schedule-time-box">
+              <input type="time" class="schedule-time-input input-time-start" data-day-idx="${idx}" value="${day.start}" ${day.allDay ? 'disabled' : ''}>
+              <span>até</span>
+              <input type="time" class="schedule-time-input input-time-end" data-day-idx="${idx}" value="${day.end}" ${day.allDay ? 'disabled' : ''}>
+            </div>
+            ${isOvernight ? `<span class="badge-overnight" title="O atendimento se estende até a manhã do dia seguinte"><i data-lucide="moon" style="width:12px;height:12px;"></i> Turno noturno (+1 dia)</span>` : ''}
+            ${day.allDay ? `<span class="badge-allday"><i data-lucide="sun" style="width:12px;height:12px;"></i> 24 Horas</span>` : ''}
+            <button type="button" class="btn-day-24h ${day.allDay ? 'active' : ''}" data-day-idx="${idx}" title="Configurar este dia para atender o dia todo">
+              ${day.allDay ? 'Definir horário' : '24h'}
             </button>
           ` : `
-            <div class="schedule-time-box">
-              <input type="time" class="schedule-time-input input-time-start" data-day-idx="${idx}" value="${day.start}">
-              <span>às</span>
-              <input type="time" class="schedule-time-input input-time-end" data-day-idx="${idx}" value="${day.end}">
-            </div>
-            ${isOvernight ? `<span class="badge-overnight" title="Encerra na manhã do dia seguinte"><i data-lucide="moon" style="width:11px;height:11px;"></i> +1 dia</span>` : ''}
-            <button type="button" class="btn-day-24h" data-day-idx="${idx}" title="Atender 24 horas neste dia">
-              Dia todo
-            </button>
-          `) : `
-            <span class="schedule-inactive-label">Sem atendimento da IA</span>
+            <span class="schedule-inactive-label">IA não atende neste dia</span>
           `}
         </div>
       </div>
@@ -3030,25 +3017,6 @@ function updatePresetButtons() {
       btn.classList.remove('active');
     }
   });
-
-  const summaryBar = document.getElementById('schedule-preset-summary-bar');
-  const summaryText = document.getElementById('schedule-preset-summary-text');
-  const weekTableWrap = document.getElementById('schedule-week-table-wrap');
-  const isCustom = agentSchedule.preset === 'custom';
-
-  if (summaryBar) summaryBar.style.display = isCustom ? 'none' : 'flex';
-  if (weekTableWrap) weekTableWrap.style.display = isCustom ? 'block' : 'none';
-
-  if (summaryText && !isCustom) {
-    if (agentSchedule.preset === 'night_weekend') {
-      summaryText.innerHTML = 'A IA atenderá de <strong>Segunda a Sexta das 18:00 às 08:00</strong> e <strong>Sábado e Domingo 24h</strong>.';
-    } else if (agentSchedule.preset === 'business_hours') {
-      summaryText.innerHTML = 'A IA atenderá de <strong>Segunda a Sexta das 08:00 às 18:00</strong> (desativada nos fins de semana).';
-    } else if (agentSchedule.preset === 'weekend_only') {
-      summaryText.innerHTML = 'A IA atenderá <strong>apenas aos Sábados e Domingos (24h)</strong>.';
-    }
-  }
-  if (window.lucide) window.lucide.createIcons();
 }
 
 function copyMondayToWeekdays() {

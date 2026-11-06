@@ -5,6 +5,7 @@ export function initSettingsView() {
   setupSettingsTabs();
   setupSaveButtons();
   setupBillingActions();
+  setupIntegrationsTab();
   initTeamSettings();
 
   // Expose globally for cross-module or inline access
@@ -158,5 +159,116 @@ function setupBillingActions() {
       showToast('Dados do cartão prontos para atualização.');
     });
   }
+}
+
+/**
+ * Setup Integrations tab (OpenAI, ElevenLabs, Gemini, Zapier, API, RD Station)
+ */
+function setupIntegrationsTab() {
+  const providers = ['openai', 'elevenlabs', 'gemini', 'rdstation'];
+  const providerLabels = {
+    openai: 'OpenAI',
+    elevenlabs: 'ElevenLabs',
+    gemini: 'Google Gemini',
+    rdstation: 'RD Station'
+  };
+
+  function updateProviderBadge(provider, hasKey) {
+    const badge = document.getElementById(`badge-status-${provider}`);
+    const saveBtn = document.getElementById(`btn-save-key-${provider}`);
+    if (badge) {
+      if (hasKey) {
+        badge.textContent = 'Conectado';
+        badge.classList.add('connected');
+      } else {
+        badge.textContent = 'Não configurado';
+        badge.classList.remove('connected');
+      }
+    }
+    if (saveBtn) {
+      saveBtn.textContent = hasKey ? 'Recarregar' : 'Salvar';
+    }
+  }
+
+  // Load saved keys from localStorage
+  providers.forEach(p => {
+    const input = document.getElementById(`input-api-key-${p}`);
+    if (!input) return;
+    const saved = localStorage.getItem(`zapchat_integration_key_${p}`);
+    if (saved !== null) {
+      input.value = saved;
+    }
+    updateProviderBadge(p, Boolean(input.value.trim()));
+  });
+
+  // Toggle visibility (eye / eye-off)
+  document.querySelectorAll('.btn-toggle-key-vis').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-target');
+      const input = document.getElementById(targetId);
+      if (!input) return;
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      btn.innerHTML = `<i data-lucide="${isPassword ? 'eye-off' : 'eye'}" style="width:15px;height:15px;"></i>`;
+      if (window.lucide) window.lucide.createIcons();
+    });
+  });
+
+  // Save / Reload key
+  document.querySelectorAll('.btn-save-integration-key').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const provider = btn.getAttribute('data-provider');
+      const input = document.getElementById(`input-api-key-${provider}`);
+      if (!input) return;
+      const val = input.value.trim();
+      if (!val) {
+        showToast(`Insira uma chave válida para ${providerLabels[provider] || provider}.`);
+        input.focus();
+        return;
+      }
+      localStorage.setItem(`zapchat_integration_key_${provider}`, val);
+      updateProviderBadge(provider, true);
+      showToast(`Chave da ${providerLabels[provider] || provider} salva e conectada com sucesso!`);
+    });
+  });
+
+  // Delete key
+  document.querySelectorAll('.btn-delete-integration-key').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const provider = btn.getAttribute('data-provider');
+      const input = document.getElementById(`input-api-key-${provider}`);
+      if (input) input.value = '';
+      localStorage.setItem(`zapchat_integration_key_${provider}`, '');
+      updateProviderBadge(provider, false);
+      showToast(`Chave da ${providerLabels[provider] || provider} removida.`);
+    });
+  });
+
+  // Copy token buttons
+  document.querySelectorAll('.btn-copy-integration-token').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-copy-target');
+      const codeEl = document.getElementById(targetId);
+      if (!codeEl) return;
+      const text = codeEl.textContent.trim();
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).catch(() => {});
+      }
+      showToast('Chave API copiada para a área de transferência!');
+    });
+  });
+
+  // Regenerate token buttons
+  document.querySelectorAll('.btn-regenerate-token').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-token-target');
+      const codeEl = document.getElementById(targetId);
+      if (!codeEl) return;
+      const randHex = (len) => Array.from({ length: len }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      const newToken = `${randHex(8)}-${randHex(4)}-4${randHex(3)}-${randHex(4)}-${randHex(12)}`;
+      codeEl.textContent = newToken;
+      showToast('Nova chave API gerada com sucesso!');
+    });
+  });
 }
 

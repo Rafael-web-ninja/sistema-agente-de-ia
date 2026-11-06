@@ -1499,3 +1499,268 @@
   margin-bottom: 14px;
 }
 
+/* ===================================================
+   PANE 5: INTEGRAÇÕES (API KEYS & PROVEDORES)
+   =================================================== */
+
+.integrations-section-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.integrations-group-header {
+  margin-bottom: 2px;
+}
+
+.integrations-group-title {
+  margin: 0 0 4px 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.integrations-group-subtitle {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.integration-provider-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.integration-provider-card:hover {
+  border-color: var(--primary-border);
+}
+
+.integration-provider-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-light);
+  color: var(--text-main);
+}
+
+.integration-provider-logo.openai-logo {
+  background: rgba(16, 163, 127, 0.1);
+  color: #10A37F;
+  border-color: rgba(16, 163, 127, 0.22);
+}
+
+.integration-provider-logo.elevenlabs-logo {
+  background: var(--bg-card-alt);
+  color: var(--text-main);
+}
+
+.integration-provider-logo.gemini-logo {
+  background: rgba(79, 70, 229, 0.1);
+  border-color: rgba(79, 70, 229, 0.22);
+}
+
+.integration-provider-logo.zapier-logo {
+  background: rgba(255, 79, 0, 0.1);
+  border-color: rgba(255, 79, 0, 0.22);
+}
+
+.integration-provider-logo.api-logo {
+  background: rgba(124, 58, 237, 0.1);
+  color: #7C3AED;
+  border-color: rgba(124, 58, 237, 0.22);
+}
+
+.integration-provider-logo.rd-logo {
+  background: rgba(2, 132, 199, 0.1);
+  color: #0284C7;
+  border-color: rgba(2, 132, 199, 0.22);
+}
+
+.integration-provider-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.integration-provider-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.integration-provider-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.integration-badge-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-card-alt);
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+}
+
+.integration-badge-status.connected {
+  background: var(--status-active-bg);
+  color: var(--status-active);
+  border-color: rgba(0, 168, 104, 0.25);
+}
+
+.integration-provider-desc {
+  margin: 0 0 14px 0;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.integration-field-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.integration-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.integration-input-action-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.integration-input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+  max-width: 420px;
+}
+
+.integration-key-input {
+  width: 100%;
+  padding-right: 36px !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12.5px !important;
+}
+
+.btn-toggle-key-vis {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+}
+
+.btn-toggle-key-vis:hover {
+  color: var(--text-main);
+  background: var(--bg-hover);
+}
+
+.btn-delete-integration-key {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-card-alt);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-delete-integration-key:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.integration-token-pill-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.22);
+  border-radius: var(--radius-md);
+  color: #6D28D9;
+  font-size: 12.5px;
+}
+
+[data-theme="dark"] .integration-token-pill-box {
+  color: #A78BFA;
+  background: rgba(124, 58, 237, 0.15);
+}
+
+.integration-token-pill-box code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+}
+
+.btn-copy-integration-token {
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+
+.btn-copy-integration-token:hover {
+  opacity: 1;
+}
+
+.integration-checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.integration-checkbox-row input[type="checkbox"] {
+  accent-color: var(--primary);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+
