@@ -100,6 +100,500 @@ let currentLeadForAssign = null;
 let currentLeadForView = null;
 let leadToDelete = null;
 
+const LEAD_TAG_COLORS = [
+  { color: '#00A868', bg: 'rgba(0, 168, 104, 0.12)' },
+  { color: '#2563EB', bg: 'rgba(37, 99, 235, 0.12)' },
+  { color: '#7C3AED', bg: 'rgba(124, 58, 237, 0.12)' },
+  { color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.14)' },
+  { color: '#EC4899', bg: 'rgba(236, 72, 153, 0.12)' },
+  { color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)' }
+];
+
+function getLeadTagsCatalog() {
+  if (!zapChatData.leads.availableTags) {
+    const defaultCatalog = [
+      { id: 'tag-quente', name: 'Lead quente', color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)' },
+      { id: 'tag-pro', name: 'Interessado - Pro', color: '#00A868', bg: 'rgba(0, 168, 104, 0.12)' },
+      { id: 'tag-vip', name: 'Cliente VIP', color: '#7C3AED', bg: 'rgba(124, 58, 237, 0.12)' },
+      { id: 'tag-orcamento', name: 'Orçamento Enviado', color: '#2563EB', bg: 'rgba(37, 99, 235, 0.12)' },
+      { id: 'tag-retorno', name: 'Aguardando Retorno', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.14)' }
+    ];
+    // Ensure all existing lead tags are in the catalog
+    (zapChatData.leads.list || []).forEach((l, lIdx) => {
+      (l.tags || []).forEach((tName, tIdx) => {
+        if (!defaultCatalog.some(c => c.name.toLowerCase() === tName.toLowerCase())) {
+          const palette = LEAD_TAG_COLORS[(lIdx + tIdx) % LEAD_TAG_COLORS.length];
+          defaultCatalog.push({
+            id: `tag-${Date.now()}-${lIdx}-${tIdx}`,
+            name: tName,
+            color: palette.color,
+            bg: palette.bg
+          });
+        }
+      });
+    });
+    zapChatData.leads.availableTags = defaultCatalog;
+  }
+  return zapChatData.leads.availableTags;
+}
+
+function getTagStyleMeta(tagName) {
+  const catalog = getLeadTagsCatalog();
+  const found = catalog.find(t => t.name.toLowerCase() === (tagName || '').toLowerCase());
+  if (found) return found;
+  return { name: tagName, color: '#00A868', bg: 'rgba(0, 168, 104, 0.12)' };
+}
+
+export function openLeadTagsModal(lead) {
+  if (!lead) return;
+  if (!Array.isArray(lead.tags)) lead.tags = [];
+
+  let modal = document.getElementById('modal-lead-tags');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-lead-tags';
+    document.body.appendChild(modal);
+  }
+  modal.className = 'modal-backdrop';
+
+  let newTagColorIdx = 0;
+  let editingTagId = null;
+  let editingTagColor = LEAD_TAG_COLORS[0].color;
+
+  const renderModalContent = () => {
+    const catalog = getLeadTagsCatalog();
+    const activePalette = LEAD_TAG_COLORS[newTagColorIdx] || LEAD_TAG_COLORS[0];
+
+    modal.innerHTML = `
+      <div class="modal-dialog" style="max-width: 500px;">
+        <div class="modal-header" style="margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 168, 104, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i data-lucide="tags" style="width: 18px; height: 18px;"></i>
+            </div>
+            <div>
+              <h3 class="modal-title" style="margin: 0; font-size: 16px;">Etiquetas do Lead</h3>
+              <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">Lead: <strong>${lead.name}</strong> • Clique para marcar, editar ou excluir</p>
+            </div>
+          </div>
+          <button type="button" class="modal-close" id="btn-close-lead-tags" aria-label="Fechar">&times;</button>
+        </div>
+
+        <div class="modal-body" style="padding: 4px 0 16px 0; display: flex; flex-direction: column; gap: 14px;">
+          <!-- Criar Nova Etiqueta -->
+          <form id="form-create-lead-tag" class="lead-tag-create-box">
+            <label class="form-label" style="margin-bottom: 6px; font-size: 12px;">Criar nova etiqueta</label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="text" id="input-new-lead-tag" class="form-input" placeholder="Nome da etiqueta (ex: Urgente, VIP...)" style="flex: 1; height: 36px; font-size: 13px;" required>
+              <button type="submit" class="btn btn-primary btn-sm" style="height: 36px; padding: 0 14px;">
+                <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                <span>Criar</span>
+              </button>
+            </div>
+            <div class="lead-tag-color-picker-row">
+              <span style="font-size: 11px; color: var(--text-muted);">Cor:</span>
+              ${LEAD_TAG_COLORS.map((c, idx) => `
+                <button type="button" class="lead-tag-color-dot ${idx === newTagColorIdx ? 'selected' : ''}" data-color-idx="${idx}" style="background: ${c.color};" title="Escolher cor"></button>
+              `).join('')}
+            </div>
+          </form>
+
+          <!-- Lista de Etiquetas Disponíveis -->
+          <div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span class="form-label" style="margin: 0; font-size: 12px;">Etiquetas disponíveis (${catalog.length})</span>
+              <span style="font-size: 11px; color: var(--text-muted);">${lead.tags.length} selecionada(s)</span>
+            </div>
+
+            <div class="lead-tags-manager-list">
+              ${catalog.map(tag => {
+                const isSelected = lead.tags.some(t => t.toLowerCase() === tag.name.toLowerCase());
+                const isEditing = editingTagId === tag.id;
+
+                if (isEditing) {
+                  return `
+                    <div class="lead-tag-manager-item is-editing">
+                      <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                        <input type="text" class="form-input" id="input-edit-tag-name-${tag.id}" value="${tag.name}" style="flex: 1; height: 32px; font-size: 12.5px;">
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                          ${LEAD_TAG_COLORS.map(c => `
+                            <button type="button" class="lead-tag-color-dot sm ${c.color === editingTagColor ? 'selected' : ''}" data-edit-color="${c.color}" data-edit-bg="${c.bg}" style="background: ${c.color};"></button>
+                          `).join('')}
+                        </div>
+                        <button type="button" class="btn btn-primary btn-sm btn-save-edit-tag" data-tag-id="${tag.id}" style="height: 30px; padding: 0 10px;">Salvar</button>
+                        <button type="button" class="btn btn-secondary btn-sm btn-cancel-edit-tag" style="height: 30px; padding: 0 8px;">✕</button>
+                      </div>
+                    </div>
+                  `;
+                }
+
+                return `
+                  <div class="lead-tag-manager-item ${isSelected ? 'selected' : ''}">
+                    <button type="button" class="lead-tag-toggle-area" data-toggle-tag="${tag.name}">
+                      <span class="lead-tag-check-box ${isSelected ? 'checked' : ''}">
+                        ${isSelected ? `<i data-lucide="check" style="width: 11px; height: 11px;"></i>` : ''}
+                      </span>
+                      <span class="lead-tag-pill-preview" style="background: ${tag.bg}; color: ${tag.color};">
+                        <span class="lead-tag-dot" style="background: ${tag.color};"></span>
+                        <span>${tag.name}</span>
+                      </span>
+                    </button>
+                    <div class="lead-tag-item-actions">
+                      <button type="button" class="lead-tag-icon-btn btn-start-edit-tag" data-tag-id="${tag.id}" title="Editar etiqueta">
+                        <i data-lucide="pencil" style="width: 13px; height: 13px;"></i>
+                      </button>
+                      <button type="button" class="lead-tag-icon-btn danger btn-delete-tag" data-tag-id="${tag.id}" title="Excluir etiqueta">
+                        <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding: 12px 0 0 0; border-top: 1px solid var(--border); display: flex; justify-content: flex-end;">
+          <button type="button" class="btn btn-primary" id="btn-done-lead-tags">Concluído</button>
+        </div>
+      </div>
+    `;
+
+    if (window.lucide) window.lucide.createIcons();
+
+    const closeModal = () => modal.classList.remove('active');
+    modal.querySelector('#btn-close-lead-tags')?.addEventListener('click', closeModal);
+    modal.querySelector('#btn-done-lead-tags')?.addEventListener('click', closeModal);
+
+    // Color picker for new tag
+    modal.querySelectorAll('[data-color-idx]').forEach(dot => {
+      dot.addEventListener('click', () => {
+        newTagColorIdx = Number(dot.getAttribute('data-color-idx')) || 0;
+        modal.querySelectorAll('[data-color-idx]').forEach((d, idx) => {
+          d.classList.toggle('selected', idx === newTagColorIdx);
+        });
+      });
+    });
+
+    // Create new tag
+    modal.querySelector('#form-create-lead-tag')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const inputEl = modal.querySelector('#input-new-lead-tag');
+      const name = (inputEl?.value || '').trim();
+      if (!name) return;
+
+      const palette = LEAD_TAG_COLORS[newTagColorIdx] || LEAD_TAG_COLORS[0];
+      const existing = catalog.find(t => t.name.toLowerCase() === name.toLowerCase());
+      if (!existing) {
+        catalog.unshift({
+          id: `tag-${Date.now()}`,
+          name,
+          color: palette.color,
+          bg: palette.bg
+        });
+      }
+      if (!lead.tags.some(t => t.toLowerCase() === name.toLowerCase())) {
+        lead.tags.push(existing ? existing.name : name);
+      }
+
+      refreshLeadTagsUI(lead);
+      renderModalContent();
+      showToast(`Etiqueta "${name}" adicionada a ${lead.name}!`);
+    });
+
+    // Toggle tag on lead
+    modal.querySelectorAll('[data-toggle-tag]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tagName = btn.getAttribute('data-toggle-tag');
+        const idx = lead.tags.findIndex(t => t.toLowerCase() === tagName.toLowerCase());
+        if (idx !== -1) {
+          lead.tags.splice(idx, 1);
+        } else {
+          lead.tags.push(tagName);
+        }
+        refreshLeadTagsUI(lead);
+        renderModalContent();
+      });
+    });
+
+    // Start editing tag
+    modal.querySelectorAll('.btn-start-edit-tag').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tagId = btn.getAttribute('data-tag-id');
+        const tagObj = catalog.find(t => t.id === tagId);
+        if (!tagObj) return;
+        editingTagId = tagId;
+        editingTagColor = tagObj.color;
+        renderModalContent();
+        const editInput = modal.querySelector(`#input-edit-tag-name-${tagId}`);
+        if (editInput) {
+          editInput.focus();
+          editInput.select();
+        }
+      });
+    });
+
+    // Edit tag color selection
+    modal.querySelectorAll('[data-edit-color]').forEach(dot => {
+      dot.addEventListener('click', () => {
+        editingTagColor = dot.getAttribute('data-edit-color');
+        modal.querySelectorAll('[data-edit-color]').forEach(d => {
+          d.classList.toggle('selected', d.getAttribute('data-edit-color') === editingTagColor);
+        });
+      });
+    });
+
+    // Cancel edit tag
+    modal.querySelectorAll('.btn-cancel-edit-tag').forEach(btn => {
+      btn.addEventListener('click', () => {
+        editingTagId = null;
+        renderModalContent();
+      });
+    });
+
+    // Save edited tag
+    modal.querySelectorAll('.btn-save-edit-tag').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tagId = btn.getAttribute('data-tag-id');
+        const tagObj = catalog.find(t => t.id === tagId);
+        const inputEl = modal.querySelector(`#input-edit-tag-name-${tagId}`);
+        const newName = (inputEl?.value || '').trim();
+        if (!tagObj || !newName) return;
+
+        const oldName = tagObj.name;
+        const chosenPalette = LEAD_TAG_COLORS.find(c => c.color === editingTagColor) || LEAD_TAG_COLORS[0];
+        tagObj.name = newName;
+        tagObj.color = chosenPalette.color;
+        tagObj.bg = chosenPalette.bg;
+
+        // Update tag name across all leads that had oldName
+        (zapChatData.leads.list || []).forEach(l => {
+          if (Array.isArray(l.tags)) {
+            l.tags = l.tags.map(t => (t.toLowerCase() === oldName.toLowerCase() ? newName : t));
+          }
+        });
+
+        editingTagId = null;
+        refreshLeadTagsUI(lead);
+        renderModalContent();
+        showToast(`Etiqueta "${newName}" atualizada!`);
+      });
+    });
+
+    // Delete tag
+    modal.querySelectorAll('.btn-delete-tag').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tagId = btn.getAttribute('data-tag-id');
+        const idx = catalog.findIndex(t => t.id === tagId);
+        if (idx === -1) return;
+        const removedTag = catalog[idx];
+        catalog.splice(idx, 1);
+
+        // Remove from all leads
+        (zapChatData.leads.list || []).forEach(l => {
+          if (Array.isArray(l.tags)) {
+            l.tags = l.tags.filter(t => t.toLowerCase() !== removedTag.name.toLowerCase());
+          }
+        });
+
+        refreshLeadTagsUI(lead);
+        renderModalContent();
+        showToast(`Etiqueta "${removedTag.name}" excluída!`);
+      });
+    });
+  };
+
+  renderModalContent();
+  modal.classList.add('active');
+  modal.onclick = (e) => {
+    if (e.target === modal) modal.classList.remove('active');
+  };
+}
+
+function refreshLeadTagsUI(lead) {
+  renderLeadsTable(currentDisplayedLeads);
+  if (selectedLead && selectedLead.id === lead.id) {
+    renderSelectedLeadPanel(lead);
+  }
+}
+
+function getCrmStagesForLeads() {
+  return zapChatData.crm?.stages || [
+    { id: 'prospeccao', name: 'Prospecção', color: '#2563EB' },
+    { id: 'qualificacao', name: 'Qualificação', color: '#7C3AED' },
+    { id: 'proposta', name: 'Proposta Enviada', color: '#F59E0B' },
+    { id: 'negociacao', name: 'Negociação', color: '#EC4899' },
+    { id: 'ganho', name: 'Fechado Ganho', color: '#00A868' }
+  ];
+}
+
+function findCrmDealForLead(lead) {
+  if (!lead || !zapChatData.crm?.deals) return null;
+  return zapChatData.crm.deals.find(d =>
+    d.leadId === lead.id ||
+    (d.contactName && lead.name && d.contactName.toLowerCase() === lead.name.toLowerCase()) ||
+    (d.phone && lead.phone && d.phone === lead.phone)
+  ) || null;
+}
+
+export function openLeadSendToCrmModal(lead) {
+  if (!lead) return;
+  let modal = document.getElementById('modal-lead-send-crm');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-lead-send-crm';
+    document.body.appendChild(modal);
+  }
+  modal.className = 'modal-backdrop';
+
+  const stages = getCrmStagesForLeads();
+  const existingDeal = findCrmDealForLead(lead);
+  let selectedStageId = existingDeal ? existingDeal.stage : stages[0].id;
+  let selectedPriority = existingDeal ? (existingDeal.priority || 'Alta') : 'Alta';
+  const initialValue = existingDeal ? (existingDeal.value || '') : '';
+
+  modal.innerHTML = `
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header" style="margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 168, 104, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="kanban" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 16px;">${existingDeal ? 'Gerenciar Lead no CRM' : 'Enviar Lead para o CRM'}</h3>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">${lead.name} • ${lead.phone}</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" id="btn-close-lead-crm-modal" aria-label="Fechar">&times;</button>
+      </div>
+
+      <form id="form-lead-send-crm">
+        <div class="modal-body" style="padding: 4px 0 18px 0; display: flex; flex-direction: column; gap: 14px;">
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Etapa do Funil no CRM</label>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;" id="lead-crm-stage-options">
+              ${stages.map(s => `
+                <button type="button" class="lead-crm-stage-btn ${s.id === selectedStageId ? 'active' : ''}" data-stage-id="${s.id}" style="display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 9px; border: 1.5px solid ${s.id === selectedStageId ? 'var(--primary)' : 'var(--border)'}; background: ${s.id === selectedStageId ? 'rgba(0, 168, 104, 0.08)' : 'var(--bg-main)'}; color: var(--text-main); font-size: 12.5px; font-weight: 600; cursor: pointer; text-align: left; transition: all 0.15s ease;">
+                  <span style="width: 9px; height: 9px; border-radius: 50%; background: ${s.color}; flex-shrink: 0;"></span>
+                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${s.name}</span>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" for="lead-crm-value-input">Valor Estimado (R$)</label>
+              <input type="number" id="lead-crm-value-input" class="form-input" placeholder="Ex: 1500" min="0" step="50" value="${initialValue}">
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" for="lead-crm-priority-select">Prioridade</label>
+              <select id="lead-crm-priority-select" class="form-select">
+                <option value="Alta" ${selectedPriority === 'Alta' ? 'selected' : ''}>🔥 Alta</option>
+                <option value="Média" ${selectedPriority === 'Média' ? 'selected' : ''}>⚡ Média</option>
+                <option value="Baixa" ${selectedPriority === 'Baixa' ? 'selected' : ''}>🌱 Baixa</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding: 14px 0 0 0; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          ${existingDeal ? `
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-lead-open-crm-board" style="display: inline-flex; align-items: center; gap: 6px;">
+              <i data-lucide="external-link" style="width: 14px; height: 14px;"></i>
+              <span>Ver no CRM</span>
+            </button>
+          ` : `<div></div>`}
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" class="btn btn-secondary" id="btn-cancel-lead-crm-modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+              <i data-lucide="check" style="width: 15px; height: 15px;"></i>
+              <span>${existingDeal ? 'Atualizar no CRM' : 'Enviar ao CRM'}</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  `;
+
+  modal.classList.add('active');
+  if (window.lucide) window.lucide.createIcons();
+
+  modal.querySelectorAll('.lead-crm-stage-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedStageId = btn.getAttribute('data-stage-id');
+      modal.querySelectorAll('.lead-crm-stage-btn').forEach(b => {
+        const isSel = b.getAttribute('data-stage-id') === selectedStageId;
+        b.classList.toggle('active', isSel);
+        b.style.borderColor = isSel ? 'var(--primary)' : 'var(--border)';
+        b.style.background = isSel ? 'rgba(0, 168, 104, 0.08)' : 'var(--bg-main)';
+      });
+    });
+  });
+
+  const closeModal = () => modal.classList.remove('active');
+  modal.querySelector('#btn-close-lead-crm-modal')?.addEventListener('click', closeModal);
+  modal.querySelector('#btn-cancel-lead-crm-modal')?.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  modal.querySelector('#btn-lead-open-crm-board')?.addEventListener('click', () => {
+    closeModal();
+    switchView('crm');
+  });
+
+  modal.querySelector('#form-lead-send-crm')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const val = Number(modal.querySelector('#lead-crm-value-input')?.value) || 0;
+    const prio = modal.querySelector('#lead-crm-priority-select')?.value || 'Alta';
+    const stageObj = stages.find(s => s.id === selectedStageId) || stages[0];
+    const priorityMap = {
+      'Alta': 'priority-high',
+      'Média': 'priority-med',
+      'Baixa': 'priority-low'
+    };
+
+    if (existingDeal) {
+      existingDeal.stage = stageObj.id;
+      existingDeal.value = val;
+      existingDeal.priority = prio;
+      existingDeal.priorityClass = priorityMap[prio] || 'priority-high';
+      existingDeal.daysInStage = 'Agora';
+    } else {
+      const newDeal = {
+        id: 'deal_' + Date.now(),
+        leadId: lead.id,
+        title: `${lead.primaryInterest || 'Oportunidade'} - ${lead.name}`,
+        contactName: lead.name,
+        company: lead.name,
+        phone: lead.phone || '+55 11 99999-9999',
+        email: lead.email || '',
+        value: val,
+        stage: stageObj.id,
+        agent: lead.agentName || 'Juliana Santos',
+        agentImg: lead.agentImg || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
+        channel: lead.channel || 'WhatsApp',
+        priority: prio,
+        priorityClass: priorityMap[prio] || 'priority-high',
+        daysInStage: 'Hoje',
+        expectedClose: '15 dias',
+        notes: lead.notes || `Enviado a partir da tela de Leads.`
+      };
+      zapChatData.crm.deals.unshift(newDeal);
+    }
+
+    if (window.refreshCrmView) window.refreshCrmView();
+    closeModal();
+    renderLeadsTable(currentDisplayedLeads);
+    if (selectedLead && selectedLead.id === lead.id) {
+      renderSelectedLeadPanel(lead);
+    }
+    showToast(`Lead "${lead.name}" enviado para a etapa "${stageObj.name}" no CRM!`);
+  });
+}
+
 export function initLeadsView() {
   renderLeadsTable(zapChatData.leads.list);
   renderSelectedLeadPanel(selectedLead);
@@ -141,6 +635,16 @@ export function renderLeadsTable(leads) {
             <div>
               <div class="lead-name-text-bold">${lead.name}</div>
               <div class="lead-phone-subtext">${lead.phone}</div>
+              <div class="lead-row-tags-wrap" onclick="event.stopPropagation()">
+                ${(lead.tags || []).map(tName => {
+                  const meta = getTagStyleMeta(tName);
+                  return `<span class="lead-mini-tag-pill btn-manage-lead-tags" data-lead-id="${lead.id}" style="background:${meta.bg}; color:${meta.color};" title="Clique para gerenciar etiquetas">${tName}</span>`;
+                }).join('')}
+                <button type="button" class="lead-add-tag-inline-btn btn-manage-lead-tags" data-lead-id="${lead.id}" title="Adicionar ou editar etiquetas">
+                  <i data-lucide="tag" style="width: 10px; height: 10px;"></i>
+                  <span>${(lead.tags && lead.tags.length > 0) ? '+' : '+ Etiqueta'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </td>
@@ -235,6 +739,16 @@ export function renderLeadsTable(leads) {
     });
   });
 
+  // Manage lead tags inline buttons
+  tbody.querySelectorAll('.btn-manage-lead-tags').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const leadId = btn.getAttribute('data-lead-id');
+      const lead = zapChatData.leads.list.find(l => l.id === leadId);
+      if (lead) openLeadTagsModal(lead);
+    });
+  });
+
   // Re-init lucide icons
   if (window.lucide) window.lucide.createIcons();
 }
@@ -290,12 +804,51 @@ export function renderSelectedLeadPanel(lead) {
         <span class="lead-panel-info-val">${lead.primaryInterest || lead.interests?.[0] || 'Plano Pro'}</span>
       </div>
 
+      <div class="lead-panel-info-row" style="align-items: flex-start;">
+        <span class="lead-panel-info-label" style="margin-top: 3px;">
+          <i data-lucide="tags" style="width: 14px; height: 14px;"></i> Etiquetas
+        </span>
+        <div class="lead-panel-tags-box">
+          ${(lead.tags || []).map(tName => {
+            const meta = getTagStyleMeta(tName);
+            return `
+              <span class="lead-panel-tag-chip" style="background:${meta.bg}; color:${meta.color};">
+                <span>${tName}</span>
+                <button type="button" class="lead-panel-tag-remove" data-remove-tag="${tName}" title="Remover etiqueta do lead">&times;</button>
+              </span>
+            `;
+          }).join('')}
+          <button type="button" class="lead-panel-add-tag-btn" id="btn-panel-manage-tags" title="Adicionar, editar ou excluir etiquetas">
+            <i data-lucide="plus" style="width: 11px; height: 11px;"></i>
+            <span>Etiquetar</span>
+          </button>
+        </div>
+      </div>
+
       <div class="lead-panel-info-row">
         <span class="lead-panel-info-label">
           <i data-lucide="user-check" style="width: 14px; height: 14px;"></i> Responsável
         </span>
         <span class="lead-panel-info-val">${lead.agentName}</span>
       </div>
+
+      ${(() => {
+        const crmDeal = findCrmDealForLead(lead);
+        const stages = getCrmStagesForLeads();
+        const stageObj = crmDeal ? (stages.find(s => s.id === crmDeal.stage) || stages[0]) : null;
+        return `
+          <div class="lead-panel-info-row">
+            <span class="lead-panel-info-label">
+              <i data-lucide="kanban" style="width: 14px; height: 14px;"></i> Funil CRM
+            </span>
+            <span class="lead-panel-info-val">
+              ${stageObj
+                ? `<span style="display:inline-flex; align-items:center; gap:6px; font-weight:600; color:var(--text-main);"><span style="width:8px; height:8px; border-radius:50%; background:${stageObj.color};"></span>${stageObj.name}</span>`
+                : `<span style="color:var(--text-muted); font-size:12px;">Fora do funil</span>`}
+            </span>
+          </div>
+        `;
+      })()}
 
       <div class="lead-panel-info-row" style="align-items: flex-start;">
         <span class="lead-panel-info-label">
@@ -312,6 +865,10 @@ export function renderSelectedLeadPanel(lead) {
       <button class="btn btn-primary" id="btn-open-lead-chat">
         <i data-lucide="message-square" style="width: 15px; height: 15px;"></i>
         Abrir conversa
+      </button>
+      <button class="btn btn-secondary" id="btn-send-lead-crm-panel">
+        <i data-lucide="kanban" style="width: 15px; height: 15px; color: var(--primary);"></i>
+        ${findCrmDealForLead(lead) ? 'Gerenciar no CRM' : 'Enviar para o CRM'}
       </button>
       <button class="btn btn-secondary" id="btn-view-lead-details-panel">
         <i data-lucide="eye" style="width: 15px; height: 15px;"></i>
@@ -364,6 +921,34 @@ export function renderSelectedLeadPanel(lead) {
       openAssignAgentModal(lead);
     });
   }
+
+  // Send to CRM button in right panel
+  const sendCrmBtn = panel.querySelector('#btn-send-lead-crm-panel');
+  if (sendCrmBtn) {
+    sendCrmBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openLeadSendToCrmModal(lead);
+    });
+  }
+
+  // Manage tags button in right panel
+  panel.querySelector('#btn-panel-manage-tags')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openLeadTagsModal(lead);
+  });
+
+  // Quick remove tag chip in right panel
+  panel.querySelectorAll('[data-remove-tag]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const tagName = btn.getAttribute('data-remove-tag');
+      if (Array.isArray(lead.tags)) {
+        lead.tags = lead.tags.filter(t => t.toLowerCase() !== tagName.toLowerCase());
+        refreshLeadTagsUI(lead);
+        showToast(`Etiqueta "${tagName}" removida de ${lead.name}.`);
+      }
+    });
+  });
 
   if (window.lucide) window.lucide.createIcons();
 }
@@ -793,6 +1378,14 @@ export function toggleLeadActionDropdown(lead, btn) {
       <i data-lucide="user-check"></i>
       <span>Atribuir Agente</span>
     </button>
+    <button type="button" class="lead-dropdown-item btn-action-send-crm">
+      <i data-lucide="kanban"></i>
+      <span>${findCrmDealForLead(lead) ? 'Mover no CRM' : 'Enviar para o CRM'}</span>
+    </button>
+    <button type="button" class="lead-dropdown-item btn-action-tag-lead">
+      <i data-lucide="tags"></i>
+      <span>Etiquetar Lead</span>
+    </button>
     <button type="button" class="lead-dropdown-item btn-action-edit-lead">
       <i data-lucide="edit-3"></i>
       <span>Editar Lead</span>
@@ -838,6 +1431,18 @@ export function toggleLeadActionDropdown(lead, btn) {
     e.stopPropagation();
     closeLeadActionDropdown();
     openAssignAgentModal(lead);
+  });
+
+  menu.querySelector('.btn-action-send-crm').addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeLeadActionDropdown();
+    openLeadSendToCrmModal(lead);
+  });
+
+  menu.querySelector('.btn-action-tag-lead').addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeLeadActionDropdown();
+    openLeadTagsModal(lead);
   });
 
   menu.querySelector('.btn-action-edit-lead').addEventListener('click', (e) => {

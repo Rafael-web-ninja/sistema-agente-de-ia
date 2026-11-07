@@ -450,12 +450,6 @@ function renderSimplifiedAgentsTable(agents) {
           </div>
         </td>
         <td>
-          <div class="agent-channel-badge">
-            <span>${channelIcon}</span>
-            <span>${agent.channel}</span>
-          </div>
-        </td>
-        <td>
           <div class="agent-actions-group">
             <button class="btn btn-secondary btn-sm" onclick="openEditAgent('${agent.id}')">
               <i data-lucide="edit-3" style="width: 12px; height: 12px;"></i>

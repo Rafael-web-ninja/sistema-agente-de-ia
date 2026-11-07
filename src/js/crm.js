@@ -17,6 +17,12 @@ export function initCrmView() {
   setupNewDealModal();
   setupViewDealModal();
   setupManageStagesModal();
+
+  window.refreshCrmView = () => {
+    syncStageDropdowns();
+    renderCrmKpis();
+    renderCrmBoard();
+  };
 }
 
 /**

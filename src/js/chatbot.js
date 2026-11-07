@@ -1,19 +1,189 @@
 import { zapChatData } from './data.js';
-import { openFlowBuilder } from './flow-builder.js';
+import { openFlowBuilder, createNodeElement, getBezierPathData } from './flow-builder.js';
 
 let searchQuery = '';
 let channelFilter = 'all';
 let statusFilter = 'all';
+let chatbotViewMode = 'cards';
+let activeChatbotMainTab = 'my';
+let tplSearchQuery = '';
+let tplCategoryFilter = 'all';
 let currentSimulatedBot = null;
 let currentEditingBot = null;
+
+export const CHATBOT_TEMPLATES = [
+  {
+    id: 'tpl-delivery',
+    name: 'Cardápio Digital & Pedidos Delivery',
+    category: 'Delivery',
+    channel: 'WhatsApp',
+    stepsBadge: '5 blocos',
+    stepsFlow: ['Bloco Inicial', 'Menu de Opções', 'Agente IA', 'CRM', 'Fila Humana'],
+    description: 'Recepciona o cliente faminto, apresenta cardápio/promoções do dia, tira dúvidas de taxa de entrega com IA e registra o pedido no CRM.',
+    trigger: 'Primeira mensagem recebida',
+    integratedAiAgents: ['Juliana Santos'],
+    canvasFlow: {
+      nodes: [
+        { id: 'node-start', type: 'start', title: 'Bloco Inicial', x: 60, y: 200, data: { subtitle: 'Cliente envia mensagem pedindo cardápio.', trigger: 'Primeira mensagem recebida', channel: 'WhatsApp' } },
+        { id: 'node-menu-1', type: 'menu', title: 'Menu Delivery', x: 370, y: 150, data: { format: 'list_button', question: 'Olá {nome}! 🍔 Bem-vindo ao nosso Delivery! O que você deseja fazer agora?', message: 'Olá {nome}! 🍔 Bem-vindo ao nosso Delivery! O que você deseja fazer agora?', buttonTitle: 'VER OPÇÕES', options: [{ id: 'opt-cardapio', label: '📖 Ver Cardápio & Combos', description: 'Promoções quentinhas de hoje', ctr: 'CTR 65%' }, { id: 'opt-status', label: '🛵 Acompanhar meu Pedido', description: 'Status de entrega em tempo real', ctr: 'CTR 25%' }, { id: 'opt-atendente', label: '💬 Falar com Atendente', description: 'Dúvidas ou alterações no pedido', ctr: 'CTR 10%' }] } },
+        { id: 'node-ai-1', type: 'ai_agent', title: 'IA Anotadora de Pedidos', agentName: 'Juliana Santos', x: 750, y: 90, data: { method: 'Agente de IA Conversacional', instructions: 'Apresente os combos mais vendidos, tire dúvidas sobre ingredientes, calcule a taxa de entrega por bairro e confirme a forma de pagamento (PIX ou Cartão).', branches: [{ id: 'b-qualified', triggerType: 'goal_reached', label: 'Pedido montado / Pronto para cozinha' }, { id: 'b-human', triggerType: 'human_handoff', label: 'Pediu atendente humano' }] } },
+        { id: 'node-crm-1', type: 'crm', title: 'Registrar Pedido no CRM', x: 1120, y: 60, data: { stageId: 'ganho', priority: 'Alta', value: 85, notes: 'Pedido de delivery anotado pela IA' } },
+        { id: 'node-human-1', type: 'human', title: 'Balcão / Expedição', actionType: 'transfer_human', targetPerson: 'Equipe Comercial', x: 1120, y: 280, data: { priority: 'Alta', description: 'Encaminha pedido para produção e motoboy' } }
+      ],
+      connections: [
+        { id: 'c-1', fromNode: 'node-start', fromPort: 'out', toNode: 'node-menu-1', toPort: 'in' },
+        { id: 'c-2', fromNode: 'node-menu-1', fromPort: 'opt-cardapio', toNode: 'node-ai-1', toPort: 'in' },
+        { id: 'c-3', fromNode: 'node-menu-1', fromPort: 'opt-status', toNode: 'node-ai-1', toPort: 'in' },
+        { id: 'c-4', fromNode: 'node-menu-1', fromPort: 'opt-atendente', toNode: 'node-human-1', toPort: 'in' },
+        { id: 'c-5', fromNode: 'node-ai-1', fromPort: 'b-qualified', toNode: 'node-crm-1', toPort: 'in' },
+        { id: 'c-6', fromNode: 'node-crm-1', fromPort: 'out', toNode: 'node-human-1', toPort: 'in' }
+      ]
+    }
+  },
+  {
+    id: 'tpl-academia',
+    name: 'Captação de Alunos & Aula Experimental',
+    category: 'Academia',
+    channel: 'WhatsApp',
+    stepsBadge: '5 blocos',
+    stepsFlow: ['Bloco Inicial', 'Menu de Opções', 'Agente IA', 'CRM', 'Transferir'],
+    description: 'Apresenta planos (Mensal, Trimestral e Anual), agenda aula experimental gratuita com IA e envia o lead para o funil comercial no CRM.',
+    trigger: 'Interesse em planos ou aula experimental',
+    integratedAiAgents: ['Felipe Costa'],
+    canvasFlow: {
+      nodes: [
+        { id: 'node-start', type: 'start', title: 'Bloco Inicial', x: 60, y: 200, data: { subtitle: 'Lead pergunta sobre mensalidade ou horários.', trigger: 'Qualquer mensagem inicial', channel: 'WhatsApp' } },
+        { id: 'node-menu-1', type: 'menu', title: 'Objetivo do Aluno', x: 380, y: 140, data: { format: 'list_button', question: 'Fala, {nome}! 💪 Que ótimo ver você dando esse passo! Como podemos te ajudar hoje na academia?', message: 'Fala, {nome}! 💪 Que ótimo ver você dando esse passo! Como podemos te ajudar hoje na academia?', buttonTitle: 'ESCOLHER OPÇÃO', options: [{ id: 'opt-planos', label: '🏋️ Conhecer Planos e Valores', description: 'Musculação, Cross e Coletivas', ctr: 'CTR 54%' }, { id: 'opt-free', label: '🎟️ Agendar Aula Experimental Grátis', description: 'Treine 1 dia por nossa conta', ctr: 'CTR 36%' }, { id: 'opt-aluno', label: '🙋 Já sou Aluno', description: 'Financeiro ou ficha de treino', ctr: 'CTR 10%' }] } },
+        { id: 'node-ai-1', type: 'ai_agent', title: 'Consultor Fitness IA', agentName: 'Felipe Costa', x: 760, y: 80, data: { method: 'Agente de IA Conversacional', instructions: 'Descubra o objetivo do aluno (emagrecimento, hipertrofia ou saúde), apresente a vantagem do Plano Anual e colete o melhor dia para a aula experimental.', branches: [{ id: 'b-done', triggerType: 'goal_reached', label: 'Aula experimental agendada' }, { id: 'b-human', triggerType: 'human_handoff', label: 'Quer fechar matrícula agora' }] } },
+        { id: 'node-crm-1', type: 'crm', title: 'Enviar para Qualificação', x: 1140, y: 80, data: { stageId: 'qualificacao', priority: 'Alta', value: 149, notes: 'Lead agendou aula experimental pela IA' } },
+        { id: 'node-act-1', type: 'action', title: 'Recepção da Academia', actionType: 'transfer', actionLabel: 'Transferir atendimento', transferType: 'human', transferTarget: 'Carlos Félix', x: 1140, y: 290, data: { description: 'Confirma horário na recepção' } }
+      ],
+      connections: [
+        { id: 'c-1', fromNode: 'node-start', fromPort: 'out', toNode: 'node-menu-1', toPort: 'in' },
+        { id: 'c-2', fromNode: 'node-menu-1', fromPort: 'opt-planos', toNode: 'node-ai-1', toPort: 'in' },
+        { id: 'c-3', fromNode: 'node-menu-1', fromPort: 'opt-free', toNode: 'node-ai-1', toPort: 'in' },
+        { id: 'c-4', fromNode: 'node-menu-1', fromPort: 'opt-aluno', toNode: 'node-act-1', toPort: 'in' },
+        { id: 'c-5', fromNode: 'node-ai-1', fromPort: 'b-done', toNode: 'node-crm-1', toPort: 'in' },
+        { id: 'c-6', fromNode: 'node-ai-1', fromPort: 'b-human', toNode: 'node-act-1', toPort: 'in' }
+      ]
+    }
+  },
+  {
+    id: 'tpl-salao-beleza',
+    name: 'Agendamento de Horários & Catálogo de Serviços',
+    category: 'Salão de Beleza',
+    channel: 'Instagram',
+    stepsBadge: '4 blocos',
+    stepsFlow: ['Bloco Inicial', 'Menu de Opções', 'Agente IA', 'CRM'],
+    description: 'Atende clientes no Direct ou WhatsApp, mostra valores de cabelo, manicure e estética, verifica disponibilidade com IA e salva no CRM.',
+    trigger: 'Interação no Direct / WhatsApp',
+    integratedAiAgents: ['Carla Menezes'],
+    canvasFlow: {
+      nodes: [
+        { id: 'node-start', type: 'start', title: 'Bloco Inicial', x: 60, y: 180, data: { subtitle: 'Cliente chama no Direct ou WhatsApp para agendar.', trigger: 'Mensagem inicial', channel: 'Instagram' } },
+        { id: 'node-menu-1', type: 'menu', title: 'Escolha o Procedimento', x: 380, y: 140, data: { format: 'list_button', question: 'Oi, maravilhosa(o) ✨ Bem-vinda ao nosso Espaço de Beleza! Qual serviço você gostaria de agendar?', message: 'Oi, maravilhosa(o) ✨ Bem-vinda ao nosso Espaço de Beleza! Qual serviço você gostaria de agendar?', buttonTitle: 'VER SERVIÇOS', options: [{ id: 'opt-cabelo', label: '💇‍♀️ Cabelo (Corte, Mechas, Escova)', description: 'Especialistas em loiros e tratamentos', ctr: 'CTR 58%' }, { id: 'opt-unhas', label: '💅 Unhas & Design de Sobrancelhas', description: 'Manicure, gel e micropigmentação', ctr: 'CTR 42%' }] } },
+        { id: 'node-ai-1', type: 'ai_agent', title: 'Concierge de Beleza IA', agentName: 'Carla Menezes', x: 750, y: 120, data: { method: 'Agente de IA Conversacional', instructions: 'Informe a tabela de valores, pergunte qual dia e período a cliente prefere e ofereça combo de hidratação.', branches: [{ id: 'b-crm', triggerType: 'goal_reached', label: 'Horário pré-reservado pela cliente' }] } },
+        { id: 'node-crm-1', type: 'crm', title: 'Reservar no Funil CRM', x: 1120, y: 150, data: { stageId: 'proposta', priority: 'Alta', value: 220, notes: 'Agendamento solicitado via Salão de Beleza' } }
+      ],
+      connections: [
+        { id: 'c-1', fromNode: 'node-start', fromPort: 'out', toNode: 'node-menu-1', toPort: 'in' },
+        { id: 'c-2', fromNode: 'node-menu-1', fromPort: 'opt-cabelo', toNode: 'node-ai-1', toPort: 'in' },
+        { id: 'c-3', fromNode: 'node-menu-1', fromPort: 'opt-unhas', toNode: 'node-ai-1', toPort: 'in' },
+        { id: 'c-4', fromNode: 'node-ai-1', fromPort: 'b-crm', toNode: 'node-crm-1', toPort: 'in' }
+      ]
+    }
+  },
+  {
+    id: 'tpl-imobiliaria',
+    name: 'Qualificação de Compra/Aluguel & Visita ao Imóvel',
+    category: 'Imobiliária',
+    channel: 'WhatsApp',
+    stepsBadge: '5 blocos',
+    stepsFlow: ['Bloco Inicial', 'Menu de Opções', 'Agente IA', 'CRM', 'Fila Humana'],
+    description: 'Identifica se o cliente busca compra, aluguel ou lançamento, filtra faixa de valor e bairro com IA, cria oportunidade no CRM e passa ao corretor.',
+    trigger: 'Lead vindo de portal ou anúncio',
+    integratedAiAgents: ['Juliana Santos'],
+    canvasFlow: {
+      nodes: [
+        { id: 'node-start', type: 'start', title: 'Bloco Inicial', x: 60, y: 190, data: { subtitle: 'Lead interessado em imóvel.', trigger: 'Anúncio de Imóvel', channel: 'WhatsApp' } },
+        { id: 'node-menu-1', type: 'menu', title: 'Interesse Imobiliário', x: 360, y: 150, data: { format: 'list_button', question: 'Olá {nome}! 🏡 Seja bem-vindo à nossa Imobiliária. Que tipo de imóvel você está buscando?', message: 'Olá {nome}! 🏡 Seja bem-vindo à nossa Imobiliária. Que tipo de imóvel você está buscando?', buttonTitle: 'ESCOLHER PERFIL', options: [{ id: 'opt-compra', label: '🔑 Comprar um Imóvel', description: 'Casas, apartamentos e terrenos', ctr: 'CTR 49%' }, { id: 'opt-aluguel', label: '📄 Alugar sem Fiador', description: 'Locação rápida e digital', ctr: 'CTR 35%' }, { id: 'opt-lanc', label: '🏗️ Lançamentos na Planta', description: 'Condições direto com a construtora', ctr: 'CTR 16%' }] } },
+        { id: 'node-ai-1', type: 'ai_agent', title: 'IA Qualificadora Imobiliária', agentName: 'Juliana Santos', x: 720, y: 120, data: { method: 'Agente de IA Conversacional', instructions: 'Pergunte a região de preferência, número de quartos, faixa de investimento e se pretende utilizar financiamento ou FGTS.', branches: [{ id: 'b-ok', triggerType: 'goal_reached', label: 'Cliente qualificado para visita' }, { id: 'b-hum', triggerType: 'human_handoff', label: 'Falar direto com corretor' }] } },
+        { id: 'node-crm-1', type: 'crm', title: 'Cadastrar Lead no CRM', x: 1090, y: 80, data: { stageId: 'qualificacao', priority: 'Alta', value: 4500, notes: 'Perfil imobiliário qualificado pela IA' } },
+        { id: 'node-human-1', type: 'human', title: 'Corretor de Plantão', actionType: 'transfer_human', targetPerson: 'Equipe Comercial', x: 1410, y: 140, data: { priority: 'Alta', description: 'Corretor assume para agendar visita' } }
+      ],
+      connections: [
+        { id: 'c-1', fromNode: 'node-start', fromPort: 'out', toNode: 'node-menu-1', toPort: 'in' },
+        { id: 'c-2', fromNode: 'node-menu-1', fromPort: 'opt-compra', toNode: 'node-ai-1', toPort: 'in' },
+        { id: 'c-3', fromNode: 'node-menu-1', fromPort: 'opt-aluguel', toNode: 'node-ai-1', toPort: 'in' },
+        { id: 'c-4', fromNode: 'node-menu-1', fromPort: 'opt-lanc', toNode: 'node-ai-1', toPort: 'in' },
+        { id: 'c-5', fromNode: 'node-ai-1', fromPort: 'b-ok', toNode: 'node-crm-1', toPort: 'in' },
+        { id: 'c-6', fromNode: 'node-crm-1', fromPort: 'out', toNode: 'node-human-1', toPort: 'in' }
+      ]
+    }
+  },
+  {
+    id: 'tpl-clinica',
+    name: 'Triagem de Pacientes & Agendamento de Consultas',
+    category: 'Clínica',
+    channel: 'WhatsApp',
+    stepsBadge: '5 blocos',
+    stepsFlow: ['Bloco Inicial', 'Conteúdo', 'Agente IA', 'CRM', 'Fila Humana'],
+    description: 'Atende pacientes para clínica médica, odontológica ou estética, verifica convênio ou particular com IA e encaminha para a recepção.',
+    trigger: 'Solicitação de consulta ou exame',
+    integratedAiAgents: ['Carla Menezes'],
+    canvasFlow: {
+      nodes: [
+        { id: 'node-start', type: 'start', title: 'Bloco Inicial', x: 60, y: 190, data: { subtitle: 'Paciente entra em contato pelo WhatsApp.', trigger: 'Mensagem inicial', channel: 'WhatsApp' } },
+        { id: 'node-msg-1', type: 'message', title: 'Acolhimento da Clínica', x: 360, y: 160, data: { items: [{ id: 'it-1', type: 'text', text: 'Olá {nome}! 🩺 Bem-vindo(a) à nossa Clínica. É um prazer cuidar da sua saúde e bem-estar.', saved: true }, { id: 'it-2', type: 'delay', seconds: 2, typing: true }, { id: 'it-3', type: 'text', text: 'Você busca agendar uma consulta particular, por convênio ou tirar dúvidas sobre procedimentos?', saved: true }] } },
+        { id: 'node-ai-1', type: 'ai_agent', title: 'Secretária Virtual IA', agentName: 'Carla Menezes', x: 700, y: 130, data: { method: 'Agente de IA Conversacional', instructions: 'Identifique a especialidade desejada, informe os dias de atendimento do especialista e colete o nome completo e preferência de horário do paciente.', branches: [{ id: 'b-neg', triggerType: 'goal_reached', label: 'Pré-agendamento realizado' }] } },
+        { id: 'node-crm-1', type: 'crm', title: 'Enviar Paciente ao CRM', x: 1080, y: 120, data: { stageId: 'proposta', priority: 'Alta', value: 350, notes: 'Paciente triado pela Secretária IA' } },
+        { id: 'node-human-1', type: 'human', title: 'Recepção da Clínica', actionType: 'transfer_human', targetPerson: 'Suporte VIP', x: 1400, y: 120, data: { priority: 'Alta', description: 'Confirmação de guia/horário na agenda médica' } }
+      ],
+      connections: [
+        { id: 'c-1', fromNode: 'node-start', fromPort: 'out', toNode: 'node-msg-1', toPort: 'in' },
+        { id: 'c-2', fromNode: 'node-msg-1', fromPort: 'out', toNode: 'node-ai-1', toPort: 'in' },
+        { id: 'c-3', fromNode: 'node-ai-1', fromPort: 'b-neg', toNode: 'node-crm-1', toPort: 'in' },
+        { id: 'c-4', fromNode: 'node-crm-1', fromPort: 'out', toNode: 'node-human-1', toPort: 'in' }
+      ]
+    }
+  },
+  {
+    id: 'tpl-ecommerce',
+    name: 'Recuperação de Carrinho, Rastreio & Pós-venda',
+    category: 'E-commerce',
+    channel: 'WhatsApp',
+    stepsBadge: '4 blocos',
+    stepsFlow: ['Bloco Inicial', 'Menu de Opções', 'Agente IA', 'Encerrar Atendimento'],
+    description: 'Automatiza o suporte da loja virtual: consulta status de pedido, libera cupom para fechar compra com IA e encerra o atendimento.',
+    trigger: 'Dúvida de compra ou rastreio',
+    integratedAiAgents: ['Pedro'],
+    canvasFlow: {
+      nodes: [
+        { id: 'node-start', type: 'start', title: 'Bloco Inicial', x: 60, y: 190, data: { subtitle: 'Cliente da loja online chama no WhatsApp.', trigger: 'Atendimento Loja', channel: 'WhatsApp' } },
+        { id: 'node-menu-1', type: 'menu', title: 'Central da Loja', x: 370, y: 140, data: { format: 'list_button', question: 'Oi {nome}! 🛍️ Bem-vindo à nossa Loja Oficial! Escolha como podemos te ajudar:', message: 'Oi {nome}! 🛍️ Bem-vindo à nossa Loja Oficial! Escolha como podemos te ajudar:', buttonTitle: 'OPÇÕES DA LOJA', options: [{ id: 'opt-comprar', label: '🔥 Quero Comprar com Desconto', description: 'Cupom de primeira compra', ctr: 'CTR 48%' }, { id: 'opt-rastreio', label: '📦 Rastrear meu Pedido', description: 'Código de rastreio e prazo', ctr: 'CTR 37%' }, { id: 'opt-troca', label: '🔄 Trocas e Devoluções', description: 'Solicitar garantia ou troca', ctr: 'CTR 15%' }] } },
+        { id: 'node-ai-1', type: 'ai_agent', title: 'Especialista E-commerce IA', agentName: 'Pedro', x: 740, y: 130, data: { method: 'Agente de IA Conversacional', instructions: 'Ajude o cliente a escolher tamanho/modelo, ofereça o cupom BEMVINDO10 ou consulte o status de entrega.', branches: [{ id: 'b-end', triggerType: 'goal_reached', label: 'Dúvida resolvida pela IA' }] } },
+        { id: 'node-end-1', type: 'end_chat', title: 'Encerrar Atendimento', x: 1110, y: 160, data: { sendMessage: true, closingMessage: 'Seu atendimento foi encerrado! Obrigado por comprar conosco. Qualquer novidade, estamos à disposição! 🛍️' } }
+      ],
+      connections: [
+        { id: 'c-1', fromNode: 'node-start', fromPort: 'out', toNode: 'node-menu-1', toPort: 'in' },
+        { id: 'c-2', fromNode: 'node-menu-1', fromPort: 'opt-comprar', toNode: 'node-ai-1', toPort: 'in' },
+        { id: 'c-3', fromNode: 'node-menu-1', fromPort: 'opt-rastreio', toNode: 'node-ai-1', toPort: 'in' },
+        { id: 'c-4', fromNode: 'node-menu-1', fromPort: 'opt-troca', toNode: 'node-ai-1', toPort: 'in' },
+        { id: 'c-5', fromNode: 'node-ai-1', fromPort: 'b-end', toNode: 'node-end-1', toPort: 'in' }
+      ]
+    }
+  }
+];
 
 export function initChatbotsView() {
   window.openSimulator = openSimulator;
   window.openFlowBuilder = openFlowBuilder;
   window.renderChatbotsList = renderChatbotsList;
+  window.getChatbotTemplate = (tplId) => CHATBOT_TEMPLATES.find(t => t.id === tplId);
 
   renderChatbotKpis();
   renderChatbotsList();
+  renderChatbotTemplates();
   setupChatbotEvents();
   setupNewChatbotModal();
   setupFlowBuilderModal();
@@ -30,9 +200,13 @@ export function renderChatbotKpis() {
 
   const kpiActiveEl = document.getElementById('chatbot-kpi-active-val');
   const kpiExecutionsEl = document.getElementById('chatbot-kpi-executions-val');
+  const tabMyCountEl = document.getElementById('chatbot-tab-my-count');
+  const tabTplCountEl = document.getElementById('chatbot-tab-tpl-count');
 
   if (kpiActiveEl) kpiActiveEl.textContent = `${activeBots}`;
   if (kpiExecutionsEl) kpiExecutionsEl.textContent = totalExecutions.toLocaleString('pt-BR');
+  if (tabMyCountEl) tabMyCountEl.textContent = `${bots.length}`;
+  if (tabTplCountEl) tabTplCountEl.textContent = `${CHATBOT_TEMPLATES.length}`;
 }
 
 /**
@@ -64,6 +238,8 @@ export function renderChatbotsList() {
   const container = document.getElementById('chatbots-cards-grid');
   if (!container) return;
 
+  container.classList.toggle('is-list-view', chatbotViewMode === 'list');
+
   const bots = getFilteredBots();
 
   if (bots.length === 0) {
@@ -79,27 +255,17 @@ export function renderChatbotsList() {
   }
 
   container.innerHTML = bots.map(bot => {
-    const isWa = bot.channel === 'WhatsApp';
-    const channelIconSvg = isWa
-      ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="#00A868"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2z"/></svg>`
-      : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E1306C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>`;
-
-    const isActive = bot.status === 'Ativo';
-
     return `
       <div class="chatbot-card" data-bot-id="${bot.id}">
         <div class="chatbot-card-header">
           <div class="chatbot-header-left">
-            <div class="chatbot-icon-wrap ${isWa ? 'channel-wa' : 'channel-ig'}">
-              <i data-lucide="git-branch" style="width: 20px; height: 20px;"></i>
+            <div class="chatbot-icon-wrap channel-wa">
+              <i data-lucide="workflow" style="width: 20px; height: 20px;"></i>
             </div>
             <div class="chatbot-title-box">
-              <h3 class="chatbot-name" title="${bot.name}">${bot.name}</h3>
+              <h3 class="chatbot-name" data-bot-name-id="${bot.id}" title="${bot.name}">${bot.name}</h3>
+              <input type="text" class="chatbot-name-inline-input" data-bot-input-id="${bot.id}" value="${bot.name}" style="display:none;" />
               <div class="chatbot-tags-row">
-                <span class="bot-badge-channel ${isWa ? 'wa' : 'ig'}">
-                  ${channelIconSvg}
-                  <span>${bot.channel}</span>
-                </span>
                 <span class="bot-badge-metric">
                   <i data-lucide="zap" style="width: 11px; height: 11px;"></i>
                   <span>${(bot.executions || 0).toLocaleString('pt-BR')} disparos</span>
@@ -107,28 +273,60 @@ export function renderChatbotsList() {
               </div>
             </div>
           </div>
-          <button type="button" class="bot-status-tag ${isActive ? 'status-active' : 'status-paused'} btn-toggle-bot-status" data-bot-id="${bot.id}" title="Clique para ${isActive ? 'pausar' : 'ativar'}">
-            <span class="status-dot"></span>
-            <span>${bot.status}</span>
-          </button>
         </div>
 
-        <p class="chatbot-desc">${bot.description}</p>
+        <div class="chatbot-desc-wrap" data-bot-desc-wrap="${bot.id}">
+          ${bot.description ? `
+            <div class="chatbot-desc-display" data-bot-desc-display="${bot.id}">
+              <p class="chatbot-desc" data-bot-desc-text="${bot.id}" title="Clique para editar a descrição">${bot.description}</p>
+              <div class="chatbot-desc-actions">
+                <button type="button" class="chatbot-desc-action-btn btn-edit-bot-desc" data-bot-id="${bot.id}" title="Editar descrição">
+                  <i data-lucide="pencil" style="width: 12px; height: 12px;"></i>
+                </button>
+                <button type="button" class="chatbot-desc-action-btn danger btn-clear-bot-desc" data-bot-id="${bot.id}" title="Remover descrição">
+                  <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+                </button>
+              </div>
+            </div>
+          ` : `
+            <button type="button" class="chatbot-desc-empty-btn btn-edit-bot-desc" data-bot-id="${bot.id}" data-bot-desc-display="${bot.id}">
+              <i data-lucide="plus" style="width: 12px; height: 12px;"></i>
+              <span>Adicionar descrição...</span>
+            </button>
+          `}
+          <textarea class="chatbot-desc-inline-input" data-bot-desc-input="${bot.id}" rows="2" placeholder="Digite uma descrição para este fluxo..." style="display:none;">${bot.description || ''}</textarea>
+        </div>
 
         <div class="chatbot-card-footer">
           <div class="chatbot-card-footer-left">
             <button type="button" class="btn btn-primary btn-sm btn-edit-flow" data-bot-id="${bot.id}">
-              <i data-lucide="sliders" style="width: 13px; height: 13px;"></i>
-              <span>Editar Fluxo</span>
+              <i data-lucide="share-2" style="width: 13px; height: 13px;"></i>
+              <span>Editar fluxo</span>
             </button>
             <button type="button" class="btn btn-secondary btn-sm btn-simulate-bot" data-bot-id="${bot.id}">
               <i data-lucide="play" style="width: 13px; height: 13px; color: var(--primary);"></i>
               <span>Testar</span>
             </button>
           </div>
-          <button type="button" class="crm-btn-card-action btn-delete-bot" data-bot-id="${bot.id}" title="Excluir Chatbot" style="color: var(--text-muted);">
-            <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
-          </button>
+          <div class="chatbot-more-wrap">
+            <button type="button" class="chatbot-more-btn btn-toggle-bot-menu" data-bot-id="${bot.id}" title="Mais opções" aria-label="Mais opções">
+              <i data-lucide="more-horizontal" style="width: 16px; height: 16px;"></i>
+            </button>
+            <div class="chatbot-more-dropdown" data-bot-menu="${bot.id}">
+              <button type="button" class="chatbot-more-item btn-duplicate-bot" data-bot-id="${bot.id}">
+                <i data-lucide="copy" style="width: 15px; height: 15px;"></i>
+                <span>Duplicar</span>
+              </button>
+              <button type="button" class="chatbot-more-item btn-rename-bot" data-bot-id="${bot.id}">
+                <i data-lucide="pencil" style="width: 15px; height: 15px;"></i>
+                <span>Renomear</span>
+              </button>
+              <button type="button" class="chatbot-more-item danger btn-delete-bot" data-bot-id="${bot.id}">
+                <i data-lucide="trash-2" style="width: 15px; height: 15px;"></i>
+                <span>Excluir</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -172,6 +370,160 @@ function setupCardButtons() {
       e.stopPropagation();
       const botId = btn.getAttribute('data-bot-id');
       openSimulator(botId);
+    });
+  });
+
+  // 3-dots dropdown menu toggle
+  document.querySelectorAll('.btn-toggle-bot-menu').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const botId = btn.getAttribute('data-bot-id');
+      const menu = document.querySelector(`.chatbot-more-dropdown[data-bot-menu="${botId}"]`);
+      const isOpen = menu?.classList.contains('show');
+
+      document.querySelectorAll('.chatbot-more-dropdown.show').forEach(m => m.classList.remove('show'));
+      document.querySelectorAll('.btn-toggle-bot-menu.active').forEach(b => b.classList.remove('active'));
+
+      if (menu && !isOpen) {
+        menu.classList.add('show');
+        btn.classList.add('active');
+      }
+    });
+  });
+
+  // Duplicate bot
+  document.querySelectorAll('.btn-duplicate-bot').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const botId = btn.getAttribute('data-bot-id');
+      const idx = zapChatData.chatbots.list.findIndex(b => b.id === botId);
+      if (idx !== -1) {
+        const original = zapChatData.chatbots.list[idx];
+        const cloned = JSON.parse(JSON.stringify(original));
+        cloned.id = `bot-${Date.now()}`;
+        cloned.name = `${original.name} (Cópia)`;
+        cloned.executions = 0;
+        cloned.updatedAt = 'Agora mesmo';
+        zapChatData.chatbots.list.splice(idx + 1, 0, cloned);
+        renderChatbotKpis();
+        renderChatbotsList();
+        if (window.showToast) window.showToast(`Fluxo "${cloned.name}" duplicado com sucesso!`);
+      }
+    });
+  });
+
+  // Rename bot (inline editing right on the card title)
+  document.querySelectorAll('.btn-rename-bot').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const botId = btn.getAttribute('data-bot-id');
+      document.querySelectorAll('.chatbot-more-dropdown.show').forEach(m => m.classList.remove('show'));
+      document.querySelectorAll('.btn-toggle-bot-menu.active').forEach(b => b.classList.remove('active'));
+
+      const bot = zapChatData.chatbots.list.find(b => b.id === botId);
+      const titleEl = document.querySelector(`.chatbot-name[data-bot-name-id="${botId}"]`);
+      const inputEl = document.querySelector(`.chatbot-name-inline-input[data-bot-input-id="${botId}"]`);
+      if (!bot || !titleEl || !inputEl) return;
+
+      titleEl.style.display = 'none';
+      inputEl.style.display = 'block';
+      inputEl.value = bot.name;
+      inputEl.focus();
+      inputEl.select();
+
+      const commitRename = (save) => {
+        if (inputEl.style.display === 'none') return;
+        inputEl.style.display = 'none';
+        titleEl.style.display = '';
+        if (save) {
+          const newName = inputEl.value.trim();
+          if (newName && newName !== bot.name) {
+            bot.name = newName;
+            titleEl.textContent = newName;
+            titleEl.title = newName;
+            if (window.showToast) window.showToast(`Fluxo renomeado para "${newName}"!`);
+          }
+        }
+      };
+
+      inputEl.onkeydown = (ev) => {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          commitRename(true);
+        } else if (ev.key === 'Escape') {
+          ev.preventDefault();
+          commitRename(false);
+        }
+      };
+      inputEl.onblur = () => commitRename(true);
+    });
+  });
+
+  // Edit description (clicking on the description text or the edit icon)
+  const startDescEdit = (botId) => {
+    const bot = zapChatData.chatbots.list.find(b => b.id === botId);
+    const displayEl = document.querySelector(`[data-bot-desc-display="${botId}"]`);
+    const inputEl = document.querySelector(`.chatbot-desc-inline-input[data-bot-desc-input="${botId}"]`);
+    if (!bot || !displayEl || !inputEl) return;
+
+    displayEl.style.display = 'none';
+    inputEl.style.display = 'block';
+    inputEl.value = bot.description || '';
+    inputEl.focus();
+    inputEl.select();
+
+    const commitDesc = (save) => {
+      if (inputEl.style.display === 'none') return;
+      inputEl.style.display = 'none';
+      if (save) {
+        const newDesc = inputEl.value.trim();
+        if (newDesc !== (bot.description || '')) {
+          bot.description = newDesc;
+          if (window.showToast) {
+            window.showToast(newDesc ? 'Descrição atualizada!' : 'Descrição removida.');
+          }
+        }
+      }
+      renderChatbotsList();
+    };
+
+    inputEl.onkeydown = (ev) => {
+      if (ev.key === 'Enter' && !ev.shiftKey) {
+        ev.preventDefault();
+        commitDesc(true);
+      } else if (ev.key === 'Escape') {
+        ev.preventDefault();
+        commitDesc(false);
+      }
+    };
+    inputEl.onblur = () => commitDesc(true);
+  };
+
+  document.querySelectorAll('.btn-edit-bot-desc').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startDescEdit(btn.getAttribute('data-bot-id'));
+    });
+  });
+
+  document.querySelectorAll('[data-bot-desc-text]').forEach(p => {
+    p.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startDescEdit(p.getAttribute('data-bot-desc-text'));
+    });
+  });
+
+  // Clear / Delete description
+  document.querySelectorAll('.btn-clear-bot-desc').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const botId = btn.getAttribute('data-bot-id');
+      const bot = zapChatData.chatbots.list.find(b => b.id === botId);
+      if (bot) {
+        bot.description = '';
+        renderChatbotsList();
+        if (window.showToast) window.showToast('Descrição removida.');
+      }
     });
   });
 
@@ -219,6 +571,580 @@ function setupChatbotEvents() {
       renderChatbotsList();
     });
   }
+
+  const btnViewCards = document.getElementById('chatbot-btn-view-cards');
+  const btnViewList = document.getElementById('chatbot-btn-view-list');
+  if (btnViewCards && btnViewList) {
+    btnViewCards.addEventListener('click', () => {
+      chatbotViewMode = 'cards';
+      btnViewCards.classList.add('active');
+      btnViewList.classList.remove('active');
+      renderChatbotsList();
+    });
+    btnViewList.addEventListener('click', () => {
+      chatbotViewMode = 'list';
+      btnViewList.classList.add('active');
+      btnViewCards.classList.remove('active');
+      renderChatbotsList();
+    });
+  }
+
+  // Main Tabs: Meus Chatbots | Templates
+  document.querySelectorAll('[data-chatbot-tab]').forEach(tabBtn => {
+    tabBtn.addEventListener('click', () => {
+      const targetTab = tabBtn.getAttribute('data-chatbot-tab') || 'my';
+      switchChatbotMainTab(targetTab);
+    });
+  });
+
+  // Template Search Input
+  const tplSearchInput = document.getElementById('chatbot-tpl-search-input');
+  if (tplSearchInput) {
+    tplSearchInput.addEventListener('input', (e) => {
+      tplSearchQuery = e.target.value.trim();
+      renderChatbotTemplates();
+    });
+  }
+
+  // Template Category Pills
+  document.querySelectorAll('[data-tpl-cat]').forEach(pill => {
+    pill.addEventListener('click', () => {
+      tplCategoryFilter = pill.getAttribute('data-tpl-cat') || 'all';
+      document.querySelectorAll('[data-tpl-cat]').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      renderChatbotTemplates();
+    });
+  });
+
+  // Close 3-dots dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.chatbot-more-wrap')) {
+      document.querySelectorAll('.chatbot-more-dropdown.show').forEach(m => m.classList.remove('show'));
+      document.querySelectorAll('.btn-toggle-bot-menu.active').forEach(b => b.classList.remove('active'));
+    }
+  });
+}
+
+/**
+ * Switch between "Meus Chatbots" and "Templates" tabs
+ */
+export function switchChatbotMainTab(tabKey) {
+  activeChatbotMainTab = tabKey;
+  const paneMy = document.getElementById('chatbot-pane-my');
+  const paneTpl = document.getElementById('chatbot-pane-templates');
+  const btnMy = document.getElementById('tab-btn-my-chatbots');
+  const btnTpl = document.getElementById('tab-btn-templates');
+
+  if (tabKey === 'templates') {
+    if (paneMy) paneMy.style.display = 'none';
+    if (paneTpl) paneTpl.style.display = 'block';
+    btnMy?.classList.remove('active');
+    btnTpl?.classList.add('active');
+    renderChatbotTemplates();
+  } else {
+    if (paneMy) paneMy.style.display = 'block';
+    if (paneTpl) paneTpl.style.display = 'none';
+    btnMy?.classList.add('active');
+    btnTpl?.classList.remove('active');
+    renderChatbotsList();
+  }
+}
+
+/**
+ * Render Ready-to-Use Chatbot Templates Grid
+ */
+export function renderChatbotTemplates() {
+  const container = document.getElementById('chatbots-templates-grid');
+  if (!container) return;
+
+  const filtered = CHATBOT_TEMPLATES.filter(tpl => {
+    if (tplCategoryFilter !== 'all' && tpl.category !== tplCategoryFilter) return false;
+    if (tplSearchQuery) {
+      const q = tplSearchQuery.toLowerCase();
+      const match = tpl.name.toLowerCase().includes(q) ||
+                    tpl.description.toLowerCase().includes(q) ||
+                    tpl.category.toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: var(--bg-card); border: 1px dashed var(--border); border-radius: var(--radius-lg); color: var(--text-muted);">
+        <i data-lucide="layout-template" style="width: 32px; height: 32px; margin-bottom: 8px; opacity: 0.5;"></i>
+        <h4 style="font-size: 15px; font-weight: 700; color: var(--text-main); margin: 0 0 4px 0;">Nenhum template encontrado</h4>
+        <p style="font-size: 13px; margin: 0;">Tente buscar por outro termo ou selecione a categoria "Todos".</p>
+      </div>
+    `;
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
+
+  container.innerHTML = filtered.map(tpl => {
+    return `
+      <div class="chatbot-card chatbot-template-card" data-tpl-id="${tpl.id}">
+        <div class="chatbot-card-header">
+          <div class="chatbot-header-left" style="align-items: center;">
+            <div class="chatbot-icon-wrap channel-wa">
+              <i data-lucide="sparkles" style="width: 19px; height: 19px;"></i>
+            </div>
+            <div class="chatbot-title-box">
+              <h3 class="chatbot-name" title="${tpl.name}">${tpl.name}</h3>
+            </div>
+          </div>
+          <span class="chatbot-tpl-category-tag">${tpl.category}</span>
+        </div>
+
+        <p class="chatbot-desc">${tpl.description}</p>
+
+        <div class="chatbot-card-footer">
+          <div class="chatbot-card-footer-left" style="width: 100%; justify-content: space-between; gap: 6px;">
+            <button type="button" class="btn btn-primary btn-sm btn-use-template" data-tpl-id="${tpl.id}" style="flex: 1; justify-content: center;">
+              <i data-lucide="plus-circle" style="width: 14px; height: 14px;"></i>
+              <span>Usar Template</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm btn-view-template-flow" data-tpl-id="${tpl.id}" title="Pré-visualizar diagrama completo do fluxo">
+              <i data-lucide="eye" style="width: 13px; height: 13px; color: var(--primary);"></i>
+              <span>Ver Fluxo</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm btn-preview-template" data-tpl-id="${tpl.id}" title="Simular conversa no WhatsApp">
+              <i data-lucide="play" style="width: 13px; height: 13px; color: var(--primary);"></i>
+              <span>Testar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (window.lucide) window.lucide.createIcons();
+
+  // "Usar Template": opens popup for the user to register the Chatbot name
+  container.querySelectorAll('.btn-use-template').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tplId = btn.getAttribute('data-tpl-id');
+      const tpl = CHATBOT_TEMPLATES.find(t => t.id === tplId);
+      if (tpl) openUseTemplateModal(tpl);
+    });
+  });
+
+  // "Ver Fluxo": opens popup showing the complete visual flow canvas without leaving the screen
+  container.querySelectorAll('.btn-view-template-flow').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tplId = btn.getAttribute('data-tpl-id');
+      const tpl = CHATBOT_TEMPLATES.find(t => t.id === tplId);
+      if (tpl) openTemplatePreviewModal(tpl);
+    });
+  });
+
+  // "Testar" Template in Live Simulator before using
+  container.querySelectorAll('.btn-preview-template').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tplId = btn.getAttribute('data-tpl-id');
+      const tpl = CHATBOT_TEMPLATES.find(t => t.id === tplId);
+      if (!tpl) return;
+      openSimulator(tpl.id);
+    });
+  });
+}
+
+/**
+ * Open popup to register the Chatbot Name when clicking "Usar Template"
+ */
+function openUseTemplateModal(tpl) {
+  let modal = document.getElementById('modal-use-chatbot-template');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-use-chatbot-template';
+    document.body.appendChild(modal);
+  }
+  modal.className = 'modal-backdrop';
+
+  modal.innerHTML = `
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 168, 104, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="sparkles" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 16px;">Usar Template de Chatbot</h3>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">Template base: <strong>${tpl.name}</strong></p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" id="btn-close-use-tpl" aria-label="Fechar">&times;</button>
+      </div>
+
+      <form id="form-use-chatbot-template">
+        <div class="modal-body" style="padding: 4px 0 18px 0; display: flex; flex-direction: column; gap: 14px;">
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label" for="use-tpl-bot-name">Nome do seu Chatbot <span style="color: #EF4444;">*</span></label>
+            <input type="text" id="use-tpl-bot-name" class="form-input" placeholder="Ex: Atendimento ${tpl.category} - Principal" value="${tpl.name}" required>
+            <span style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px; display: block;">Escolha um nome para identificar este fluxo na sua lista de chatbots.</span>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding: 14px 0 0 0; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-use-tpl">Cancelar</button>
+          <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+            <i data-lucide="check" style="width: 15px; height: 15px;"></i>
+            <span>Criar Chatbot</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  modal.classList.add('active');
+  if (window.lucide) window.lucide.createIcons();
+
+  const nameInput = modal.querySelector('#use-tpl-bot-name');
+  if (nameInput) {
+    setTimeout(() => {
+      nameInput.focus();
+      nameInput.select();
+    }, 40);
+  }
+
+  const closeModal = () => modal.classList.remove('active');
+  modal.querySelector('#btn-close-use-tpl')?.addEventListener('click', closeModal);
+  modal.querySelector('#btn-cancel-use-tpl')?.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  modal.querySelector('#form-use-chatbot-template')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const customName = (nameInput?.value || '').trim() || tpl.name;
+    const customChannel = modal.querySelector('#use-tpl-bot-channel')?.value || tpl.channel;
+    closeModal();
+    applyChatbotTemplate(tpl.id, false, customName, customChannel);
+  });
+}
+
+/**
+ * Add a template to "Meus Chatbots" and switch to the "Meus Chatbots" tab highlighting it
+ */
+function applyChatbotTemplate(tplId, openEditorImmediately = false, customName = null, customChannel = null) {
+  const tpl = CHATBOT_TEMPLATES.find(t => t.id === tplId);
+  if (!tpl) return;
+
+  const clonedFlow = JSON.parse(JSON.stringify(tpl.canvasFlow));
+  const finalName = customName || tpl.name;
+  const finalChannel = customChannel || tpl.channel;
+
+  const newBot = {
+    id: `bot-${Date.now()}`,
+    name: finalName,
+    channel: finalChannel,
+    status: 'Ativo',
+    trigger: tpl.trigger,
+    description: tpl.description,
+    executions: 0,
+    conversionRate: '0%',
+    stepsCount: clonedFlow.nodes.length,
+    updatedAt: 'Agora mesmo',
+    integratedAiAgents: [...(tpl.integratedAiAgents || ['Juliana Santos'])],
+    canvasFlow: clonedFlow,
+    flow: {
+      triggerText: tpl.trigger,
+      initialMessage: 'Olá! Como posso ajudar você hoje?',
+      options: []
+    }
+  };
+
+  zapChatData.chatbots.list.unshift(newBot);
+  renderChatbotKpis();
+  switchChatbotMainTab('my');
+
+  if (openEditorImmediately) {
+    openFlowBuilder(newBot.id);
+  } else {
+    requestAnimationFrame(() => {
+      const newCard = document.querySelector(`.chatbot-card[data-bot-id="${newBot.id}"]`);
+      if (newCard) {
+        newCard.classList.add('chatbot-card-newly-added');
+        newCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        setTimeout(() => newCard.classList.remove('chatbot-card-newly-added'), 2200);
+      }
+    });
+  }
+
+  if (window.showToast) {
+    window.showToast(`Chatbot "${finalName}" criado com sucesso!`);
+  }
+}
+
+/**
+ * Open Visual Flow Canvas Popup for a Template (shows all connected blocks on a canvas without leaving the screen)
+ */
+function openTemplatePreviewModal(tpl) {
+  let modal = document.getElementById('modal-template-flow-preview');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-template-flow-preview';
+    document.body.appendChild(modal);
+  }
+  modal.className = 'modal-backdrop';
+
+  const nodes = tpl.canvasFlow?.nodes || [];
+  const connections = tpl.canvasFlow?.connections || [];
+
+  modal.innerHTML = `
+    <div class="modal-dialog tpl-flow-preview-dialog">
+      <div class="modal-header" style="padding: 14px 20px; border-bottom: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 168, 104, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="workflow" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div style="min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <h3 class="modal-title" style="margin: 0; font-size: 16px;">${tpl.name}</h3>
+              <span class="chatbot-tpl-category-tag">${tpl.category}</span>
+            </div>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              Arraste o quadro para navegar pelo fluxo completo ou use o zoom
+            </p>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="tpl-canvas-zoom-controls">
+            <button type="button" class="tpl-zoom-btn" id="tpl-zoom-out" title="Diminuir zoom">
+              <i data-lucide="minus" style="width: 13px; height: 13px;"></i>
+            </button>
+            <button type="button" class="tpl-zoom-val" id="tpl-zoom-label" title="Clique para reenquadrar todo o fluxo">75%</button>
+            <button type="button" class="tpl-zoom-btn" id="tpl-zoom-in" title="Aumentar zoom">
+              <i data-lucide="plus" style="width: 13px; height: 13px;"></i>
+            </button>
+            <button type="button" class="tpl-zoom-btn" id="tpl-zoom-center" title="Enquadrar fluxo completo">
+              <i data-lucide="scan" style="width: 13px; height: 13px;"></i>
+            </button>
+            <button type="button" class="tpl-zoom-btn" id="tpl-zoom-fit" title="Expandir tela cheia">
+              <i data-lucide="maximize-2" style="width: 13px; height: 13px;"></i>
+            </button>
+          </div>
+          <button type="button" class="modal-close" id="btn-close-tpl-preview" aria-label="Fechar">&times;</button>
+        </div>
+      </div>
+
+      <div class="tpl-flow-canvas-viewport" id="tpl-flow-viewport">
+        <div class="tpl-flow-canvas-world" id="tpl-flow-world">
+          <svg class="tpl-flow-svg-layer" id="tpl-flow-svg"></svg>
+          <div class="tpl-flow-nodes-layer" id="tpl-flow-nodes"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 12px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-tpl-modal-simulate">
+          <i data-lucide="play" style="width: 14px; height: 14px; color: var(--primary);"></i>
+          <span>Testar no Simulador</span>
+        </button>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-tpl-modal-close-footer">Fechar</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-tpl-modal-use">
+            <i data-lucide="plus-circle" style="width: 14px; height: 14px;"></i>
+            <span>Usar este Template</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  modal.classList.add('active');
+
+  const viewportEl = modal.querySelector('#tpl-flow-viewport');
+  const worldEl = modal.querySelector('#tpl-flow-world');
+  const nodesLayer = modal.querySelector('#tpl-flow-nodes');
+  const svgLayer = modal.querySelector('#tpl-flow-svg');
+  const zoomLabel = modal.querySelector('#tpl-zoom-label');
+
+  // Render visual node cards inside the preview world
+  const clonedFlow = JSON.parse(JSON.stringify(tpl.canvasFlow));
+  clonedFlow.nodes.forEach(node => {
+    const nodeEl = createNodeElement(node, clonedFlow);
+    nodeEl.removeAttribute('id');
+    nodeEl.setAttribute('data-tpl-node-id', node.id);
+    nodeEl.style.pointerEvents = 'none';
+    nodesLayer.appendChild(nodeEl);
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+
+  let pZoom = 0.72;
+  let pPanX = 36;
+  let pPanY = 36;
+
+  const updatePreviewTransform = (smooth = false) => {
+    if (worldEl) {
+      worldEl.style.transition = smooth ? 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)' : 'none';
+      worldEl.style.transform = `translate3d(${pPanX}px, ${pPanY}px, 0) scale(${pZoom})`;
+    }
+    if (zoomLabel) {
+      zoomLabel.textContent = `${Math.round(pZoom * 100)}%`;
+    }
+  };
+
+  // Zoom around a specific viewport point (cx, cy) so flow never jumps off-screen
+  const zoomAtPoint = (newZoom, cx, cy, smooth = false) => {
+    const clamped = Math.min(1.3, Math.max(0.4, newZoom));
+    const worldX = (cx - pPanX) / pZoom;
+    const worldY = (cy - pPanY) / pZoom;
+    pZoom = clamped;
+    pPanX = Math.round(cx - worldX * pZoom);
+    pPanY = Math.round(cy - worldY * pZoom);
+    updatePreviewTransform(smooth);
+  };
+
+  // Draw Bezier cables between ports inside the preview world (immune to modal CSS scale transition)
+  const drawPreviewConnections = () => {
+    if (!svgLayer || !worldEl) return;
+    const worldRect = worldEl.getBoundingClientRect();
+    let pathsHtml = '';
+
+    connections.forEach(conn => {
+      const fromNodeEl = nodesLayer.querySelector(`[data-tpl-node-id="${conn.fromNode}"]`);
+      const toNodeEl = nodesLayer.querySelector(`[data-tpl-node-id="${conn.toNode}"]`);
+      if (!fromNodeEl || !toNodeEl) return;
+
+      const fromPortEl = fromNodeEl.querySelector(`.node-port[data-port-id="${conn.fromPort}"]`) || fromNodeEl.querySelector('.port-out');
+      const toPortEl = toNodeEl.querySelector(`.node-port[data-port-id="${conn.toPort || 'in'}"]`) || toNodeEl.querySelector('.port-in');
+
+      if (!fromPortEl || !toPortEl) return;
+
+      const fromNodeRect = fromNodeEl.getBoundingClientRect();
+      const effectiveScale = (fromNodeRect.width / (fromNodeEl.offsetWidth || 280)) || pZoom;
+
+      const fromRect = fromPortEl.getBoundingClientRect();
+      const toRect = toPortEl.getBoundingClientRect();
+
+      const x1 = Math.round((fromRect.left + fromRect.width / 2 - worldRect.left) / effectiveScale);
+      const y1 = Math.round((fromRect.top + fromRect.height / 2 - worldRect.top) / effectiveScale);
+      const x2 = Math.round((toRect.left + toRect.width / 2 - worldRect.left) / effectiveScale);
+      const y2 = Math.round((toRect.top + toRect.height / 2 - worldRect.top) / effectiveScale);
+
+      const sourceNode = clonedFlow.nodes.find(n => n.id === conn.fromNode);
+      const cableType = sourceNode ? sourceNode.type : 'default';
+      const d = getBezierPathData(x1, y1, x2, y2);
+      pathsHtml += `<path d="${d}" class="builder-cable ${cableType}" fill="none" />`;
+    });
+
+    svgLayer.innerHTML = pathsHtml;
+  };
+
+  // Auto-fit flow into modal viewport
+  const fitFlowToViewport = (smooth = false) => {
+    if (!viewportEl || clonedFlow.nodes.length === 0) return;
+    const vRect = viewportEl.getBoundingClientRect();
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    clonedFlow.nodes.forEach(n => {
+      const el = nodesLayer.querySelector(`[data-tpl-node-id="${n.id}"]`);
+      const w = el ? el.offsetWidth : 280;
+      const h = el ? el.offsetHeight : 180;
+      if (n.x < minX) minX = n.x;
+      if (n.y < minY) minY = n.y;
+      if (n.x + w > maxX) maxX = n.x + w;
+      if (n.y + h > maxY) maxY = n.y + h;
+    });
+
+    const contentW = Math.max(400, maxX - minX + 100);
+    const contentH = Math.max(260, maxY - minY + 100);
+    const scaleX = (vRect.width - 56) / contentW;
+    const scaleY = (vRect.height - 56) / contentH;
+    pZoom = Math.min(0.88, Math.max(0.46, Math.min(scaleX, scaleY)));
+    pPanX = Math.round((vRect.width - (maxX - minX) * pZoom) / 2 - minX * pZoom);
+    pPanY = Math.round((vRect.height - (maxY - minY) * pZoom) / 2 - minY * pZoom);
+    updatePreviewTransform(smooth);
+    drawPreviewConnections();
+  };
+
+  requestAnimationFrame(() => {
+    fitFlowToViewport(false);
+  });
+
+  // Pan & Zoom interactions inside the preview viewport
+  let isPanning = false;
+  let startX = 0;
+  let startY = 0;
+
+  viewportEl?.addEventListener('mousedown', (e) => {
+    isPanning = true;
+    startX = e.clientX - pPanX;
+    startY = e.clientY - pPanY;
+    viewportEl.classList.add('is-panning');
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isPanning) return;
+    pPanX = e.clientX - startX;
+    pPanY = e.clientY - startY;
+    updatePreviewTransform(false);
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isPanning) {
+      isPanning = false;
+      viewportEl?.classList.remove('is-panning');
+    }
+  });
+
+  viewportEl?.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const vRect = viewportEl.getBoundingClientRect();
+    const cx = e.clientX - vRect.left;
+    const cy = e.clientY - vRect.top;
+    const delta = e.deltaY < 0 ? 0.07 : -0.07;
+    zoomAtPoint(pZoom + delta, cx, cy, false);
+  }, { passive: false });
+
+  modal.querySelector('#tpl-zoom-in')?.addEventListener('click', () => {
+    const vRect = viewportEl.getBoundingClientRect();
+    zoomAtPoint(pZoom + 0.1, vRect.width / 2, vRect.height / 2, true);
+  });
+
+  modal.querySelector('#tpl-zoom-out')?.addEventListener('click', () => {
+    const vRect = viewportEl.getBoundingClientRect();
+    zoomAtPoint(pZoom - 0.1, vRect.width / 2, vRect.height / 2, true);
+  });
+
+  modal.querySelector('#tpl-zoom-center')?.addEventListener('click', () => fitFlowToViewport(true));
+  modal.querySelector('#tpl-zoom-label')?.addEventListener('click', () => fitFlowToViewport(true));
+
+  modal.querySelector('#tpl-zoom-fit')?.addEventListener('click', () => {
+    const dialogEl = modal.querySelector('.tpl-flow-preview-dialog');
+    const fitBtn = modal.querySelector('#tpl-zoom-fit');
+    if (dialogEl) {
+      const isExpanded = dialogEl.classList.toggle('is-expanded');
+      if (fitBtn) {
+        fitBtn.title = isExpanded ? 'Restaurar tamanho' : 'Expandir tela cheia';
+        fitBtn.innerHTML = `<i data-lucide="${isExpanded ? 'minimize-2' : 'maximize-2'}" style="width: 13px; height: 13px;"></i>`;
+        if (window.lucide) window.lucide.createIcons();
+      }
+      setTimeout(() => {
+        fitFlowToViewport();
+      }, 60);
+    } else {
+      fitFlowToViewport();
+    }
+  });
+
+  const closeModal = () => modal.classList.remove('active');
+  modal.querySelector('#btn-close-tpl-preview')?.addEventListener('click', closeModal);
+  modal.querySelector('#btn-tpl-modal-close-footer')?.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  modal.querySelector('#btn-tpl-modal-simulate')?.addEventListener('click', () => {
+    closeModal();
+    openSimulator(tpl.id);
+  });
+
+  modal.querySelector('#btn-tpl-modal-use')?.addEventListener('click', () => {
+    closeModal();
+    openUseTemplateModal(tpl);
+  });
 }
 
 /**
@@ -530,7 +1456,7 @@ export function openSimulator(botId) {
   const activeFlowBot = (window.getCurrentFlowBot && window.getCurrentFlowBot());
   const bot = (activeFlowBot && activeFlowBot.id === botId)
     ? activeFlowBot
-    : (zapChatData.chatbots.list.find(b => b.id === botId) || activeFlowBot);
+    : (zapChatData.chatbots.list.find(b => b.id === botId) || CHATBOT_TEMPLATES.find(t => t.id === botId) || activeFlowBot);
 
   if (!bot) return;
   currentSimulatedBot = bot;
@@ -795,7 +1721,7 @@ function executeFlowNode(nodeId, bot) {
           branchesHtml = `
             <div class="sim-ai-branches-tray">
               <span class="sim-branches-tray-label">
-                <i data-lucide="git-branch" style="width:12px; height:12px;"></i>
+                <i data-lucide="workflow" style="width:12px; height:12px;"></i>
                 Simular caminho de saída da IA:
               </span>
               ${branches.map(b => `
@@ -870,6 +1796,43 @@ function executeFlowNode(nodeId, bot) {
         simSetTimeout(() => {
           executeFlowNode(nextConn.toNode, bot);
         }, 500);
+      }
+      break;
+    }
+
+    case 'crm': {
+      const stages = zapChatData.crm?.stages || [];
+      const stageObj = stages.find(s => s.id === node.data?.stageId) || stages[0] || { name: 'Prospecção' };
+      const val = Number(node.data?.value) || 0;
+      const valText = val > 0 ? ` • R$ ${val.toLocaleString('pt-BR')}` : '';
+      appendSystemAlert(`💼 Contato enviado ao CRM na etapa <strong>${stageObj.name}</strong>${valText}`);
+
+      const nextConn = bot.canvasFlow?.connections?.find(c => c.fromNode === node.id && (c.fromPort === 'out' || !c.fromPort));
+      if (nextConn) {
+        simSetTimeout(() => {
+          executeFlowNode(nextConn.toNode, bot);
+        }, 500);
+      }
+      break;
+    }
+
+    case 'end_chat': {
+      const sendMsg = node.data?.sendMessage !== false;
+      const closingMsg = (node.data?.closingMessage || 'Seu atendimento foi encerrado! Agradecemos o seu contato.').replace(/\{nome\}/gi, 'Lucas');
+      const reason = node.data?.reason || 'Resolvido';
+
+      if (sendMsg && closingMsg.trim()) {
+        setSimulatorStatus('digitando...');
+        showTypingIndicator(true);
+        simSetTimeout(() => {
+          showTypingIndicator(false);
+          setSimulatorStatus('atendimento encerrado');
+          appendBotBubble(formatSimText(closingMsg));
+          appendSystemAlert(`✅ <strong>Atendimento encerrado</strong> • ${reason}`);
+        }, 650);
+      } else {
+        setSimulatorStatus('atendimento encerrado');
+        appendSystemAlert(`✅ <strong>Atendimento encerrado</strong> • ${reason}`);
       }
       break;
     }

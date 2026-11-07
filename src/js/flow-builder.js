@@ -35,7 +35,17 @@ let portOffsetCache = {};
  * Open Visual Flow Builder Studio for a specific bot
  */
 export function openFlowBuilder(botId) {
-  const bot = zapChatData.chatbots.list.find(b => b.id === botId);
+  let bot = zapChatData.chatbots.list.find(b => b.id === botId);
+  if (!bot && window.getChatbotTemplate) {
+    const tpl = window.getChatbotTemplate(botId);
+    if (tpl) {
+      bot = {
+        ...JSON.parse(JSON.stringify(tpl)),
+        status: 'Template',
+        isTemplatePreview: true
+      };
+    }
+  }
   if (!bot) return;
 
   currentBot = bot;
@@ -311,9 +321,19 @@ function renderBuilderTopbar() {
   }
 
   if (statusBadgeEl) {
-    const isActive = currentBot.status === 'Ativo';
-    statusBadgeEl.className = `builder-status-badge ${isActive ? 'active' : 'paused'}`;
-    statusBadgeEl.textContent = currentBot.status;
+    if (currentBot.isTemplatePreview) {
+      statusBadgeEl.className = 'builder-status-badge active';
+      statusBadgeEl.textContent = 'Pré-visualização de Template';
+    } else {
+      const isActive = currentBot.status === 'Ativo';
+      statusBadgeEl.className = `builder-status-badge ${isActive ? 'active' : 'paused'}`;
+      statusBadgeEl.textContent = currentBot.status;
+    }
+  }
+
+  const saveBtnSpan = document.querySelector('#btn-builder-save span');
+  if (saveBtnSpan) {
+    saveBtnSpan.textContent = currentBot.isTemplatePreview ? 'Usar este Template' : 'Salvar Fluxo';
   }
 }
 
@@ -438,7 +458,7 @@ function getBranchTriggerMeta(triggerType) {
 /**
  * Create HTML element for a node
  */
-function createNodeElement(node) {
+export function createNodeElement(node, flowContext = null) {
   const el = document.createElement('div');
   el.className = `flow-canvas-node node-${node.type} ${selectedNodeId === node.id ? 'selected' : ''}`;
   el.id = `canvas-node-${node.id}`;
@@ -512,8 +532,9 @@ function createNodeElement(node) {
           <div class="node-branches-list">
             ${branches.map(b => {
               const meta = getBranchTriggerMeta(b.triggerType);
-              const conn = currentBot?.canvasFlow?.connections?.find(c => c.fromNode === node.id && c.fromPort === b.id);
-              const targetNode = conn ? currentBot?.canvasFlow?.nodes?.find(n => n.id === conn.toNode) : null;
+              const activeFlow = flowContext || currentBot?.canvasFlow;
+              const conn = activeFlow?.connections?.find(c => c.fromNode === node.id && c.fromPort === b.id);
+              const targetNode = conn ? activeFlow?.nodes?.find(n => n.id === conn.toNode) : null;
               return `
                 <div class="node-branch-item">
                   <div class="node-branch-left">
@@ -555,6 +576,55 @@ function createNodeElement(node) {
           <div class="node-action-card">
             <span>${label}</span>
             ${target ? `<strong class="node-target-tag">${target}</strong>` : ''}
+          </div>
+        </div>
+
+        <div class="node-port port-out" data-node-id="${node.id}" data-port-id="out" data-port-type="out" title="Próximo passo">
+          <i data-lucide="chevron-right" style="width: 10px; height: 10px;"></i>
+        </div>
+      </div>
+    `;
+  } else if (node.type === 'crm') {
+    const stages = zapChatData.crm?.stages || [
+      { id: 'prospeccao', name: 'Prospecção', color: '#2563EB' },
+      { id: 'qualificacao', name: 'Qualificação', color: '#7C3AED' },
+      { id: 'proposta', name: 'Proposta Enviada', color: '#F59E0B' },
+      { id: 'negociacao', name: 'Negociação', color: '#EC4899' },
+      { id: 'ganho', name: 'Fechado Ganho', color: '#00A868' }
+    ];
+    const stageId = node.data?.stageId || stages[0]?.id || 'prospeccao';
+    const stageObj = stages.find(s => s.id === stageId) || stages[0] || { name: 'Prospecção', color: '#2563EB' };
+    const dealVal = Number(node.data?.value) || 0;
+    const priority = node.data?.priority || 'Alta';
+
+    contentHtml = `
+      <div class="flow-node-inner">
+        <div class="node-port port-in" data-node-id="${node.id}" data-port-id="in" data-port-type="in" title="Entrada">
+          <i data-lucide="chevron-right" style="width: 10px; height: 10px;"></i>
+        </div>
+
+        <div class="node-header">
+          <div class="node-header-icon crm">
+            <i data-lucide="kanban" style="width: 14px; height: 14px;"></i>
+          </div>
+          <div class="node-header-title-wrap">
+            <span class="node-header-title">${node.title || 'Enviar ao CRM'}</span>
+            <span class="node-header-badge" style="color: #2563EB;">Funil de Vendas</span>
+          </div>
+        </div>
+
+        <div class="node-body">
+          <div class="node-action-card" style="gap: 6px;">
+            <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Mover contato para etapa:</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+              <strong class="node-target-tag" style="display: inline-flex; align-items: center; gap: 6px; color: var(--text-main);">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${stageObj.color || '#2563EB'}; display: inline-block;"></span>
+                ${stageObj.name}
+              </strong>
+              <span style="font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 999px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);">
+                ${dealVal > 0 ? `R$ ${dealVal.toLocaleString('pt-BR')}` : priority}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -809,6 +879,39 @@ function createNodeElement(node) {
         </div>
       </div>
     `;
+  } else if (node.type === 'end_chat') {
+    const sendMsg = node.data?.sendMessage !== false;
+    const closingMsg = node.data?.closingMessage || 'Seu atendimento foi encerrado! Agradecemos o seu contato.';
+
+    contentHtml = `
+      <div class="flow-node-inner">
+        <div class="node-port port-in" data-node-id="${node.id}" data-port-id="in" data-port-type="in" title="Entrada">
+          <i data-lucide="chevron-right" style="width: 10px; height: 10px;"></i>
+        </div>
+
+        <div class="node-header">
+          <div class="node-header-icon end_chat">
+            <i data-lucide="check-circle-2" style="width: 14px; height: 14px;"></i>
+          </div>
+          <div class="node-header-title-wrap">
+            <span class="node-header-title">${node.title || 'Encerrar Atendimento'}</span>
+            <span class="node-header-badge" style="color: #10B981;">Finalização</span>
+          </div>
+        </div>
+
+        <div class="node-body">
+          ${sendMsg ? `
+            <div class="node-message-bubble" style="border-left-color: #10B981;">
+              ${closingMsg}
+            </div>
+          ` : ''}
+          <div class="node-action-card" style="flex-direction: row; align-items: center; justify-content: space-between; padding: 6px 10px;">
+            <span style="font-size: 11px; color: var(--text-secondary);">Status da conversa</span>
+            <strong class="node-target-tag" style="color: #10B981;">✓ Encerrada</strong>
+          </div>
+        </div>
+      </div>
+    `;
   } else {
     contentHtml = `
       <div class="flow-node-inner">
@@ -870,7 +973,7 @@ function getPortWorldCoords(nodeId, portId) {
 /**
  * Compute Bezier Path String
  */
-function getBezierPathData(x1, y1, x2, y2) {
+export function getBezierPathData(x1, y1, x2, y2) {
   const dx = Math.max(45, Math.abs(x2 - x1) * 0.55);
   const cx1 = x1 + dx;
   const cy1 = y1;
@@ -2088,6 +2191,56 @@ function populateInspector(node) {
         <input type="text" class="form-input" id="insp-input-action-label" value="${node.actionLabel || (isFinish ? 'Finalizar atendimento' : 'Transferir atendimento')}" />
       </div>
     `;
+  } else if (node.type === 'crm') {
+    if (!node.data) node.data = {};
+    const stages = zapChatData.crm?.stages || [
+      { id: 'prospeccao', name: 'Prospecção', color: '#2563EB' },
+      { id: 'qualificacao', name: 'Qualificação', color: '#7C3AED' },
+      { id: 'proposta', name: 'Proposta Enviada', color: '#F59E0B' },
+      { id: 'negociacao', name: 'Negociação', color: '#EC4899' },
+      { id: 'ganho', name: 'Fechado Ganho', color: '#00A868' }
+    ];
+    if (!node.data.stageId) node.data.stageId = stages[0]?.id || 'prospeccao';
+    if (!node.data.priority) node.data.priority = 'Alta';
+
+    formHtml = `
+      <div class="form-group">
+        <label class="form-label">Título do Bloco</label>
+        <input type="text" class="form-input" id="insp-input-title" value="${node.title || 'Enviar ao CRM'}" placeholder="Ex: Enviar ao CRM" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Etapa do Funil CRM</label>
+        <select class="form-select" id="insp-crm-stage">
+          ${stages.map(s => `
+            <option value="${s.id}" ${s.id === node.data.stageId ? 'selected' : ''}>
+              ${s.name}
+            </option>
+          `).join('')}
+        </select>
+        <span class="form-hint">Para qual coluna do Kanban o contato será enviado ao passar por este bloco.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Prioridade da Oportunidade</label>
+        <select class="form-select" id="insp-crm-priority">
+          <option value="Alta" ${node.data.priority === 'Alta' ? 'selected' : ''}>🔥 Alta</option>
+          <option value="Média" ${node.data.priority === 'Média' ? 'selected' : ''}>⚡ Média</option>
+          <option value="Baixa" ${node.data.priority === 'Baixa' ? 'selected' : ''}>🌱 Baixa</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Valor Estimado (R$ - Opcional)</label>
+        <input type="number" class="form-input" id="insp-crm-value" value="${node.data.value || ''}" min="0" step="100" placeholder="Ex: 1500" />
+        <span class="form-hint">Deixe em branco ou 0 caso o valor ainda não seja conhecido.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Nota / Observação Automática (Opcional)</label>
+        <textarea class="form-textarea" rows="2" id="insp-crm-notes" placeholder="Ex: Lead qualificado pelo fluxo de boas-vindas...">${node.data.notes || ''}</textarea>
+      </div>
+    `;
   } else if (node.type === 'menu') {
     if (!node.data) node.data = {};
     if (!node.data.format) node.data.format = 'list_button';
@@ -2449,6 +2602,38 @@ function populateInspector(node) {
         </label>
       </div>
     `;
+  } else if (node.type === 'end_chat') {
+    if (!node.data) node.data = {};
+    const sendMsg = node.data.sendMessage !== false;
+    const defaultMsg = 'Seu atendimento foi encerrado! Agradecemos o seu contato. Caso precise de ajuda novamente, basta enviar uma nova mensagem.';
+    if (node.data.closingMessage === undefined) node.data.closingMessage = defaultMsg;
+
+    formHtml = `
+      <div class="form-group">
+        <label class="form-label">Título do Bloco</label>
+        <input type="text" class="form-input" id="insp-input-title" value="${node.title || 'Encerrar Atendimento'}" placeholder="Ex: Encerrar Atendimento" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-check-label" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <input type="checkbox" id="insp-end-send-msg" ${sendMsg ? 'checked' : ''} />
+          <span style="font-size:12px; font-weight:600; color:var(--text-main);">Enviar mensagem de atendimento encerrado para o cliente</span>
+        </label>
+      </div>
+
+      <div class="form-group" id="insp-end-msg-group" style="${sendMsg ? '' : 'display:none;'}">
+        <label class="form-label">Mensagem de Encerramento</label>
+        <div class="conteudo-text-box">
+          <textarea class="conteudo-textarea" id="insp-end-message" rows="4" placeholder="Digite a mensagem final enviada ao cliente quando o atendimento for encerrado...">${node.data.closingMessage || ''}</textarea>
+          <div class="conteudo-format-toolbar">
+            <button type="button" class="conteudo-fmt-btn" id="fmt-end-bold" title="Negrito (*)"><strong>B</strong></button>
+            <button type="button" class="conteudo-fmt-btn" id="fmt-end-italic" title="Itálico (_)"><em>I</em></button>
+            <button type="button" class="conteudo-fmt-btn var" id="fmt-end-var" title="Inserir {nome}">{nome}</button>
+          </div>
+        </div>
+        <span class="form-hint">Esta mensagem será enviada ao cliente imediatamente antes de finalizar a conversa.</span>
+      </div>
+    `;
   } else {
     formHtml = `
       <div class="form-group">
@@ -2541,6 +2726,73 @@ function populateInspector(node) {
       renderCanvasNodes();
       if (window.lucide) window.lucide.createIcons();
     });
+  }
+
+  if (node.type === 'crm') {
+    document.getElementById('insp-input-title')?.addEventListener('input', (e) => {
+      node.title = e.target.value;
+      renderCanvasNodes();
+      if (window.lucide) window.lucide.createIcons();
+    });
+    document.getElementById('insp-crm-stage')?.addEventListener('change', (e) => {
+      if (!node.data) node.data = {};
+      node.data.stageId = e.target.value;
+      renderCanvasNodes();
+      if (window.lucide) window.lucide.createIcons();
+    });
+    document.getElementById('insp-crm-priority')?.addEventListener('change', (e) => {
+      if (!node.data) node.data = {};
+      node.data.priority = e.target.value;
+      renderCanvasNodes();
+      if (window.lucide) window.lucide.createIcons();
+    });
+    document.getElementById('insp-crm-value')?.addEventListener('input', (e) => {
+      if (!node.data) node.data = {};
+      node.data.value = parseFloat(e.target.value) || 0;
+      renderCanvasNodes();
+      if (window.lucide) window.lucide.createIcons();
+    });
+    document.getElementById('insp-crm-notes')?.addEventListener('input', (e) => {
+      if (!node.data) node.data = {};
+      node.data.notes = e.target.value;
+    });
+  }
+
+  if (node.type === 'end_chat') {
+    document.getElementById('insp-input-title')?.addEventListener('input', (e) => {
+      node.title = e.target.value;
+      renderCanvasNodes();
+      if (window.lucide) window.lucide.createIcons();
+    });
+    document.getElementById('insp-end-send-msg')?.addEventListener('change', (e) => {
+      if (!node.data) node.data = {};
+      node.data.sendMessage = e.target.checked;
+      const msgGroup = document.getElementById('insp-end-msg-group');
+      if (msgGroup) msgGroup.style.display = e.target.checked ? '' : 'none';
+      renderCanvasNodes();
+      cachePortOffsets();
+      renderAllCables();
+      if (window.lucide) window.lucide.createIcons();
+    });
+    const endTxt = document.getElementById('insp-end-message');
+    if (endTxt) {
+      endTxt.addEventListener('input', (e) => {
+        if (!node.data) node.data = {};
+        node.data.closingMessage = e.target.value;
+        renderCanvasNodes();
+        cachePortOffsets();
+        renderAllCables();
+      });
+      document.getElementById('fmt-end-bold')?.addEventListener('click', () => wrapTextInTextarea(endTxt, '*'));
+      document.getElementById('fmt-end-italic')?.addEventListener('click', () => wrapTextInTextarea(endTxt, '_'));
+      document.getElementById('fmt-end-var')?.addEventListener('click', () => {
+        const start = endTxt.selectionStart || 0;
+        const end = endTxt.selectionEnd || 0;
+        endTxt.value = endTxt.value.substring(0, start) + '{nome}' + endTxt.value.substring(end);
+        endTxt.focus();
+        endTxt.dispatchEvent(new Event('input'));
+      });
+    }
   }
 
   if (node.type === 'menu') {
@@ -3305,6 +3557,16 @@ function applyInspectorChanges() {
       node.transferType = parts[0];
       node.transferTarget = parts.slice(1).join(':');
     }
+  } else if (node.type === 'crm') {
+    if (!node.data) node.data = {};
+    const stageSelect = document.getElementById('insp-crm-stage');
+    const prioSelect = document.getElementById('insp-crm-priority');
+    const valInput = document.getElementById('insp-crm-value');
+    const notesInput = document.getElementById('insp-crm-notes');
+    if (stageSelect) node.data.stageId = stageSelect.value;
+    if (prioSelect) node.data.priority = prioSelect.value;
+    if (valInput) node.data.value = parseFloat(valInput.value) || 0;
+    if (notesInput) node.data.notes = notesInput.value.trim();
   } else if (node.type === 'menu') {
     if (!node.data) node.data = {};
     const formatRadio = document.querySelector('input[name="menu-format"]:checked');
@@ -3398,6 +3660,12 @@ function applyInspectorChanges() {
     if (unitSelect) node.data.unit = unitSelect.value;
     if (businessCheck) node.data.respectBusinessHours = businessCheck.checked;
     if (presenceCheck) node.data.showPresence = presenceCheck.checked;
+  } else if (node.type === 'end_chat') {
+    if (!node.data) node.data = {};
+    const sendMsgCheck = document.getElementById('insp-end-send-msg');
+    const msgTextarea = document.getElementById('insp-end-message');
+    if (sendMsgCheck) node.data.sendMessage = sendMsgCheck.checked;
+    if (msgTextarea) node.data.closingMessage = msgTextarea.value.trim();
   }
 
   renderCanvasNodes();
@@ -3496,6 +3764,21 @@ function spawnNewNode(type, x, y) {
       y,
       data: { description: 'Transferência de atendimento' }
     };
+  } else if (type === 'crm') {
+    const stages = zapChatData.crm?.stages || [{ id: 'prospeccao', name: 'Prospecção', color: '#2563EB' }];
+    newNode = {
+      id: newId,
+      type: 'crm',
+      title: 'Enviar ao CRM',
+      x,
+      y,
+      data: {
+        stageId: stages[0]?.id || 'prospeccao',
+        priority: 'Alta',
+        value: 0,
+        notes: ''
+      }
+    };
   } else if (type === 'menu') {
     newNode = {
       id: newId,
@@ -3562,6 +3845,19 @@ function spawnNewNode(type, x, y) {
         showPresence: true
       }
     };
+  } else if (type === 'end_chat') {
+    newNode = {
+      id: newId,
+      type: 'end_chat',
+      title: 'Encerrar Atendimento',
+      x,
+      y,
+      data: {
+        sendMessage: true,
+        closingMessage: 'Seu atendimento foi encerrado! Agradecemos o seu contato. Caso precise de ajuda novamente, basta enviar uma nova mensagem.',
+        reason: 'Resolvido'
+      }
+    };
   } else {
     newNode = {
       id: newId,
@@ -3593,6 +3889,22 @@ function spawnNewNode(type, x, y) {
 function saveCanvasFlow() {
   if (!currentBot) return;
 
+  if (currentBot.isTemplatePreview) {
+    delete currentBot.isTemplatePreview;
+    currentBot.id = `bot-${Date.now()}`;
+    currentBot.status = 'Ativo';
+    currentBot.executions = 0;
+    currentBot.updatedAt = 'Agora mesmo';
+    currentBot.stepsCount = currentBot.canvasFlow.nodes.length;
+    zapChatData.chatbots.list.unshift(currentBot);
+    renderBuilderTopbar();
+    if (window.renderChatbotsList) window.renderChatbotsList();
+    if (window.showToast) {
+      window.showToast(`Template "${currentBot.name}" adicionado aos seus chatbots!`);
+    }
+    return;
+  }
+
   const inputEl = document.getElementById('builder-bot-name-input');
   const wrapper = document.getElementById('builder-title-wrapper');
   if (wrapper?.classList.contains('is-editing') && inputEl) {
@@ -3623,10 +3935,12 @@ function getNodeTypeLabel(type) {
     ai_agent: 'Agente de Inteligência Artificial',
     menu: 'Menu Interativo',
     action: 'Ação Automatizada',
+    crm: 'Funil CRM',
     message: 'Conteúdo (Texto, Mídia e Atraso)',
     human: 'Fila Humana',
     condition: 'Condição Lógica',
-    delay: 'Atraso / Espera'
+    delay: 'Atraso / Espera',
+    end_chat: 'Encerramento de Atendimento'
   };
   return map[type] || 'Bloco';
 }

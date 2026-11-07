@@ -56,7 +56,7 @@
           </li>
           <li class="nav-item">
             <a href="#chatbots" class="nav-link" data-target="chatbots">
-              <span class="nav-icon"><i data-lucide="git-branch"></i></span>
+              <span class="nav-icon"><i data-lucide="workflow"></i></span>
               <span>Chatbot</span>
             </a>
           </li>
@@ -226,11 +226,6 @@
               <span class="dash-breadcrumb-tag">PAINEL DO CLIENTE</span>
               <div class="dash-title-row">
                 <h1>Dashboard</h1>
-                <div class="dash-status-badge">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#25D366"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2z"/></svg>
-                  <span>WhatsApp conectado — IA ativa</span>
-                  <span class="dash-status-dot"></span>
-                </div>
               </div>
             </div>
 
@@ -440,7 +435,6 @@
                       <th>Agente</th>
                       <th>Status</th>
                       <th>Conversas hoje</th>
-                      <th>Canal</th>
                       <th>Ações</th>
                     </tr>
                   </thead>
@@ -524,7 +518,7 @@
         <section class="view-panel" id="view-chatbots">
           <div class="chatbot-view-container">
             <!-- Page Header -->
-            <div class="page-header" style="margin-bottom: 20px;">
+            <div class="page-header" style="margin-bottom: 14px;">
               <div class="page-title-group">
                 <h1 class="page-title">Chatbots & Fluxos de Atendimento</h1>
                 <p class="page-subtitle">Crie árvores de decisão, menus inteligentes e integre seus Agentes de IA nos fluxos</p>
@@ -537,13 +531,29 @@
               </div>
             </div>
 
-            <!-- KPI Row -->
-            <div class="chatbot-kpi-grid">
+            <!-- Sub-navigation Tabs: Meus Chatbots | Templates -->
+            <div class="chatbot-main-tabs" role="tablist">
+              <button type="button" class="chatbot-main-tab active" id="tab-btn-my-chatbots" data-chatbot-tab="my" role="tab" aria-selected="true">
+                <i data-lucide="workflow" style="width: 15px; height: 15px;"></i>
+                <span>Meus Chatbots</span>
+                <span class="chatbot-tab-badge" id="chatbot-tab-my-count">4</span>
+              </button>
+              <button type="button" class="chatbot-main-tab" id="tab-btn-templates" data-chatbot-tab="templates" role="tab" aria-selected="false">
+                <i data-lucide="layout-template" style="width: 15px; height: 15px;"></i>
+                <span>Templates</span>
+                <span class="chatbot-tab-badge tpl" id="chatbot-tab-tpl-count">6</span>
+              </button>
+            </div>
+
+            <!-- ABA 1: MEUS CHATBOTS -->
+            <div class="chatbot-tab-pane active" id="chatbot-pane-my">
+              <!-- KPI Row -->
+              <div class="chatbot-kpi-grid">
               <div class="chatbot-kpi-card">
                 <div class="chatbot-kpi-top">
                   <span class="chatbot-kpi-label">Chatbots Ativos</span>
                   <div class="chatbot-kpi-icon green">
-                    <i data-lucide="git-branch" style="width: 18px; height: 18px;"></i>
+                    <i data-lucide="workflow" style="width: 18px; height: 18px;"></i>
                   </div>
                 </div>
                 <div class="chatbot-kpi-value" id="chatbot-kpi-active-val">3</div>
@@ -623,12 +633,49 @@
                   </select>
                   <i data-lucide="chevron-down" class="filter-chevron-icon"></i>
                 </div>
+
+                <!-- View Mode Switcher (Cards / Lista) -->
+                <div class="crm-view-mode-pill">
+                  <button type="button" class="crm-pill-btn active" id="chatbot-btn-view-cards" title="Visualização em Cards">
+                    <i data-lucide="layout-grid" style="width: 14px; height: 14px;"></i>
+                    <span>Cards</span>
+                  </button>
+                  <button type="button" class="crm-pill-btn" id="chatbot-btn-view-list" title="Visualização em Lista">
+                    <i data-lucide="list" style="width: 14px; height: 14px;"></i>
+                    <span>Lista</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <!-- Cards Grid -->
-            <div class="chatbot-grid" id="chatbots-cards-grid">
-              <!-- Rendered dynamically by chatbot.js -->
+              <!-- Cards Grid -->
+              <div class="chatbot-grid" id="chatbots-cards-grid">
+                <!-- Rendered dynamically by chatbot.js -->
+              </div>
+            </div>
+
+            <!-- ABA 2: TEMPLATES PRONTOS -->
+            <div class="chatbot-tab-pane" id="chatbot-pane-templates" style="display: none;">
+              <div class="leads-filter-bar-simplified crm-filter-bar" style="margin-bottom: 18px;">
+                <div class="leads-search-wrap">
+                  <i data-lucide="search" class="leads-search-icon"></i>
+                  <input type="text" id="chatbot-tpl-search-input" placeholder="Buscar template por nome, objetivo ou segmento...">
+                </div>
+
+                <div class="chatbot-tpl-categories" id="chatbot-tpl-categories">
+                  <button type="button" class="chatbot-tpl-cat-pill active" data-tpl-cat="all">Todos</button>
+                  <button type="button" class="chatbot-tpl-cat-pill" data-tpl-cat="Delivery">Delivery</button>
+                  <button type="button" class="chatbot-tpl-cat-pill" data-tpl-cat="Academia">Academia</button>
+                  <button type="button" class="chatbot-tpl-cat-pill" data-tpl-cat="Salão de Beleza">Salão de Beleza</button>
+                  <button type="button" class="chatbot-tpl-cat-pill" data-tpl-cat="Imobiliária">Imobiliária</button>
+                  <button type="button" class="chatbot-tpl-cat-pill" data-tpl-cat="Clínica">Clínica</button>
+                  <button type="button" class="chatbot-tpl-cat-pill" data-tpl-cat="E-commerce">E-commerce</button>
+                </div>
+              </div>
+
+              <div class="chatbot-grid" id="chatbots-templates-grid">
+                <!-- Rendered dynamically by chatbot.js -->
+              </div>
             </div>
           </div>
         </section>
@@ -794,6 +841,17 @@
                   <i data-lucide="grip-vertical" class="dock-item-grip"></i>
                 </div>
 
+                <div class="dock-item" draggable="true" data-node-type="crm" title="Enviar contato para uma etapa do funil no CRM">
+                  <div class="dock-item-icon crm">
+                    <i data-lucide="kanban" style="width: 16px; height: 16px;"></i>
+                  </div>
+                  <div class="dock-item-info">
+                    <span class="dock-item-name">CRM</span>
+                    <span class="dock-item-desc">Enviar contato ao funil</span>
+                  </div>
+                  <i data-lucide="grip-vertical" class="dock-item-grip"></i>
+                </div>
+
                 <div class="dock-item" draggable="true" data-node-type="human" title="Transbordo para fila humana de atendimento">
                   <div class="dock-item-icon human">
                     <i data-lucide="users" style="width: 16px; height: 16px;"></i>
@@ -812,6 +870,17 @@
                   <div class="dock-item-info">
                     <span class="dock-item-name">Atraso Inteligente</span>
                     <span class="dock-item-desc">Pausa simulada</span>
+                  </div>
+                  <i data-lucide="grip-vertical" class="dock-item-grip"></i>
+                </div>
+
+                <div class="dock-item" draggable="true" data-node-type="end_chat" title="Encerrar o atendimento e enviar mensagem de encerramento opcional">
+                  <div class="dock-item-icon end_chat">
+                    <i data-lucide="check-circle-2" style="width: 16px; height: 16px;"></i>
+                  </div>
+                  <div class="dock-item-info">
+                    <span class="dock-item-name">Encerrar Atendimento</span>
+                    <span class="dock-item-desc">Finalizar e despedir</span>
                   </div>
                   <i data-lucide="grip-vertical" class="dock-item-grip"></i>
                 </div>
@@ -1146,7 +1215,7 @@
           <div class="channels-action-bar">
             <div class="search-input-wrap channels-search-wrap">
               <i data-lucide="search" style="width: 15px; height: 15px; color: var(--text-muted);"></i>
-              <input type="text" id="channels-search-input" placeholder="Buscar por nome, identificador ou agente...">
+              <input type="text" id="channels-search-input" placeholder="Buscar por nome, identificador ou atendimento inicial...">
             </div>
 
             <div class="channels-action-right">
@@ -1172,7 +1241,7 @@
                 <thead>
                   <tr>
                     <th>Nome</th>
-                    <th>Agente</th>
+                    <th>Atendimento Inicial</th>
                     <th>Identificador</th>
                     <th>Departamento</th>
                     <th>Status</th>
@@ -1275,17 +1344,8 @@
                   </div>
                   <h3 class="agent-sidebar-name" id="edit-agent-name-display">Pedro</h3>
                   <span class="agent-sidebar-role" id="edit-agent-role-display">Vendedor em Loja Download</span>
-                  <div class="agent-sidebar-status-wrap">
-                    <button type="button" class="badge badge-dot badge-active agent-sidebar-status-pill is-active" id="edit-agent-status-badge" title="Agente ativo — Clique para alternar status">
-                      IA ativa
-                    </button>
-                    <button type="button" class="agent-sidebar-switcher is-active" id="btn-sidebar-quick-pause" role="switch" aria-checked="true" title="Status: Ativo — Clique para pausar">
-                      <span class="switch-thumb"></span>
-                    </button>
-                  </div>
                 </div>
 
-                <!-- Internal Sub-navigation -->
                 <!-- Internal Sub-navigation -->
                 <ul class="agent-internal-nav">
                   <li>
@@ -1298,12 +1358,6 @@
                     <button type="button" class="agent-internal-nav-btn" data-agent-tab="conhecimento">
                       <i data-lucide="book-open"></i>
                       <span>Conhecimento</span>
-                    </button>
-                  </li>
-                  <li>
-                    <button type="button" class="agent-internal-nav-btn" data-agent-tab="canais">
-                      <i data-lucide="share-2"></i>
-                      <span>Canais</span>
                     </button>
                   </li>
                   <li>
@@ -1940,56 +1994,6 @@
                   </div>
                 </div>
 
-                <!-- PANE 3: CANAIS -->
-                <div class="agent-tab-pane" id="agent-tab-pane-canais">
-                  <div class="agent-config-card">
-                    <div class="agent-config-card-header">
-                      <div>
-                        <h3 class="agent-config-card-title">Canais de Atendimento Vinculados</h3>
-                        <p class="agent-config-card-subtitle">Ative ou pause a atuação deste agente em cada um dos seus canais.</p>
-                      </div>
-                    </div>
-                    <div class="agent-channels-grid">
-                      <div class="agent-channel-card">
-                        <div class="agent-channel-card-left">
-                          <div class="agent-channel-icon-wrap" style="background:#E6F7F0; color:#25D366;">
-                            <i data-lucide="phone" style="width:20px;height:20px;"></i>
-                          </div>
-                          <div>
-                            <div class="agent-channel-title">WhatsApp Oficial API</div>
-                            <div class="agent-channel-status">+55 (11) 99765-4321 • Conectado</div>
-                          </div>
-                        </div>
-                        <label class="switch-toggle"><input type="checkbox" checked><span class="switch-slider"></span></label>
-                      </div>
-                      <div class="agent-channel-card">
-                        <div class="agent-channel-card-left">
-                          <div class="agent-channel-icon-wrap" style="background:#FDE8E8; color:#E1306C;">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
-                          </div>
-                          <div>
-                            <div class="agent-channel-title">Instagram Direct</div>
-                            <div class="agent-channel-status">@lojaexemplo • Conectado</div>
-                          </div>
-                        </div>
-                        <label class="switch-toggle"><input type="checkbox" checked><span class="switch-slider"></span></label>
-                      </div>
-                      <div class="agent-channel-card">
-                        <div class="agent-channel-card-left">
-                          <div class="agent-channel-icon-wrap" style="background:#EFF6FF; color:#3B82F6;">
-                            <i data-lucide="message-square" style="width:20px;height:20px;"></i>
-                          </div>
-                          <div>
-                            <div class="agent-channel-title">Chat no Site (Widget)</div>
-                            <div class="agent-channel-status">Ativo na página inicial</div>
-                          </div>
-                        </div>
-                        <label class="switch-toggle"><input type="checkbox" checked><span class="switch-slider"></span></label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
                 <!-- PANE 7: PREFERÊNCIAS DE ATENDIMENTO / CONFIGURAÇÕES -->
                 <div class="agent-tab-pane" id="agent-tab-pane-configuracoes">
 
@@ -2467,7 +2471,10 @@
               <!-- Card 1: Contato -->
               <div class="profile-section-card" id="chat-profile-card"></div>
 
-              <!-- Card 2: Atendimento -->
+              <!-- Card 2: CRM & Oportunidade -->
+              <div class="profile-section-card" id="chat-crm-card"></div>
+
+              <!-- Card 3: Atendimento -->
               <div class="profile-section-card" id="chat-attendance-card"></div>
             </div>
           </div>
@@ -4049,14 +4056,26 @@
             </div>
 
             <div class="form-group full-col">
-              <label class="form-label">Agente de IA Responsável *</label>
-              <select id="wizard-input-agent" class="form-select">
-                <option value="Pedro" selected>Pedro (Especialista em Vendas & Atendimento Comercial)</option>
-                <option value="SDR IA">SDR IA (Qualificação de Leads & Agendamento)</option>
-                <option value="Atendimento">Atendimento (Triagem Geral de Clientes)</option>
-                <option value="Suporte IA">Suporte IA (Dúvidas Técnicas, FAQ & Pós-Venda)</option>
-              </select>
-              <span class="form-help-text">A inteligência artificial que assumirá as respostas automáticas deste canal.</span>
+              <label class="form-label">Atendimento Inicial *</label>
+              <div class="channel-initial-type-tabs" id="wizard-initial-type-tabs">
+                <button type="button" class="channel-initial-type-btn active" data-initial-type="chatbot">
+                  <i data-lucide="workflow" style="width: 15px; height: 15px;"></i>
+                  <span>Chatbot</span>
+                </button>
+                <button type="button" class="channel-initial-type-btn" data-initial-type="ai_agent">
+                  <i data-lucide="bot" style="width: 15px; height: 15px;"></i>
+                  <span>Agente de IA</span>
+                </button>
+                <button type="button" class="channel-initial-type-btn" data-initial-type="human">
+                  <i data-lucide="users" style="width: 15px; height: 15px;"></i>
+                  <span>Atendimento Humano</span>
+                </button>
+              </div>
+              <input type="hidden" id="wizard-input-initial-type" value="chatbot">
+              <div id="wizard-initial-target-wrap" style="margin-top: 10px;">
+                <select id="wizard-input-agent" class="form-select"></select>
+              </div>
+              <span class="form-help-text" id="wizard-initial-help-text">Escolha quem recepcionará o cliente primeiro ao iniciar uma conversa neste canal.</span>
             </div>
           </div>
 
@@ -4252,17 +4271,29 @@
             <span class="form-help-text">Telefone, URL do widget ou nome de usuário vinculado.</span>
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="edit-channel-agent">Agente de IA Responsável *</label>
-            <select id="edit-channel-agent" class="form-select" required>
-              <option value="Pedro">Pedro (Vendas & Comercial)</option>
-              <option value="SDR IA">SDR IA (Qualificação & Agendamento)</option>
-              <option value="Atendimento">Atendimento (Triagem Geral)</option>
-              <option value="Suporte IA">Suporte IA (Dúvidas Técnicas & FAQ)</option>
-            </select>
+          <div class="form-group full-span">
+            <label class="form-label">Atendimento Inicial *</label>
+            <div class="channel-initial-type-tabs" id="edit-channel-initial-type-tabs">
+              <button type="button" class="channel-initial-type-btn active" data-initial-type="chatbot">
+                <i data-lucide="workflow" style="width: 15px; height: 15px;"></i>
+                <span>Chatbot</span>
+              </button>
+              <button type="button" class="channel-initial-type-btn" data-initial-type="ai_agent">
+                <i data-lucide="bot" style="width: 15px; height: 15px;"></i>
+                <span>Agente de IA</span>
+              </button>
+              <button type="button" class="channel-initial-type-btn" data-initial-type="human">
+                <i data-lucide="users" style="width: 15px; height: 15px;"></i>
+                <span>Atendimento Humano</span>
+              </button>
+            </div>
+            <input type="hidden" id="edit-channel-initial-type" value="chatbot">
+            <div id="edit-channel-initial-target-wrap" style="margin-top: 10px;">
+              <select id="edit-channel-agent" class="form-select"></select>
+            </div>
           </div>
 
-          <div class="form-group">
+          <div class="form-group full-span">
             <label class="form-label" for="edit-channel-status">Status da Linha *</label>
             <select id="edit-channel-status" class="form-select" required>
               <option value="Conectado">Conectado</option>
@@ -5482,7 +5513,7 @@
             <span>Simulador Ao Vivo</span>
           </div>
           <div class="sim-step-badge" id="sim-step-badge" title="Nó em execução no fluxo">
-            <i data-lucide="git-branch" style="width:12px; height:12px;"></i>
+            <i data-lucide="workflow" style="width:12px; height:12px;"></i>
             <span id="sim-current-node-name">Bloco Inicial</span>
           </div>
         </div>
@@ -5537,10 +5568,10 @@
           <!-- WhatsApp In-App Navigation Bar -->
           <div class="sim-wa-header">
             <div class="sim-wa-header-left">
-              <button type="button" class="sim-wa-back-btn" title="Voltar">
+              <div class="sim-wa-back-btn">
                 <i data-lucide="chevron-left" style="width:20px; height:20px;"></i>
                 <span class="sim-wa-back-count">14</span>
-              </button>
+              </div>
               <div class="sim-wa-avatar-wrap">
                 <div class="sim-wa-avatar" id="sim-phone-avatar">🤖</div>
                 <span class="sim-wa-online-dot"></span>
@@ -5557,9 +5588,9 @@
               </div>
             </div>
             <div class="sim-wa-header-right">
-              <button type="button" class="sim-wa-icon-btn" title="Chamada de Vídeo"><i data-lucide="video" style="width:17px; height:17px;"></i></button>
-              <button type="button" class="sim-wa-icon-btn" title="Chamada de Voz"><i data-lucide="phone" style="width:16px; height:16px;"></i></button>
-              <button type="button" class="sim-wa-icon-btn" title="Mais opções"><i data-lucide="more-vertical" style="width:17px; height:17px;"></i></button>
+              <span class="sim-wa-icon-btn"><i data-lucide="video" style="width:17px; height:17px;"></i></span>
+              <span class="sim-wa-icon-btn"><i data-lucide="phone" style="width:16px; height:16px;"></i></span>
+              <span class="sim-wa-icon-btn"><i data-lucide="more-vertical" style="width:17px; height:17px;"></i></span>
             </div>
           </div>
 

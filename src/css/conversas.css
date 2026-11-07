@@ -2905,3 +2905,568 @@
   color: #FBBF24;
   border-color: rgba(245, 158, 11, 0.3);
 }
+
+/* ===================================================
+   CRM INTEGRATION IN CONVERSAS (LIST, HEADER POPOVER & SIDEBAR CARD)
+   =================================================== */
+
+.thread-crm-mini-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--bg-card-alt);
+  color: var(--text-main);
+  border: 1px solid var(--border-light);
+  white-space: nowrap;
+}
+
+.thread-crm-mini-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chat-crm-header-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.chat-crm-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-color: var(--primary-border) !important;
+}
+
+.chat-crm-header-btn.is-in-crm {
+  background: var(--primary-light) !important;
+  color: var(--primary) !important;
+  font-weight: 600;
+}
+
+.crm-header-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.crm-header-value-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(0, 168, 104, 0.14);
+  color: var(--primary);
+}
+
+/* Header Quick Popover */
+.chat-crm-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+  padding: 12px;
+  z-index: 120;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  animation: crmPopoverFadeIn 0.15s ease-out;
+}
+
+.chat-crm-popover.show {
+  display: flex;
+}
+
+@keyframes crmPopoverFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-crm-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.chat-crm-popover-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.chat-crm-popover-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.chat-crm-popover-val-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.chat-crm-popover-stages {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 195px;
+  overflow-y: auto;
+}
+
+.chat-crm-popover-stage-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 9px;
+  background: var(--bg-card-alt);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: left;
+}
+
+.chat-crm-popover-stage-btn:hover {
+  background: var(--primary-light);
+  border-color: var(--primary-border);
+  color: var(--primary);
+}
+
+.chat-crm-popover-stage-btn.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.crm-stage-dot-sm {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.crm-stage-name-sm {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-stage-send-hint {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--primary);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.chat-crm-popover-stage-btn:hover .crm-stage-send-hint {
+  opacity: 1;
+}
+
+.chat-crm-popover-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-light);
+}
+
+.chat-crm-popover-advance {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Sidebar Card & Pipeline Stepper */
+.chat-crm-status-pill {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-card-alt);
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+}
+
+.chat-crm-status-pill.active {
+  background: var(--status-active-bg);
+  color: var(--status-active);
+  border-color: rgba(0, 168, 104, 0.25);
+}
+
+.btn-crm-remove-deal {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-crm-remove-deal:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
+}
+
+.chat-crm-deal-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.crm-pipeline-stepper-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 9px 10px;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.crm-stepper-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.crm-stepper-current-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.btn-crm-advance-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-crm-advance-inline:hover {
+  filter: brightness(1.08);
+  transform: translateX(1px);
+}
+
+.crm-stepper-done-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.crm-pipeline-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.crm-stepper-seg {
+  flex: 1;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--border);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease, opacity 0.15s ease;
+}
+
+.crm-stepper-seg:hover {
+  transform: scaleY(1.35);
+  opacity: 0.9;
+}
+
+.crm-stepper-seg.filled {
+  background: var(--step-color, var(--primary));
+}
+
+.crm-stepper-seg.current {
+  box-shadow: 0 0 0 2px rgba(0, 168, 104, 0.2);
+}
+
+/* Stage Select Dropdown (New Lead in CRM Card) */
+.crm-stage-select-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.crm-stage-select-trigger {
+  width: 100%;
+  height: 36px;
+  padding: 0 11px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.crm-stage-select-trigger:hover,
+.crm-stage-select-wrap.open .crm-stage-select-trigger {
+  border-color: var(--primary);
+}
+
+.crm-stage-select-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.crm-stage-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+  padding: 4px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 60;
+}
+
+.crm-stage-select-wrap.open .crm-stage-select-dropdown {
+  display: flex;
+}
+
+.crm-stage-select-option {
+  width: 100%;
+  padding: 7px 9px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-main);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.14s ease;
+}
+
+.crm-stage-select-option:hover {
+  background: var(--bg-hover);
+}
+
+.crm-stage-select-option.selected {
+  background: rgba(0, 168, 104, 0.1);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.crm-stage-option-check {
+  margin-left: auto;
+  opacity: 0;
+  color: var(--primary);
+}
+
+.crm-stage-select-option.selected .crm-stage-option-check {
+  opacity: 1;
+}
+
+/* Quick Value Chips & Currency Prefix */
+.crm-value-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.crm-val-chip {
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 999px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.crm-val-chip:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.chat-crm-input-prefix-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.chat-crm-currency-prefix {
+  position: absolute;
+  left: 9px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.chat-crm-input-prefix-wrap .chat-crm-input {
+  padding-left: 28px;
+}
+
+.chat-crm-row-split {
+  display: flex;
+  gap: 8px;
+}
+
+/* Priority Segmented Buttons */
+.crm-priority-seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  background: var(--bg-card-alt);
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+}
+
+.crm-prio-btn {
+  padding: 4px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.crm-prio-btn.active {
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.chat-crm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chat-crm-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.chat-crm-select,
+.chat-crm-input {
+  width: 100%;
+  height: 32px;
+  padding: 0 9px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-main);
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: var(--transition);
+}
+
+.chat-crm-select:focus,
+.chat-crm-input:focus {
+  border-color: var(--primary);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 2px var(--primary-glow);
+}
+
+.chat-crm-submit-btn {
+  width: 100%;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.btn-chat-open-crm {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  transition: var(--transition);
+  margin-top: 2px;
+}
+
+.btn-chat-open-crm:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+
+.crm-card-pulse {
+  animation: crmPulseHighlight 1.1s ease;
+}
+
+@keyframes crmPulseHighlight {
+  0%, 100% { box-shadow: none; border-color: var(--border); }
+  40% { box-shadow: 0 0 0 3px var(--primary-glow); border-color: var(--primary); }
+}

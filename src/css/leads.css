@@ -1512,5 +1512,241 @@
   background: rgba(239, 68, 68, 0.1);
 }
 
+/* Lead Tags (Table, Panel & Tag Manager Modal) */
+.lead-row-tags-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.lead-mini-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.lead-mini-tag-pill:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.lead-add-tag-inline-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lead-add-tag-inline-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(0, 168, 104, 0.06);
+}
+
+.lead-panel-tags-box {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+  max-width: 210px;
+}
+
+.lead-panel-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.lead-panel-tag-remove {
+  border: none;
+  background: transparent;
+  color: currentColor;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 1px;
+  cursor: pointer;
+  opacity: 0.65;
+}
+
+.lead-panel-tag-remove:hover {
+  opacity: 1;
+}
+
+.lead-panel-add-tag-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px dashed var(--border);
+  background: var(--bg-main);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lead-panel-add-tag-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.lead-tag-create-box {
+  padding: 12px;
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.lead-tag-color-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.lead-tag-color-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lead-tag-color-dot.sm {
+  width: 16px;
+  height: 16px;
+}
+
+.lead-tag-color-dot.selected {
+  transform: scale(1.15);
+  border-color: var(--bg-card);
+  box-shadow: 0 0 0 2px var(--text-main);
+}
+
+.lead-tags-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.lead-tag-manager-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  transition: all 0.15s ease;
+}
+
+.lead-tag-manager-item.selected {
+  border-color: rgba(0, 168, 104, 0.35);
+  background: rgba(0, 168, 104, 0.04);
+}
+
+.lead-tag-toggle-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  flex: 1;
+  text-align: left;
+}
+
+.lead-tag-check-box {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.lead-tag-check-box.checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.lead-tag-pill-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.lead-tag-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.lead-tag-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lead-tag-icon-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lead-tag-icon-btn:hover {
+  background: var(--bg-card);
+  color: var(--text-main);
+}
+
+.lead-tag-icon-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
+}
+
+
 
 

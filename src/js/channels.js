@@ -28,6 +28,244 @@ export function refreshChannelsTable() {
   }
 }
 
+function getChannelInitialRoutingMeta(channel) {
+  let type = channel.initialType;
+  let target = channel.initialTarget || channel.agentName || '';
+
+  if (!type) {
+    const bots = zapChatData.chatbots?.list || [];
+    const agents = zapChatData.agentes?.list || [];
+    if (bots.some(b => b.name === target)) {
+      type = 'chatbot';
+    } else if (target.toLowerCase().includes('humano') || target.toLowerCase().includes('equipe')) {
+      type = 'human';
+    } else if (agents.some(a => a.name === target)) {
+      type = 'ai_agent';
+    } else {
+      type = 'ai_agent';
+    }
+    channel.initialType = type;
+    channel.initialTarget = target;
+  }
+
+  if (type === 'chatbot') {
+    const bots = zapChatData.chatbots?.list || [];
+    const displayTarget = target || bots[0]?.name || 'Fluxo de Chatbot';
+    return {
+      type: 'chatbot',
+      typeLabel: 'Chatbot',
+      target: displayTarget,
+      icon: 'workflow',
+      badgeBg: 'rgba(0, 168, 104, 0.12)',
+      badgeColor: '#00A868'
+    };
+  }
+
+  if (type === 'human') {
+    return {
+      type: 'human',
+      typeLabel: 'Humano',
+      target: 'Atendimento Humano',
+      icon: 'users',
+      badgeBg: 'rgba(37, 99, 235, 0.12)',
+      badgeColor: '#2563EB'
+    };
+  }
+
+  const agents = zapChatData.agentes?.list || [];
+  const displayTarget = target || agents[0]?.name || 'Pedro';
+  return {
+    type: 'ai_agent',
+    typeLabel: 'Agente IA',
+    target: displayTarget,
+    icon: 'bot',
+    badgeBg: 'rgba(124, 58, 237, 0.12)',
+    badgeColor: '#7C3AED'
+  };
+}
+
+function populateInitialTargetSelect(selectEl, wrapEl, type, selectedTarget = '') {
+  if (!selectEl) return;
+
+  if (type === 'human') {
+    if (wrapEl) {
+      wrapEl.innerHTML = `
+        <div class="channel-initial-human-notice">
+          <i data-lucide="users" style="width: 16px; height: 16px; color: #2563EB; flex-shrink: 0;"></i>
+          <span>Novas conversas serão enviadas diretamente para a <strong>Fila de Atendimento Humano</strong> da equipe.</span>
+        </div>
+      `;
+      if (window.lucide) window.lucide.createIcons();
+    }
+    return;
+  }
+
+  // Ensure selectEl is inside wrapEl
+  if (wrapEl && !wrapEl.contains(selectEl)) {
+    wrapEl.innerHTML = '';
+    wrapEl.appendChild(selectEl);
+  }
+
+  if (type === 'chatbot') {
+    const bots = zapChatData.chatbots?.list || [];
+    selectEl.innerHTML = bots.map(b => `
+      <option value="${b.name}" ${b.name === selectedTarget ? 'selected' : ''}>🤖 Chatbot: ${b.name}</option>
+    `).join('');
+  } else {
+    const agents = zapChatData.agentes?.list || [];
+    selectEl.innerHTML = agents.map(a => `
+      <option value="${a.name}" ${a.name === selectedTarget ? 'selected' : ''}>✨ Agente IA: ${a.name} (${a.role || 'Atendimento'})</option>
+    `).join('');
+  }
+}
+
+export function openChannelInitialRoutingModal(channelId) {
+  const channel = zapChatData.canais.list.find(c => c.id === channelId);
+  if (!channel) return;
+
+  let modal = document.getElementById('modal-channel-initial-routing');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-channel-initial-routing';
+    document.body.appendChild(modal);
+  }
+  modal.className = 'modal-backdrop';
+
+  const meta = getChannelInitialRoutingMeta(channel);
+  let selectedType = meta.type;
+  let selectedTarget = meta.target;
+
+  const bots = zapChatData.chatbots?.list || [];
+  const agents = zapChatData.agentes?.list || [];
+
+  modal.innerHTML = `
+    <div class="modal-dialog" style="max-width: 500px;">
+      <div class="modal-header" style="margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 168, 104, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="sliders" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 16px;">Atendimento Inicial do Canal</h3>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">Canal: <strong>${channel.name}</strong> (${channel.identifier})</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" id="btn-close-initial-routing" aria-label="Fechar">&times;</button>
+      </div>
+
+      <form id="form-channel-initial-routing">
+        <div class="modal-body" style="padding: 4px 0 18px 0; display: flex; flex-direction: column; gap: 14px;">
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">Quem deve atender o cliente primeiro?</label>
+            <div class="channel-initial-type-tabs" id="modal-routing-type-tabs">
+              <button type="button" class="channel-initial-type-btn ${selectedType === 'chatbot' ? 'active' : ''}" data-initial-type="chatbot">
+                <i data-lucide="workflow" style="width: 15px; height: 15px;"></i>
+                <span>Chatbot</span>
+              </button>
+              <button type="button" class="channel-initial-type-btn ${selectedType === 'ai_agent' ? 'active' : ''}" data-initial-type="ai_agent">
+                <i data-lucide="bot" style="width: 15px; height: 15px;"></i>
+                <span>Agente de IA</span>
+              </button>
+              <button type="button" class="channel-initial-type-btn ${selectedType === 'human' ? 'active' : ''}" data-initial-type="human">
+                <i data-lucide="users" style="width: 15px; height: 15px;"></i>
+                <span>Atendimento Humano</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="modal-routing-target-section"></div>
+        </div>
+
+        <div class="modal-footer" style="padding: 14px 0 0 0; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-initial-routing">Cancelar</button>
+          <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+            <i data-lucide="check" style="width: 15px; height: 15px;"></i>
+            <span>Salvar Atendimento Inicial</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  const renderTargetSection = () => {
+    const sectionEl = modal.querySelector('#modal-routing-target-section');
+    if (!sectionEl) return;
+
+    if (selectedType === 'chatbot') {
+      if (!bots.some(b => b.name === selectedTarget)) {
+        selectedTarget = bots[0]?.name || '';
+      }
+      sectionEl.innerHTML = `
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" for="modal-routing-target-select">Selecione o Chatbot criado</label>
+          <select id="modal-routing-target-select" class="form-select">
+            ${bots.map(b => `<option value="${b.name}" ${b.name === selectedTarget ? 'selected' : ''}>${b.name}</option>`).join('')}
+          </select>
+          <span class="form-help-text">O fluxo de chatbot selecionado iniciará automaticamente quando o cliente mandar mensagem.</span>
+        </div>
+      `;
+    } else if (selectedType === 'ai_agent') {
+      if (!agents.some(a => a.name === selectedTarget)) {
+        selectedTarget = agents[0]?.name || 'Pedro';
+      }
+      sectionEl.innerHTML = `
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" for="modal-routing-target-select">Selecione o Agente de IA criado</label>
+          <select id="modal-routing-target-select" class="form-select">
+            ${agents.map(a => `<option value="${a.name}" ${a.name === selectedTarget ? 'selected' : ''}>${a.name} — ${a.role || 'Atendimento'}</option>`).join('')}
+          </select>
+          <span class="form-help-text">O Agente de IA selecionado conversará diretamente com os clientes deste canal.</span>
+        </div>
+      `;
+    } else {
+      selectedTarget = 'Atendimento Humano';
+      sectionEl.innerHTML = `
+        <div class="channel-initial-human-notice">
+          <i data-lucide="users" style="width: 18px; height: 18px; color: #2563EB; flex-shrink: 0;"></i>
+          <div>
+            <strong style="display: block; font-size: 13px; color: var(--text-main); margin-bottom: 2px;">Fila de Atendimento Humano</strong>
+            <span style="font-size: 12px; color: var(--text-secondary);">As mensagens recebidas neste canal irão direto para a fila da sua equipe, sem passar por robôs ou IA antes.</span>
+          </div>
+        </div>
+      `;
+    }
+    if (window.lucide) window.lucide.createIcons();
+  };
+
+  renderTargetSection();
+  modal.classList.add('active');
+  if (window.lucide) window.lucide.createIcons();
+
+  modal.querySelectorAll('#modal-routing-type-tabs .channel-initial-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedType = btn.getAttribute('data-initial-type');
+      modal.querySelectorAll('#modal-routing-type-tabs .channel-initial-type-btn').forEach(b => {
+        b.classList.toggle('active', b === btn);
+      });
+      renderTargetSection();
+    });
+  });
+
+  const closeModal = () => modal.classList.remove('active');
+  modal.querySelector('#btn-close-initial-routing')?.addEventListener('click', closeModal);
+  modal.querySelector('#btn-cancel-initial-routing')?.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  modal.querySelector('#form-channel-initial-routing')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const selectEl = modal.querySelector('#modal-routing-target-select');
+    const finalTarget = selectedType === 'human' ? 'Atendimento Humano' : (selectEl?.value || selectedTarget);
+    channel.initialType = selectedType;
+    channel.initialTarget = finalTarget;
+    channel.agentName = finalTarget;
+    closeModal();
+    refreshChannelsTable();
+    showToast(`Atendimento inicial de "${channel.name}" atualizado!`);
+  });
+}
+
 export function renderSimplifiedChannelsTable(channels) {
   const tableBody = document.getElementById('channels-table-body');
   if (!tableBody) return;
@@ -54,25 +292,18 @@ export function renderSimplifiedChannelsTable(channels) {
 
   tableBody.innerHTML = channels.map(channel => {
     const glyphHtml = getChannelIconHtml(channel.channelType);
+    const routing = getChannelInitialRoutingMeta(channel);
 
-    let agentHtml = '';
-    if (channel.agentType === 'photo') {
-      agentHtml = `
-        <div class="channel-agent-cell">
-          <img src="${channel.agentImg}" alt="${channel.agentName}" class="channel-agent-avatar">
-          <span>${channel.agentName}</span>
-        </div>
-      `;
-    } else {
-      agentHtml = `
-        <div class="channel-agent-cell">
-          <div class="channel-agent-badge" style="background-color: ${channel.agentBg || '#EAF8F1'}; color: ${channel.agentColor || '#00A868'};">
-            ${channel.agentInitials || channel.agentName?.substring(0, 2).toUpperCase() || 'IA'}
-          </div>
-          <span>${channel.agentName}</span>
-        </div>
-      `;
-    }
+    const initialRoutingHtml = `
+      <button type="button" class="channel-initial-routing-pill btn-channel-initial-routing" data-channel-id="${channel.id}" title="Clique para alterar o Atendimento Inicial deste canal">
+        <span class="channel-initial-type-badge" style="background: ${routing.badgeBg}; color: ${routing.badgeColor};">
+          <i data-lucide="${routing.icon}" style="width: 12px; height: 12px;"></i>
+          <span>${routing.typeLabel}</span>
+        </span>
+        <span class="channel-initial-target-name">${routing.target}</span>
+        <i data-lucide="chevron-down" class="channel-initial-chevron" style="width: 13px; height: 13px;"></i>
+      </button>
+    `;
 
     const isConnected = channel.status === 'Conectado' || channel.status === 'Ativo';
     const isTesting = channel.status === 'Em breve';
@@ -87,7 +318,7 @@ export function renderSimplifiedChannelsTable(channels) {
           </div>
         </td>
         <td>
-          ${agentHtml}
+          ${initialRoutingHtml}
         </td>
         <td>
           <span class="channel-ident-text">${channel.identifier}</span>
@@ -109,6 +340,14 @@ export function renderSimplifiedChannelsTable(channels) {
       </tr>
     `;
   }).join('');
+
+  tableBody.querySelectorAll('.btn-channel-initial-routing').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const chId = btn.getAttribute('data-channel-id');
+      openChannelInitialRoutingModal(chId);
+    });
+  });
 
   const countInfo = document.getElementById('channels-pagination-info');
   if (countInfo) {
@@ -250,14 +489,24 @@ export function openEditChannel(channelId) {
   const identInput = document.getElementById('edit-channel-ident');
   const agentSelect = document.getElementById('edit-channel-agent');
   const statusSelect = document.getElementById('edit-channel-status');
+  const initialTypeInput = document.getElementById('edit-channel-initial-type');
+  const targetWrap = document.getElementById('edit-channel-initial-target-wrap');
+
+  const routing = getChannelInitialRoutingMeta(channel);
 
   if (idInput) idInput.value = channel.id;
   if (nameInput) nameInput.value = channel.name;
   if (typeSelect) typeSelect.value = channel.channelType || 'whatsapp';
   if (deptSelect) deptSelect.value = channel.department || 'Geral';
   if (identInput) identInput.value = channel.identifier || '';
-  if (agentSelect) agentSelect.value = channel.agentName || 'Pedro';
   if (statusSelect) statusSelect.value = channel.status || 'Conectado';
+  if (initialTypeInput) initialTypeInput.value = routing.type;
+
+  document.querySelectorAll('#edit-channel-initial-type-tabs .channel-initial-type-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-initial-type') === routing.type);
+  });
+
+  populateInitialTargetSelect(agentSelect, targetWrap, routing.type, routing.target);
 
   openModal('modal-edit-channel');
 }
@@ -265,6 +514,21 @@ export function openEditChannel(channelId) {
 function setupEditChannelForm() {
   const form = document.getElementById('form-edit-channel');
   if (!form) return;
+
+  const agentSelect = document.getElementById('edit-channel-agent');
+  const targetWrap = document.getElementById('edit-channel-initial-target-wrap');
+  const initialTypeInput = document.getElementById('edit-channel-initial-type');
+
+  document.querySelectorAll('#edit-channel-initial-type-tabs .channel-initial-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const chosenType = btn.getAttribute('data-initial-type') || 'chatbot';
+      if (initialTypeInput) initialTypeInput.value = chosenType;
+      document.querySelectorAll('#edit-channel-initial-type-tabs .channel-initial-type-btn').forEach(b => {
+        b.classList.toggle('active', b === btn);
+      });
+      populateInitialTargetSelect(agentSelect, targetWrap, chosenType, '');
+    });
+  });
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -276,7 +540,10 @@ function setupEditChannelForm() {
     const newType = document.getElementById('edit-channel-type')?.value || channel.channelType;
     const newDept = document.getElementById('edit-channel-dept')?.value || channel.department;
     const newIdent = document.getElementById('edit-channel-ident')?.value.trim() || channel.identifier;
-    const newAgent = document.getElementById('edit-channel-agent')?.value || channel.agentName;
+    const newInitialType = document.getElementById('edit-channel-initial-type')?.value || 'chatbot';
+    const newTarget = newInitialType === 'human'
+      ? 'Atendimento Humano'
+      : (document.getElementById('edit-channel-agent')?.value || channel.initialTarget || '');
     const newStatus = document.getElementById('edit-channel-status')?.value || channel.status;
 
     channel.name = newName;
@@ -284,32 +551,9 @@ function setupEditChannelForm() {
     channel.iconType = newType;
     channel.department = newDept;
     channel.identifier = newIdent;
-    channel.agentName = newAgent;
-
-    // Update agent appearance
-    if (newAgent === 'Pedro') {
-      channel.agentType = 'photo';
-      channel.agentImg = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80';
-      channel.agentInitials = 'PE';
-      channel.agentBg = '#EAF8F1';
-      channel.agentColor = '#00A868';
-    } else {
-      channel.agentType = 'initials';
-      channel.agentInitials = newAgent.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-      if (newAgent === 'SDR IA') {
-        channel.agentBg = '#EAF8F1';
-        channel.agentColor = '#00A868';
-      } else if (newAgent === 'Atendimento') {
-        channel.agentBg = '#F3E8FF';
-        channel.agentColor = '#7C3AED';
-      } else if (newAgent === 'Suporte IA') {
-        channel.agentBg = '#EFF6FF';
-        channel.agentColor = '#2563EB';
-      } else {
-        channel.agentBg = '#F1F5F9';
-        channel.agentColor = '#475569';
-      }
-    }
+    channel.initialType = newInitialType;
+    channel.initialTarget = newTarget;
+    channel.agentName = newTarget;
 
     channel.status = newStatus;
     if (newStatus === 'Conectado' || newStatus === 'Ativo') {
@@ -460,6 +704,22 @@ function setupChannelWizard() {
     goToWizardStep(1);
   });
 
+  // Step 2: Atendimento Inicial type tabs in Wizard
+  const wizardAgentSelect = document.getElementById('wizard-input-agent');
+  const wizardTargetWrap = document.getElementById('wizard-initial-target-wrap');
+  const wizardInitialTypeInput = document.getElementById('wizard-input-initial-type');
+
+  document.querySelectorAll('#wizard-initial-type-tabs .channel-initial-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const chosenType = btn.getAttribute('data-initial-type') || 'chatbot';
+      if (wizardInitialTypeInput) wizardInitialTypeInput.value = chosenType;
+      document.querySelectorAll('#wizard-initial-type-tabs .channel-initial-type-btn').forEach(b => {
+        b.classList.toggle('active', b === btn);
+      });
+      populateInitialTargetSelect(wizardAgentSelect, wizardTargetWrap, chosenType, '');
+    });
+  });
+
   // Step 2: Form submit (Next to Step 3)
   const step2Form = document.getElementById('wizard-step-2-form');
   step2Form?.addEventListener('submit', (e) => {
@@ -468,10 +728,12 @@ function setupChannelWizard() {
     const deptInput = document.getElementById('wizard-input-dept');
     const agentInput = document.getElementById('wizard-input-agent');
     const identInput = document.getElementById('wizard-input-ident');
+    const initialType = document.getElementById('wizard-input-initial-type')?.value || 'chatbot';
 
     currentChannelData.name = nameInput?.value.trim() || 'Novo Canal';
     currentChannelData.dept = deptInput?.value || 'Comercial';
-    currentChannelData.agent = agentInput?.value || 'Pedro';
+    currentChannelData.initialType = initialType;
+    currentChannelData.agent = initialType === 'human' ? 'Atendimento Humano' : (agentInput?.value || 'Boas-vindas & Triagem Inteligente');
     currentChannelData.ident = identInput?.value.trim() || '+55 11 98842-1920';
 
     goToWizardStep(3);
@@ -614,12 +876,9 @@ function simulateQrConnection() {
       name: currentChannelData.name,
       channelType: currentChannelData.type,
       iconType: currentChannelData.type,
+      initialType: currentChannelData.initialType || 'chatbot',
+      initialTarget: currentChannelData.agent,
       agentName: currentChannelData.agent,
-      agentType: currentChannelData.agent === 'Pedro' ? 'photo' : 'initials',
-      agentImg: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-      agentInitials: initials,
-      agentBg: '#EAF8F1',
-      agentColor: '#00A868',
       identifier: currentChannelData.ident,
       department: currentChannelData.dept,
       status: 'Conectado',
@@ -666,11 +925,17 @@ function resetChannelWizard() {
   const identInput = document.getElementById('wizard-input-ident');
   const deptInput = document.getElementById('wizard-input-dept');
   const agentInput = document.getElementById('wizard-input-agent');
+  const wizardTargetWrap = document.getElementById('wizard-initial-target-wrap');
+  const wizardInitialTypeInput = document.getElementById('wizard-input-initial-type');
 
   if (nameInput) nameInput.value = 'WhatsApp Comercial';
   if (identInput) identInput.value = '+55 11 98842-1920';
   if (deptInput) deptInput.value = 'Comercial';
-  if (agentInput) agentInput.value = 'Pedro';
+  if (wizardInitialTypeInput) wizardInitialTypeInput.value = 'chatbot';
+  document.querySelectorAll('#wizard-initial-type-tabs .channel-initial-type-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-initial-type') === 'chatbot');
+  });
+  populateInitialTargetSelect(agentInput, wizardTargetWrap, 'chatbot', '');
 
   // Select WhatsApp card by default
   const typeCards = document.querySelectorAll('.channel-type-card');

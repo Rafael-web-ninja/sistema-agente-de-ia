@@ -648,6 +648,9 @@ export function renderThreadList() {
   container.innerHTML = threads.map(thread => {
     const isActive = thread.id === activeThreadId;
     const attStatus = getAttendanceStatus(thread);
+    const crmDeal = findCrmDealForThread(thread);
+    const crmStages = zapChatData.crm?.stages || [];
+    const crmStageObj = crmDeal ? (crmStages.find(s => s.id === crmDeal.stage) || crmStages[0]) : null;
 
     return `
       <div class="chat-thread-item ${isActive ? 'active' : ''}" data-thread-id="${thread.id}">
@@ -669,6 +672,12 @@ export function renderThreadList() {
               <i data-lucide="${attStatus.icon}"></i>
               <span>${attStatus.label}</span>
             </span>
+            ${crmStageObj ? `
+              <span class="thread-crm-mini-tag" title="No CRM: ${escapeHtml(crmStageObj.name)}">
+                <span class="thread-crm-dot" style="background: ${crmStageObj.color};"></span>
+                <span>${escapeHtml(crmStageObj.name)}</span>
+              </span>
+            ` : ''}
           </div>
           <div class="thread-bottom-row">
             <span class="thread-snippet">${thread.snippet}</span>
@@ -703,6 +712,101 @@ export function renderThreadList() {
   if (window.lucide) window.lucide.createIcons();
 }
 
+function getCrmStagesList() {
+  return zapChatData.crm?.stages || [
+    { id: 'prospeccao', name: 'Prospecção', color: '#2563EB' },
+    { id: 'qualificacao', name: 'Qualificação', color: '#7C3AED' },
+    { id: 'proposta', name: 'Proposta Enviada', color: '#F59E0B' },
+    { id: 'negociacao', name: 'Negociação', color: '#EC4899' },
+    { id: 'ganho', name: 'Fechado Ganho', color: '#00A868' }
+  ];
+}
+
+function formatCrmCurrency(val) {
+  const num = Number(val) || 0;
+  return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function findCrmDealForThread(thread) {
+  if (!thread || !zapChatData.crm?.deals) return null;
+  return zapChatData.crm.deals.find(d =>
+    d.threadId === thread.id ||
+    (d.contactName && thread.name && d.contactName.toLowerCase() === thread.name.toLowerCase()) ||
+    (d.phone && thread.phone && d.phone === thread.phone)
+  ) || null;
+}
+
+function sendThreadToCrm(thread, stageId, dealValue = 0, priority = 'Alta') {
+  if (!thread) return null;
+  const stages = getCrmStagesList();
+  const stageObj = stages.find(s => s.id === stageId) || stages[0];
+  const priorityMap = {
+    'Alta': 'priority-high',
+    'Média': 'priority-med',
+    'Baixa': 'priority-low'
+  };
+
+  const newDeal = {
+    id: 'deal_' + Date.now(),
+    threadId: thread.id,
+    title: `Atendimento ${thread.channel || 'WhatsApp'} - ${thread.name}`,
+    contactName: thread.name,
+    company: thread.name,
+    phone: thread.phone || '+55 11 99999-9999',
+    email: thread.email || `${thread.name.toLowerCase().replace(/\s+/g, '.')}@email.com`,
+    value: Number(dealValue) || 0,
+    stage: stageObj.id,
+    agent: (thread.assignedAgent || 'Pedro').replace(/\s*\(Você\)/i, ''),
+    agentImg: thread.img || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
+    channel: thread.channel || 'WhatsApp',
+    priority: priority,
+    priorityClass: priorityMap[priority] || 'priority-high',
+    daysInStage: 'Hoje',
+    expectedClose: '15 dias',
+    notes: `Lead enviado diretamente da conversa (${thread.channel || 'WhatsApp'}). Última mensagem: "${thread.snippet || ''}"`
+  };
+
+  zapChatData.crm.deals.unshift(newDeal);
+  if (window.refreshCrmView) window.refreshCrmView();
+
+  const now = new Date();
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  thread.messages.push({
+    sender: 'system',
+    text: `Lead enviado para o CRM na etapa "${stageObj.name}"${newDeal.value > 0 ? ` (${formatCrmCurrency(newDeal.value)})` : ''}`,
+    time: timeStr
+  });
+
+  renderThreadList();
+  renderActiveChat();
+  showToast(`Lead "${thread.name}" enviado para "${stageObj.name}" no CRM!`);
+  return newDeal;
+}
+
+function updateThreadDealStage(thread, deal, newStageId) {
+  if (!deal) return;
+  const stages = getCrmStagesList();
+  const stageObj = stages.find(s => s.id === newStageId) || stages[0];
+  if (deal.stage === stageObj.id) return;
+  deal.stage = stageObj.id;
+  deal.daysInStage = 'Agora';
+  if (window.refreshCrmView) window.refreshCrmView();
+
+  if (thread) {
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    thread.messages.push({
+      sender: 'system',
+      text: `Etapa do CRM atualizada para "${stageObj.name}"`,
+      time: timeStr
+    });
+  }
+
+  renderThreadList();
+  renderActiveChat();
+  showToast(`Movido para "${stageObj.name}" no CRM!`);
+}
+
 export function renderActiveChat() {
   const thread = zapChatData.conversas.threads.find(t => t.id === activeThreadId);
   if (!thread) {
@@ -718,6 +822,8 @@ export function renderActiveChat() {
     }
     const cardContato = document.getElementById('chat-profile-card');
     if (cardContato) cardContato.innerHTML = '';
+    const cardCrm = document.getElementById('chat-crm-card');
+    if (cardCrm) cardCrm.innerHTML = '';
     const cardAtendimento = document.getElementById('chat-attendance-card');
     if (cardAtendimento) cardAtendimento.innerHTML = '';
     const strip = document.getElementById('ai-attending-strip');
@@ -733,6 +839,15 @@ export function renderActiveChat() {
   if (header) {
     const attStatus = getAttendanceStatus(thread);
     const isHumanAttending = attStatus.key === 'human';
+    const existingDeal = findCrmDealForThread(thread);
+    const stages = getCrmStagesList();
+    const currentStageIdx = existingDeal ? stages.findIndex(s => s.id === existingDeal.stage) : -1;
+    const currentStageObj = existingDeal
+      ? (stages[currentStageIdx] || stages[0])
+      : null;
+    const nextStageObj = (existingDeal && currentStageIdx >= 0 && currentStageIdx < stages.length - 1)
+      ? stages[currentStageIdx + 1]
+      : null;
 
     header.innerHTML = `
       <div class="chat-contact-banner">
@@ -756,6 +871,119 @@ export function renderActiveChat() {
       </div>
 
       <div class="chat-header-actions">
+        <div class="chat-crm-header-wrap" id="chat-crm-header-wrap">
+          ${existingDeal ? `
+            <button class="btn btn-secondary btn-sm chat-action-btn chat-crm-header-btn is-in-crm" id="btn-header-crm" title="Gerenciar etapa do lead no CRM">
+              <span class="crm-header-dot" style="background: ${currentStageObj?.color || '#00A868'};"></span>
+              <span>${escapeHtml(currentStageObj?.name || 'No Funil')}</span>
+              ${existingDeal.value > 0 ? `<span class="crm-header-value-badge">${formatCrmCurrency(existingDeal.value)}</span>` : ''}
+              <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+            </button>
+          ` : `
+            <button class="btn btn-secondary btn-sm chat-action-btn chat-crm-header-btn" id="btn-header-crm" title="Enviar este lead para o funil do CRM em 1 clique">
+              <i data-lucide="kanban" style="width: 14px; height: 14px; color: var(--primary);"></i>
+              <span>CRM</span>
+              <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.65;"></i>
+            </button>
+          `}
+
+          <div class="chat-crm-popover" id="chat-crm-header-popover">
+            ${existingDeal ? `
+              <div class="chat-crm-popover-head">
+                <div class="chat-crm-popover-title">
+                  <i data-lucide="kanban" style="width:13px;height:13px;color:var(--primary);"></i>
+                  <span>Lead no Funil CRM</span>
+                </div>
+                <span class="chat-crm-status-pill active">${existingDeal.value > 0 ? formatCrmCurrency(existingDeal.value) : 'Ativo'}</span>
+              </div>
+              <div class="chat-crm-field" style="margin-bottom: 10px;">
+                <label class="chat-crm-label">Etapa Atual no Funil</label>
+                <div class="crm-stage-select-wrap" id="popover-crm-stage-select-wrap">
+                  <button type="button" class="crm-stage-select-trigger" id="popover-crm-stage-trigger">
+                    <span class="crm-stage-select-value">
+                      <span class="crm-stage-dot-sm" id="popover-crm-selected-dot" style="background:${currentStageObj?.color || stages[0].color};"></span>
+                      <span id="popover-crm-selected-name">${escapeHtml(currentStageObj?.name || stages[0].name)}</span>
+                    </span>
+                    <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--text-muted);"></i>
+                  </button>
+                  <div class="crm-stage-select-dropdown" id="popover-crm-stage-dropdown">
+                    ${stages.map((s, idx) => `
+                      <button
+                        type="button"
+                        class="crm-stage-select-option ${s.id === existingDeal.stage ? 'selected' : ''}"
+                        data-popover-stage="${s.id}"
+                        data-stage-name="${escapeHtml(s.name)}"
+                        data-stage-color="${s.color}"
+                      >
+                        <span class="crm-stage-dot-sm" style="background:${s.color};"></span>
+                        <span class="crm-stage-pill-text">${idx + 1}. ${escapeHtml(s.name)}</span>
+                        <i data-lucide="check" class="crm-stage-option-check" style="width:13px;height:13px;"></i>
+                      </button>
+                    `).join('')}
+                  </div>
+                </div>
+              </div>
+              <div class="chat-crm-popover-footer">
+                ${nextStageObj ? `
+                  <button type="button" class="btn btn-primary btn-sm chat-crm-popover-advance" id="btn-popover-advance-stage" data-next-stage="${nextStageObj.id}">
+                    <span>Avançar para ${escapeHtml(nextStageObj.name)}</span>
+                    <i data-lucide="arrow-right" style="width:13px;height:13px;"></i>
+                  </button>
+                ` : ''}
+                <button type="button" class="btn-chat-open-crm" id="btn-popover-open-crm">
+                  <span>Ver no Kanban CRM</span>
+                  <i data-lucide="arrow-up-right" style="width:12px;height:12px;"></i>
+                </button>
+              </div>
+            ` : `
+              <div class="chat-crm-popover-head">
+                <div class="chat-crm-popover-title">
+                  <i data-lucide="zap" style="width:13px;height:13px;color:var(--primary);"></i>
+                  <span>Envio Rápido ao CRM</span>
+                </div>
+                <span class="chat-crm-status-pill">Funil</span>
+              </div>
+              <div class="chat-crm-field" style="margin-bottom: 10px;">
+                <label class="chat-crm-label">Escolha a Etapa Destino</label>
+                <div class="crm-stage-select-wrap" id="popover-crm-stage-select-wrap">
+                  <button type="button" class="crm-stage-select-trigger" id="popover-crm-stage-trigger">
+                    <span class="crm-stage-select-value">
+                      <span class="crm-stage-dot-sm" id="popover-crm-selected-dot" style="background:${stages[0].color};"></span>
+                      <span id="popover-crm-selected-name">${escapeHtml(stages[0].name)}</span>
+                    </span>
+                    <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--text-muted);"></i>
+                  </button>
+                  <div class="crm-stage-select-dropdown" id="popover-crm-stage-dropdown">
+                    ${stages.map((s, idx) => `
+                      <button
+                        type="button"
+                        class="crm-stage-select-option ${idx === 0 ? 'selected' : ''}"
+                        data-popover-pick-stage="${s.id}"
+                        data-stage-name="${escapeHtml(s.name)}"
+                        data-stage-color="${s.color}"
+                      >
+                        <span class="crm-stage-dot-sm" style="background:${s.color};"></span>
+                        <span class="crm-stage-pill-text">${idx + 1}. ${escapeHtml(s.name)}</span>
+                        <i data-lucide="check" class="crm-stage-option-check" style="width:13px;height:13px;"></i>
+                      </button>
+                    `).join('')}
+                  </div>
+                </div>
+              </div>
+              <div class="chat-crm-field" style="margin-bottom: 10px;">
+                <label class="chat-crm-label">Valor Estimado (Opcional)</label>
+                <div class="chat-crm-input-prefix-wrap">
+                  <span class="chat-crm-currency-prefix">R$</span>
+                  <input type="number" class="chat-crm-input" id="popover-crm-quick-val" placeholder="0" min="0" step="100">
+                </div>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm chat-crm-submit-btn" id="btn-popover-confirm-send-crm" style="width: 100%; justify-content: center;">
+                <i data-lucide="plus-circle" style="width:14px;height:14px;"></i>
+                <span id="btn-popover-send-label">Enviar para ${escapeHtml(stages[0].name)}</span>
+              </button>
+            `}
+          </div>
+        </div>
         ${isHumanAttending ? `
           <button class="btn btn-secondary btn-sm chat-action-btn" id="btn-header-assume">
             <i data-lucide="bot" style="width: 14px; height: 14px;"></i>
@@ -781,6 +1009,84 @@ export function renderActiveChat() {
         </button>
       </div>
     `;
+
+    // CRM Header button & quick popover handlers
+    const btnHeaderCrm = header.querySelector('#btn-header-crm');
+    const crmPopover = header.querySelector('#chat-crm-header-popover');
+    if (btnHeaderCrm && crmPopover) {
+      btnHeaderCrm.addEventListener('click', (e) => {
+        e.stopPropagation();
+        crmPopover.classList.toggle('show');
+      });
+
+      // Prevent clicks inside popover from closing it prematurely
+      crmPopover.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!e.target.closest('#popover-crm-stage-select-wrap')) {
+          crmPopover.querySelector('#popover-crm-stage-select-wrap')?.classList.remove('open');
+        }
+      });
+
+      const popSelectWrap = crmPopover.querySelector('#popover-crm-stage-select-wrap');
+      const popSelectTrigger = crmPopover.querySelector('#popover-crm-stage-trigger');
+      const popSelectedDot = crmPopover.querySelector('#popover-crm-selected-dot');
+      const popSelectedName = crmPopover.querySelector('#popover-crm-selected-name');
+      const popSendLabel = crmPopover.querySelector('#btn-popover-send-label');
+      let popoverPickedStageId = stages[0]?.id || 'prospeccao';
+
+      popSelectTrigger?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        popSelectWrap?.classList.toggle('open');
+      });
+
+      // Pick stage inside popover select (when not in CRM yet)
+      crmPopover.querySelectorAll('[data-popover-pick-stage]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          crmPopover.querySelectorAll('[data-popover-pick-stage]').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          popoverPickedStageId = btn.getAttribute('data-popover-pick-stage');
+          const sName = btn.getAttribute('data-stage-name');
+          const sColor = btn.getAttribute('data-stage-color');
+          if (popSelectedDot && sColor) popSelectedDot.style.background = sColor;
+          if (popSelectedName && sName) popSelectedName.textContent = sName;
+          if (popSendLabel && sName) popSendLabel.textContent = `Enviar para ${sName}`;
+          popSelectWrap?.classList.remove('open');
+        });
+      });
+
+      // Confirm send to CRM from popover
+      crmPopover.querySelector('#btn-popover-confirm-send-crm')?.addEventListener('click', () => {
+        const val = Number(crmPopover.querySelector('#popover-crm-quick-val')?.value) || 0;
+        crmPopover.classList.remove('show');
+        sendThreadToCrm(thread, popoverPickedStageId, val, 'Alta');
+      });
+
+      // Change stage from popover select (when already in CRM)
+      crmPopover.querySelectorAll('[data-popover-stage]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const newStageId = btn.getAttribute('data-popover-stage');
+          popSelectWrap?.classList.remove('open');
+          crmPopover.classList.remove('show');
+          updateThreadDealStage(thread, existingDeal, newStageId);
+        });
+      });
+
+      // Advance stage button in popover
+      crmPopover.querySelector('#btn-popover-advance-stage')?.addEventListener('click', (e) => {
+        const nextId = e.currentTarget.getAttribute('data-next-stage');
+        crmPopover.classList.remove('show');
+        updateThreadDealStage(thread, existingDeal, nextId);
+      });
+
+      // Open Kanban view from popover
+      crmPopover.querySelector('#btn-popover-open-crm')?.addEventListener('click', () => {
+        crmPopover.classList.remove('show');
+        if (window.refreshCrmView) window.refreshCrmView();
+        switchView('crm');
+      });
+    }
 
     // Toggle contact profile drawer handler
     header.querySelector('#btn-toggle-chat-profile')?.addEventListener('click', () => {
@@ -1118,7 +1424,262 @@ function renderRightColumnCards(thread) {
     setupContactActions(thread);
   }
 
-  // Card 2: Atendimento
+  // Card 2: Funil CRM (Enviar Lead ao CRM / Gerenciar Etapa)
+  const cardCrm = document.getElementById('chat-crm-card');
+  if (cardCrm) {
+    const stages = getCrmStagesList();
+    const existingDeal = findCrmDealForThread(thread);
+
+    if (existingDeal) {
+      const currentIdx = Math.max(0, stages.findIndex(s => s.id === existingDeal.stage));
+      const currentStage = stages[currentIdx] || stages[0];
+      const nextStage = currentIdx < stages.length - 1 ? stages[currentIdx + 1] : null;
+      const currentPriority = existingDeal.priority || 'Alta';
+
+      cardCrm.innerHTML = `
+        <div class="profile-card-top-bar" style="margin-bottom: 10px;">
+          <span class="profile-card-top-title" style="display:flex;align-items:center;gap:6px;">
+            <i data-lucide="kanban" style="width:14px;height:14px;color:var(--primary);"></i>
+            Funil CRM
+          </span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="chat-crm-status-pill active">Etapa ${currentIdx + 1}/${stages.length}</span>
+            <button type="button" class="btn-crm-remove-deal" id="btn-chat-remove-crm" title="Remover oportunidade do funil">
+              <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="chat-crm-deal-box">
+          <!-- Visual Pipeline Progress Stepper -->
+          <div class="crm-pipeline-stepper-wrap">
+            <div class="crm-stepper-header">
+              <span class="crm-stepper-current-badge" style="color:${currentStage.color};">
+                <span class="crm-stage-dot-sm" style="background:${currentStage.color};"></span>
+                ${escapeHtml(currentStage.name)}
+              </span>
+              ${nextStage ? `
+                <button type="button" class="btn-crm-advance-inline" id="btn-card-advance-stage" data-next-stage="${nextStage.id}" title="Avançar para ${escapeHtml(nextStage.name)}">
+                  <span>Avançar</span>
+                  <i data-lucide="arrow-right" style="width:11px;height:11px;"></i>
+                </button>
+              ` : `
+                <span class="crm-stepper-done-tag">
+                  <i data-lucide="check-circle-2" style="width:11px;height:11px;"></i> Concluído
+                </span>
+              `}
+            </div>
+            <div class="crm-pipeline-stepper" role="group" aria-label="Progresso no Funil CRM">
+              ${stages.map((s, idx) => {
+                const isPassed = idx <= currentIdx;
+                const isCurrent = idx === currentIdx;
+                return `
+                  <button
+                    type="button"
+                    class="crm-stepper-seg ${isPassed ? 'filled' : ''} ${isCurrent ? 'current' : ''}"
+                    data-step-stage="${s.id}"
+                    style="${isPassed ? `--step-color: ${currentStage.color};` : ''}"
+                    title="Mover para ${idx + 1}. ${escapeHtml(s.name)}"
+                  ></button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <div class="chat-crm-row-split">
+            <div class="chat-crm-field" style="flex: 1.25;">
+              <label class="chat-crm-label">Valor Estimado</label>
+              <div class="chat-crm-input-prefix-wrap">
+                <span class="chat-crm-currency-prefix">R$</span>
+                <input type="number" class="chat-crm-input" id="chat-crm-active-value" value="${existingDeal.value || 0}" min="0" step="100" placeholder="0">
+              </div>
+            </div>
+            <div class="chat-crm-field" style="flex: 1;">
+              <label class="chat-crm-label">Prioridade</label>
+              <select class="chat-crm-select" id="chat-crm-active-priority">
+                <option value="Alta" ${currentPriority === 'Alta' ? 'selected' : ''}>🔥 Alta</option>
+                <option value="Média" ${currentPriority === 'Média' ? 'selected' : ''}>⚡ Média</option>
+                <option value="Baixa" ${currentPriority === 'Baixa' ? 'selected' : ''}>🌱 Baixa</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="button" class="btn-chat-open-crm" id="btn-chat-open-crm-view">
+            <span>Abrir no Kanban CRM</span>
+            <i data-lucide="arrow-up-right" style="width:13px;height:13px;"></i>
+          </button>
+        </div>
+      `;
+
+      // Clickable stepper segments to jump to any stage
+      cardCrm.querySelectorAll('[data-step-stage]').forEach(seg => {
+        seg.addEventListener('click', () => {
+          const targetStageId = seg.getAttribute('data-step-stage');
+          updateThreadDealStage(thread, existingDeal, targetStageId);
+        });
+      });
+
+      // 1-click Advance to next stage
+      cardCrm.querySelector('#btn-card-advance-stage')?.addEventListener('click', (e) => {
+        const nextStageId = e.currentTarget.getAttribute('data-next-stage');
+        updateThreadDealStage(thread, existingDeal, nextStageId);
+      });
+
+      // Update deal value
+      const valInput = cardCrm.querySelector('#chat-crm-active-value');
+      if (valInput) {
+        valInput.addEventListener('change', (e) => {
+          existingDeal.value = parseFloat(e.target.value) || 0;
+          if (window.refreshCrmView) window.refreshCrmView();
+          renderActiveChat();
+          showToast(`Valor atualizado para ${formatCrmCurrency(existingDeal.value)}!`);
+        });
+      }
+
+      // Update priority
+      const prioSelect = cardCrm.querySelector('#chat-crm-active-priority');
+      if (prioSelect) {
+        prioSelect.addEventListener('change', (e) => {
+          const prio = e.target.value;
+          const priorityMap = { 'Alta': 'priority-high', 'Média': 'priority-med', 'Baixa': 'priority-low' };
+          existingDeal.priority = prio;
+          existingDeal.priorityClass = priorityMap[prio] || 'priority-high';
+          if (window.refreshCrmView) window.refreshCrmView();
+          showToast(`Prioridade alterada para ${prio}!`);
+        });
+      }
+
+      // Remove from CRM funnel
+      cardCrm.querySelector('#btn-chat-remove-crm')?.addEventListener('click', () => {
+        const idx = zapChatData.crm.deals.findIndex(d => d.id === existingDeal.id);
+        if (idx !== -1) {
+          zapChatData.crm.deals.splice(idx, 1);
+          if (window.refreshCrmView) window.refreshCrmView();
+          renderThreadList();
+          renderActiveChat();
+          showToast('Oportunidade removida do funil CRM.');
+        }
+      });
+
+      cardCrm.querySelector('#btn-chat-open-crm-view')?.addEventListener('click', () => {
+        if (window.refreshCrmView) window.refreshCrmView();
+        switchView('crm');
+      });
+    } else {
+      const defaultStage = stages[0] || { id: 'prospeccao', name: 'Prospecção', color: '#2563EB' };
+      cardCrm.innerHTML = `
+        <div class="profile-card-top-bar" style="margin-bottom: 8px;">
+          <span class="profile-card-top-title" style="display:flex;align-items:center;gap:6px;">
+            <i data-lucide="kanban" style="width:14px;height:14px;color:var(--primary);"></i>
+            Funil CRM
+          </span>
+          <span class="chat-crm-status-pill">Fora do Funil</span>
+        </div>
+
+        <div class="chat-crm-deal-box">
+          <div class="chat-crm-field">
+            <label class="chat-crm-label">Escolha a Etapa Inicial</label>
+            <div class="crm-stage-select-wrap" id="chat-crm-stage-select-wrap">
+              <button type="button" class="crm-stage-select-trigger" id="chat-crm-stage-trigger">
+                <span class="crm-stage-select-value">
+                  <span class="crm-stage-dot-sm" id="chat-crm-selected-dot" style="background:${defaultStage.color};"></span>
+                  <span id="chat-crm-selected-name">${escapeHtml(defaultStage.name)}</span>
+                </span>
+                <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--text-muted);"></i>
+              </button>
+              <div class="crm-stage-select-dropdown" id="chat-crm-stage-dropdown">
+                ${stages.map((s, idx) => `
+                  <button
+                    type="button"
+                    class="crm-stage-select-option ${idx === 0 ? 'selected' : ''}"
+                    data-stage-id="${s.id}"
+                    data-stage-name="${escapeHtml(s.name)}"
+                    data-stage-color="${s.color}"
+                  >
+                    <span class="crm-stage-dot-sm" style="background:${s.color};"></span>
+                    <span class="crm-stage-pill-text">${escapeHtml(s.name)}</span>
+                    <i data-lucide="check" class="crm-stage-option-check" style="width:13px;height:13px;"></i>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-crm-field">
+            <label class="chat-crm-label">Valor Estimado (Opcional)</label>
+            <div class="chat-crm-input-prefix-wrap">
+              <span class="chat-crm-currency-prefix">R$</span>
+              <input type="number" class="chat-crm-input" id="chat-crm-new-value" placeholder="0" min="0" step="100">
+            </div>
+          </div>
+
+          <div class="chat-crm-field">
+            <label class="chat-crm-label">Prioridade</label>
+            <div class="crm-priority-seg" id="chat-crm-new-priority">
+              <button type="button" class="crm-prio-btn active" data-prio="Alta">🔥 Alta</button>
+              <button type="button" class="crm-prio-btn" data-prio="Média">⚡ Média</button>
+              <button type="button" class="crm-prio-btn" data-prio="Baixa">🌱 Baixa</button>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-primary btn-sm chat-crm-submit-btn" id="btn-chat-send-to-crm">
+            <i data-lucide="plus-circle" style="width:14px;height:14px;"></i>
+            <span id="btn-chat-send-crm-label">Enviar para ${escapeHtml(defaultStage.name)}</span>
+          </button>
+        </div>
+      `;
+
+      let selectedStageId = defaultStage.id;
+      let selectedPriority = 'Alta';
+
+      // Stage custom select dropdown
+      const selectWrap = cardCrm.querySelector('#chat-crm-stage-select-wrap');
+      const selectTrigger = cardCrm.querySelector('#chat-crm-stage-trigger');
+      const selectDropdown = cardCrm.querySelector('#chat-crm-stage-dropdown');
+      const selectedDot = cardCrm.querySelector('#chat-crm-selected-dot');
+      const selectedName = cardCrm.querySelector('#chat-crm-selected-name');
+      const stageOptions = cardCrm.querySelectorAll('.crm-stage-select-option');
+      const submitLabel = cardCrm.querySelector('#btn-chat-send-crm-label');
+
+      selectTrigger?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectWrap?.classList.toggle('open');
+      });
+
+      stageOptions.forEach(opt => {
+        opt.addEventListener('click', (e) => {
+          e.stopPropagation();
+          stageOptions.forEach(o => o.classList.remove('selected'));
+          opt.classList.add('selected');
+          selectedStageId = opt.getAttribute('data-stage-id');
+          const stageName = opt.getAttribute('data-stage-name');
+          const stageColor = opt.getAttribute('data-stage-color');
+          if (selectedDot && stageColor) selectedDot.style.background = stageColor;
+          if (selectedName && stageName) selectedName.textContent = stageName;
+          if (submitLabel && stageName) submitLabel.textContent = `Enviar para ${stageName}`;
+          selectWrap?.classList.remove('open');
+        });
+      });
+
+      // Priority buttons
+      const prioBtns = cardCrm.querySelectorAll('.crm-prio-btn');
+      prioBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          prioBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          selectedPriority = btn.getAttribute('data-prio') || 'Alta';
+        });
+      });
+
+      cardCrm.querySelector('#btn-chat-send-to-crm')?.addEventListener('click', () => {
+        const valRaw = cardCrm.querySelector('#chat-crm-new-value')?.value;
+        const dealValue = parseFloat(valRaw) || 0;
+        sendThreadToCrm(thread, selectedStageId, dealValue, selectedPriority);
+      });
+    }
+  }
+
+  // Card 3: Atendimento
   const cardAtendimento = document.getElementById('chat-attendance-card');
   if (cardAtendimento) {
     const attStatus = getAttendanceStatus(thread);
@@ -2324,12 +2885,24 @@ function setupContactModals() {
     showToast(`Conversa com ${threadName} excluída com sucesso.`);
   });
 
-  // Global click outside to close contact dropdown
+  // Global click outside to close contact dropdown and CRM header popover
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.contact-actions-wrap')) {
       const dropdown = document.getElementById('contact-actions-dropdown');
       if (dropdown && dropdown.classList.contains('show')) {
         dropdown.classList.remove('show');
+      }
+    }
+    if (!e.target.closest('#chat-crm-header-wrap')) {
+      const crmPopover = document.getElementById('chat-crm-header-popover');
+      if (crmPopover && crmPopover.classList.contains('show')) {
+        crmPopover.classList.remove('show');
+      }
+    }
+    if (!e.target.closest('#chat-crm-stage-select-wrap')) {
+      const stageSelectWrap = document.getElementById('chat-crm-stage-select-wrap');
+      if (stageSelectWrap && stageSelectWrap.classList.contains('open')) {
+        stageSelectWrap.classList.remove('open');
       }
     }
   });
