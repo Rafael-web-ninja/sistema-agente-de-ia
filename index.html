@@ -614,26 +614,6 @@
               </div>
 
               <div class="leads-filters-group">
-                <div class="filter-dropdown-item">
-                  <span class="filter-mini-label">Canal:</span>
-                  <select class="filter-mini-select" id="chatbot-filter-channel">
-                    <option value="all">Todos</option>
-                    <option value="WhatsApp">WhatsApp</option>
-                    <option value="Instagram">Instagram</option>
-                  </select>
-                  <i data-lucide="chevron-down" class="filter-chevron-icon"></i>
-                </div>
-
-                <div class="filter-dropdown-item">
-                  <span class="filter-mini-label">Status:</span>
-                  <select class="filter-mini-select" id="chatbot-filter-status">
-                    <option value="all">Todos</option>
-                    <option value="Ativo">Ativo</option>
-                    <option value="Pausado">Pausado</option>
-                  </select>
-                  <i data-lucide="chevron-down" class="filter-chevron-icon"></i>
-                </div>
-
                 <!-- View Mode Switcher (Cards / Lista) -->
                 <div class="crm-view-mode-pill">
                   <button type="button" class="crm-pill-btn active" id="chatbot-btn-view-cards" title="Visualização em Cards">
@@ -2345,14 +2325,6 @@
                     <label class="chat-filter-group-label">Etiqueta / Marcador</label>
                     <select id="filter-tag-select" class="chat-filter-select">
                       <option value="all">Todas as etiquetas</option>
-                      <option value="Lead quente">Lead quente</option>
-                      <option value="Interessado - Pro">Interessado - Pro</option>
-                      <option value="CRM">CRM / RD Station</option>
-                      <option value="Setup">Setup / Configuração</option>
-                      <option value="Promoção">Promoção / Cupom</option>
-                      <option value="Retenção">Retenção</option>
-                      <option value="Suporte">Suporte</option>
-                      <option value="Pós-venda">Pós-venda</option>
                     </select>
                   </div>
 
@@ -3323,9 +3295,6 @@
               <span id="view-lead-channel-badge" class="view-lead-channel-badge">
                 <i data-lucide="instagram" style="width: 13px; height: 13px;"></i> Instagram
               </span>
-              <span id="view-lead-score-badge" class="view-lead-score-badge">
-                <i data-lucide="award" style="width: 13px; height: 13px;"></i> Score: 58 (Médio)
-              </span>
             </div>
           </div>
           <div class="view-lead-header-actions">
@@ -3394,17 +3363,6 @@
                 <div class="info-value-agent" id="view-lead-agent-box">
                   <img id="view-lead-agent-img" src="" alt="Agente" class="view-lead-agent-img">
                   <span id="view-lead-agent-name" class="info-value">Felipe Costa</span>
-                </div>
-              </div>
-              <div class="view-lead-info-item">
-                <span class="info-label">Interesse Principal</span>
-                <span id="view-lead-interest" class="info-value">Plano Business</span>
-              </div>
-              <div class="view-lead-info-item">
-                <span class="info-label">Próxima Ação</span>
-                <div class="view-lead-next-action-box">
-                  <span id="view-lead-next-action-text" class="next-action-text">Enviar demonstração gravada</span>
-                  <span id="view-lead-next-action-time" class="next-action-time">Amanhã às 10:00</span>
                 </div>
               </div>
             </div>
@@ -3630,10 +3588,6 @@
             </select>
           </div>
         </div>
-        <div class="form-group" style="margin-bottom: 12px;">
-          <label class="form-label">Interesse Principal</label>
-          <input type="text" id="edit-lead-interest" class="form-input" placeholder="Ex: Plano Pro, Integração CRM">
-        </div>
         <div class="form-group" style="margin-bottom: 16px;">
           <label class="form-label">Observações / Notas</label>
           <textarea id="edit-lead-notes" class="form-input" rows="3" placeholder="Contexto ou preferências do lead..."></textarea>
@@ -3753,47 +3707,6 @@
           </button>
         </div>
       </form>
-    </div>
-  </div>
-
-  <!-- Modal Gerenciar Etiquetas -->
-  <div class="modal-backdrop" id="modal-manage-contact-tags">
-    <div class="modal-dialog">
-      <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 34px; height: 34px; border-radius: var(--radius-sm); background: rgba(124, 58, 237, 0.1); color: var(--ai-purple); display: flex; align-items: center; justify-content: center;">
-            <i data-lucide="tag" style="width: 18px; height: 18px;"></i>
-          </div>
-          <div>
-            <h3 class="modal-title" style="margin: 0; font-size: 16px;">Gerenciar Etiquetas</h3>
-            <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);" id="modal-manage-tags-subtitle">Adicione ou remova marcadores deste contato</p>
-          </div>
-        </div>
-        <button type="button" class="modal-close" aria-label="Fechar">✕</button>
-      </div>
-      <div style="padding: 14px 0;">
-        <label class="form-label" style="margin-bottom: 6px;">Etiquetas Atuais</label>
-        <div class="current-tags-container" id="manage-tags-list" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; min-height: 40px; padding: 10px; background: var(--bg-hover); border-radius: var(--radius-md); border: 1px solid var(--border-light);"></div>
-
-        <label class="form-label" style="margin-bottom: 6px;">Adicionar Nova Etiqueta</label>
-        <div style="display: flex; gap: 8px; margin-bottom: 14px;">
-          <input type="text" id="input-new-tag-name" class="form-input" placeholder="Digite o nome da etiqueta..." style="flex: 1;">
-          <button type="button" class="btn btn-primary btn-sm" id="btn-add-tag-to-contact">Adicionar</button>
-        </div>
-
-        <label class="form-label" style="margin-bottom: 6px;">Sugestões Rápidas</label>
-        <div class="tag-suggestions-row" id="tag-suggestions-row" style="display: flex; flex-wrap: wrap; gap: 6px;">
-          <button type="button" class="tag-suggestion-chip" data-tag="Lead quente">🔥 Lead quente</button>
-          <button type="button" class="tag-suggestion-chip" data-tag="Interessado - Pro">⭐ Interessado - Pro</button>
-          <button type="button" class="tag-suggestion-chip" data-tag="VIP">💎 VIP</button>
-          <button type="button" class="tag-suggestion-chip" data-tag="Setup">⚙️ Setup</button>
-          <button type="button" class="tag-suggestion-chip" data-tag="Pós-venda">📦 Pós-venda</button>
-          <button type="button" class="tag-suggestion-chip" data-tag="Suporte">🎧 Suporte</button>
-        </div>
-      </div>
-      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; border-top: 1px solid var(--border-light); padding-top: 14px;">
-        <button type="button" class="btn btn-primary modal-close" id="btn-save-tags-modal">Concluído</button>
-      </div>
     </div>
   </div>
 
@@ -4939,6 +4852,90 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- 5. Modal Editar Departamento -->
+  <div class="modal-backdrop" id="modal-edit-department">
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="edit-3" style="width: 20px; height: 20px; color: var(--primary);"></i>
+            <span>Editar Departamento</span>
+          </h3>
+          <p class="modal-header-sub">Atualize as informações e cor da fila de atendimento</p>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar">✕</button>
+      </div>
+
+      <form id="form-edit-department">
+        <input type="hidden" id="edit-dept-id">
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Nome do Departamento *</label>
+          <input type="text" id="edit-dept-name" class="form-input" placeholder="Ex: Pós-Venda & Sucesso do Cliente" required>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Descrição da Fila</label>
+          <textarea id="edit-dept-desc" class="form-textarea" rows="2" placeholder="Descreva o objetivo deste departamento e tipos de solicitações..."></textarea>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label">Cor de Identificação</label>
+          <select id="edit-dept-color" class="form-select">
+            <option value="#00A868">Verde ZapChat</option>
+            <option value="#2563EB">Azul Suporte</option>
+            <option value="#7C3AED">Roxo Comercial</option>
+            <option value="#F59E0B">Âmbar Financeiro</option>
+            <option value="#EA580C">Laranja Atendimento</option>
+            <option value="#0D9488">Teal Operacional</option>
+          </select>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+            <span>Salvar Alterações</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. Modal Excluir Departamento -->
+  <div class="modal-backdrop" id="modal-delete-department">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" style="color: var(--status-danger); display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="alert-triangle" style="width: 20px; height: 20px;"></i>
+            <span>Excluir Departamento</span>
+          </h3>
+          <p class="modal-header-sub">Confirme a exclusão da fila de atendimento</p>
+        </div>
+        <button type="button" class="modal-close" aria-label="Fechar">✕</button>
+      </div>
+
+      <div style="padding: 10px 0 20px 0;">
+        <input type="hidden" id="delete-dept-id">
+        <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
+          Tem certeza de que deseja excluir o departamento <strong id="delete-dept-target-name" style="color: var(--text-main);"></strong>?
+        </p>
+        <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 8px;">
+          Os membros vinculados a esta fila permanecerão na equipe e poderão ser realocados para outro departamento.
+        </p>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-delete-department" style="background-color: var(--status-danger); color: white;">
+          <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+          <span>Confirmar Exclusão</span>
+        </button>
+      </div>
     </div>
   </div>
 

@@ -533,7 +533,7 @@ function setupForms() {
         stage: 'Novo lead',
         stageClass: 'blue',
         interests: ['Atendimento WhatsApp', 'Automação'],
-        tags: ['Novo Lead', 'Qualificado'],
+        tags: [],
         nextAction: { text: 'Primeiro contato', time: 'Hoje' },
         notes: 'Lead cadastrado manualmente através da plataforma.'
       });

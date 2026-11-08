@@ -233,6 +233,7 @@ export const zapChatData = {
       { title: 'Qualificados', value: '412', trend: '↗ 16% vs. ontem', trendType: 'up', icon: 'award', color: 'green' },
       { title: 'Taxa de conversão', value: '23,4%', trend: '↗ 6,2% vs. ontem', trendType: 'up', icon: 'trending-up', color: 'green' }
     ],
+    availableTags: [],
     list: [
       {
         id: 'rafael_carvalho',
@@ -250,7 +251,7 @@ export const zapChatData = {
         lastContact: '2 min atrás',
         primaryInterest: 'Plano Pro',
         interests: ['Plano Pro', 'Automação de atendimento'],
-        tags: ['Interessado - Pro', 'Lead quente'],
+        tags: [],
         nextAction: { text: 'Follow-up por WhatsApp', time: 'Hoje às 14:00' },
         notes: 'Cliente demonstrou interesse em relatórios avançados e integração com CRM.'
       },
@@ -270,7 +271,7 @@ export const zapChatData = {
         lastContact: '15 min atrás',
         primaryInterest: 'Plano Business',
         interests: ['Integração com Loja', 'Catálogo WhatsApp'],
-        tags: ['E-commerce', 'Potencial'],
+        tags: [],
         nextAction: { text: 'Enviar demonstração gravada', time: 'Amanhã às 10:00' },
         notes: 'Dúvidas sobre volume de disparos simultâneos.'
       },
@@ -290,7 +291,7 @@ export const zapChatData = {
         lastContact: '1 h atrás',
         primaryInterest: 'Plano Enterprise',
         interests: ['Plano Enterprise', 'API dedicada'],
-        tags: ['Enterprise', 'Lead quente', 'Urgente'],
+        tags: [],
         nextAction: { text: 'Apresentação de proposta técnica', time: 'Hoje às 16:30' },
         notes: 'Precisa de SLA de 99.9% e canal dedicado no Telegram.'
       },
@@ -310,7 +311,7 @@ export const zapChatData = {
         lastContact: '3 h atrás',
         primaryInterest: 'Plano Starter',
         interests: ['Plano Starter'],
-        tags: ['Pequena Empresa'],
+        tags: [],
         nextAction: { text: 'Verificar resposta do e-mail comercial', time: 'Amanhã às 11:00' },
         notes: 'Aguardando validação da diretoria financeira.'
       },
@@ -330,7 +331,7 @@ export const zapChatData = {
         lastContact: '5 h atrás',
         primaryInterest: 'Plano Pro',
         interests: ['Automação 24/7', 'Múltiplos Atendentes'],
-        tags: ['Lead quente', 'Alta prioridade'],
+        tags: [],
         nextAction: { text: 'Agendar call de onboarding', time: 'Hoje às 17:00' },
         notes: 'Pronto para fechar contrato anual com desconto.'
       },
@@ -350,7 +351,7 @@ export const zapChatData = {
         lastContact: '1 dia atrás',
         primaryInterest: 'Plano Starter',
         interests: ['Consultoria IA'],
-        tags: ['Iniciante'],
+        tags: [],
         nextAction: { text: 'Enviar material educativo', time: 'Sexta-feira' },
         notes: 'Ainda em estágio inicial de maturidade digital.'
       }
@@ -450,7 +451,7 @@ export const zapChatData = {
         attendingStatus: 'IA atendendo',
         isAiAttending: true,
         attendanceState: 'ai',
-        tags: ['Interessado - Pro', 'Lead quente'],
+        tags: [],
         status: 'Em atendimento',
         aiSummary: [
           'Cliente demonstrou interesse no plano Pro.',
@@ -500,7 +501,7 @@ export const zapChatData = {
         attendingStatus: 'IA atendendo',
         isAiAttending: true,
         attendanceState: 'ai',
-        tags: ['CRM', 'RD Station'],
+        tags: [],
         status: 'Em atendimento',
         aiSummary: [
           'Dúvidas sobre integração com RD Station CRM',
@@ -540,7 +541,7 @@ export const zapChatData = {
         attendingStatus: 'IA atendendo',
         isAiAttending: true,
         attendanceState: 'ai',
-        tags: ['Setup', 'Prazo'],
+        tags: [],
         status: 'Em atendimento',
         aiSummary: ['Dúvida sobre prazo de ativação do agente no WhatsApp.'],
         messages: [
@@ -567,7 +568,7 @@ export const zapChatData = {
         attendingStatus: 'IA atendendo',
         isAiAttending: true,
         attendanceState: 'ai',
-        tags: ['Pós-venda', 'Rastreio'],
+        tags: [],
         status: 'Resolvido',
         aiSummary: [
           'Consulta de rastreamento de pedido #4392',
@@ -597,7 +598,7 @@ export const zapChatData = {
         attendingStatus: 'IA atendendo',
         isAiAttending: true,
         attendanceState: 'ai',
-        tags: ['Setup', 'Ajuda Técnica'],
+        tags: [],
         status: 'Em andamento',
         aiSummary: ['Dúvidas no upload do documento da base de conhecimento.'],
         messages: [
@@ -624,7 +625,7 @@ export const zapChatData = {
         attendingStatus: 'Humano atendendo',
         isAiAttending: false,
         attendanceState: 'human',
-        tags: ['Promoção', 'Cupom'],
+        tags: [],
         status: 'Resolvido',
         aiSummary: ['Cupom BEMVINDO10 enviado e utilizado.'],
         messages: [
@@ -651,7 +652,7 @@ export const zapChatData = {
         attendingStatus: 'Aguardando humano',
         isAiAttending: false,
         attendanceState: 'waiting_human',
-        tags: ['Retenção', 'Cancelamento'],
+        tags: [],
         status: 'Em atendimento',
         aiSummary: ['Cliente solicitou cancelamento. Transmitido para equipe de retenção com proposta especial.'],
         messages: [
@@ -678,7 +679,7 @@ export const zapChatData = {
         attendingStatus: 'IA atendendo',
         isAiAttending: true,
         attendanceState: 'ai',
-        tags: ['Suporte', 'Resolvido'],
+        tags: [],
         status: 'Resolvido',
         aiSummary: ['Problema com redefinição de senha solucionado.'],
         messages: [

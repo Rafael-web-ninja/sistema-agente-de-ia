@@ -2537,16 +2537,6 @@ function populateInspector(node) {
       </div>
 
       <div class="form-group">
-        <label class="form-label">Prioridade do Ticket</label>
-        <select class="form-select" id="insp-input-priority">
-          <option value="Normal" ${node.data?.priority === 'Normal' ? 'selected' : ''}>Normal</option>
-          <option value="Média" ${node.data?.priority === 'Média' ? 'selected' : ''}>Média</option>
-          <option value="Alta" ${(!node.data?.priority || node.data?.priority === 'Alta') ? 'selected' : ''}>🔥 Alta</option>
-          <option value="Urgente" ${node.data?.priority === 'Urgente' ? 'selected' : ''}>🚨 Urgente</option>
-        </select>
-      </div>
-
-      <div class="form-group">
         <label class="form-label">Mensagem Automática de Transbordo</label>
         <textarea class="form-textarea" rows="3" id="insp-input-desc" placeholder="Aviso ao cliente">${node.data?.description || 'Transferindo para nossa equipe humana. Aguarde um instante que já vamos te atender!'}</textarea>
       </div>

@@ -109,42 +109,50 @@ const LEAD_TAG_COLORS = [
   { color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)' }
 ];
 
-function getLeadTagsCatalog() {
-  if (!zapChatData.leads.availableTags) {
-    const defaultCatalog = [
-      { id: 'tag-quente', name: 'Lead quente', color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)' },
-      { id: 'tag-pro', name: 'Interessado - Pro', color: '#00A868', bg: 'rgba(0, 168, 104, 0.12)' },
-      { id: 'tag-vip', name: 'Cliente VIP', color: '#7C3AED', bg: 'rgba(124, 58, 237, 0.12)' },
-      { id: 'tag-orcamento', name: 'Orçamento Enviado', color: '#2563EB', bg: 'rgba(37, 99, 235, 0.12)' },
-      { id: 'tag-retorno', name: 'Aguardando Retorno', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.14)' }
-    ];
-    // Ensure all existing lead tags are in the catalog
-    (zapChatData.leads.list || []).forEach((l, lIdx) => {
-      (l.tags || []).forEach((tName, tIdx) => {
-        if (!defaultCatalog.some(c => c.name.toLowerCase() === tName.toLowerCase())) {
-          const palette = LEAD_TAG_COLORS[(lIdx + tIdx) % LEAD_TAG_COLORS.length];
-          defaultCatalog.push({
-            id: `tag-${Date.now()}-${lIdx}-${tIdx}`,
-            name: tName,
-            color: palette.color,
-            bg: palette.bg
-          });
-        }
-      });
-    });
-    zapChatData.leads.availableTags = defaultCatalog;
+export function getLeadTagsCatalog() {
+  if (!Array.isArray(zapChatData.leads.availableTags)) {
+    zapChatData.leads.availableTags = [];
   }
   return zapChatData.leads.availableTags;
 }
 
-function getTagStyleMeta(tagName) {
+export function getTagStyleMeta(tagName) {
   const catalog = getLeadTagsCatalog();
   const found = catalog.find(t => t.name.toLowerCase() === (tagName || '').toLowerCase());
   if (found) return found;
   return { name: tagName, color: '#00A868', bg: 'rgba(0, 168, 104, 0.12)' };
 }
 
-export function openLeadTagsModal(lead) {
+export function syncEntityTagsAcrossViews(entity) {
+  if (!entity) return;
+  const tagsCopy = Array.isArray(entity.tags) ? [...entity.tags] : [];
+  const entityName = (entity.name || '').toLowerCase();
+  const entityPhone = entity.phone || '';
+
+  (zapChatData.leads?.list || []).forEach(l => {
+    if (l === entity) return;
+    if (
+      (l.id && entity.id && l.id === entity.id) ||
+      (entityName && (l.name || '').toLowerCase() === entityName) ||
+      (entityPhone && l.phone === entityPhone)
+    ) {
+      l.tags = [...tagsCopy];
+    }
+  });
+
+  (zapChatData.conversas?.threads || []).forEach(t => {
+    if (t === entity) return;
+    if (
+      (t.id && entity.id && t.id === entity.id) ||
+      (entityName && (t.name || '').toLowerCase() === entityName) ||
+      (entityPhone && t.phone === entityPhone)
+    ) {
+      t.tags = [...tagsCopy];
+    }
+  });
+}
+
+export function openLeadTagsModal(lead, options = {}) {
   if (!lead) return;
   if (!Array.isArray(lead.tags)) lead.tags = [];
 
@@ -160,9 +168,19 @@ export function openLeadTagsModal(lead) {
   let editingTagId = null;
   let editingTagColor = LEAD_TAG_COLORS[0].color;
 
+  const notifyAllUpdates = () => {
+    syncEntityTagsAcrossViews(lead);
+    refreshLeadTagsUI(lead);
+    if (typeof options.onUpdate === 'function') {
+      options.onUpdate(lead);
+    }
+    if (typeof window.refreshChatTagsUI === 'function') {
+      window.refreshChatTagsUI();
+    }
+  };
+
   const renderModalContent = () => {
     const catalog = getLeadTagsCatalog();
-    const activePalette = LEAD_TAG_COLORS[newTagColorIdx] || LEAD_TAG_COLORS[0];
 
     modal.innerHTML = `
       <div class="modal-dialog" style="max-width: 500px;">
@@ -296,7 +314,7 @@ export function openLeadTagsModal(lead) {
         lead.tags.push(existing ? existing.name : name);
       }
 
-      refreshLeadTagsUI(lead);
+      notifyAllUpdates();
       renderModalContent();
       showToast(`Etiqueta "${name}" adicionada a ${lead.name}!`);
     });
@@ -311,7 +329,7 @@ export function openLeadTagsModal(lead) {
         } else {
           lead.tags.push(tagName);
         }
-        refreshLeadTagsUI(lead);
+        notifyAllUpdates();
         renderModalContent();
       });
     });
@@ -366,15 +384,23 @@ export function openLeadTagsModal(lead) {
         tagObj.color = chosenPalette.color;
         tagObj.bg = chosenPalette.bg;
 
-        // Update tag name across all leads that had oldName
+        // Update tag name across all leads and threads that had oldName
         (zapChatData.leads.list || []).forEach(l => {
           if (Array.isArray(l.tags)) {
             l.tags = l.tags.map(t => (t.toLowerCase() === oldName.toLowerCase() ? newName : t));
           }
         });
+        (zapChatData.conversas?.threads || []).forEach(t => {
+          if (Array.isArray(t.tags)) {
+            t.tags = t.tags.map(tag => (tag.toLowerCase() === oldName.toLowerCase() ? newName : tag));
+          }
+        });
+        if (Array.isArray(lead.tags)) {
+          lead.tags = lead.tags.map(t => (t.toLowerCase() === oldName.toLowerCase() ? newName : t));
+        }
 
         editingTagId = null;
-        refreshLeadTagsUI(lead);
+        notifyAllUpdates();
         renderModalContent();
         showToast(`Etiqueta "${newName}" atualizada!`);
       });
@@ -389,14 +415,22 @@ export function openLeadTagsModal(lead) {
         const removedTag = catalog[idx];
         catalog.splice(idx, 1);
 
-        // Remove from all leads
+        // Remove from all leads and threads
         (zapChatData.leads.list || []).forEach(l => {
           if (Array.isArray(l.tags)) {
             l.tags = l.tags.filter(t => t.toLowerCase() !== removedTag.name.toLowerCase());
           }
         });
+        (zapChatData.conversas?.threads || []).forEach(t => {
+          if (Array.isArray(t.tags)) {
+            t.tags = t.tags.filter(tag => tag.toLowerCase() !== removedTag.name.toLowerCase());
+          }
+        });
+        if (Array.isArray(lead.tags)) {
+          lead.tags = lead.tags.filter(t => t.toLowerCase() !== removedTag.name.toLowerCase());
+        }
 
-        refreshLeadTagsUI(lead);
+        notifyAllUpdates();
         renderModalContent();
         showToast(`Etiqueta "${removedTag.name}" excluída!`);
       });
@@ -797,13 +831,6 @@ export function renderSelectedLeadPanel(lead) {
         </span>
       </div>
 
-      <div class="lead-panel-info-row">
-        <span class="lead-panel-info-label">
-          <i data-lucide="tag" style="width: 14px; height: 14px;"></i> Interesse
-        </span>
-        <span class="lead-panel-info-val">${lead.primaryInterest || lead.interests?.[0] || 'Plano Pro'}</span>
-      </div>
-
       <div class="lead-panel-info-row" style="align-items: flex-start;">
         <span class="lead-panel-info-label" style="margin-top: 3px;">
           <i data-lucide="tags" style="width: 14px; height: 14px;"></i> Etiquetas
@@ -849,16 +876,6 @@ export function renderSelectedLeadPanel(lead) {
           </div>
         `;
       })()}
-
-      <div class="lead-panel-info-row" style="align-items: flex-start;">
-        <span class="lead-panel-info-label">
-          <i data-lucide="calendar" style="width: 14px; height: 14px;"></i> Próxima ação
-        </span>
-        <div class="lead-next-action-box">
-          <span class="next-action-title">${lead.nextAction?.text || 'Follow-up por WhatsApp'}</span>
-          <span class="next-action-time">${lead.nextAction?.time || 'Hoje às 14:00'}</span>
-        </div>
-      </div>
     </div>
 
     <div class="lead-panel-buttons-stack">
@@ -944,7 +961,9 @@ export function renderSelectedLeadPanel(lead) {
       const tagName = btn.getAttribute('data-remove-tag');
       if (Array.isArray(lead.tags)) {
         lead.tags = lead.tags.filter(t => t.toLowerCase() !== tagName.toLowerCase());
+        syncEntityTagsAcrossViews(lead);
         refreshLeadTagsUI(lead);
+        if (typeof window.refreshChatTagsUI === 'function') window.refreshChatTagsUI();
         showToast(`Etiqueta "${tagName}" removida de ${lead.name}.`);
       }
     });
@@ -1827,7 +1846,7 @@ export function openChatForLead(lead) {
       assignedAgent: lead.agentName || 'Pedro',
       attendingStatus: 'IA atendendo',
       isAiAttending: true,
-      tags: lead.tags || ['Lead'],
+      tags: Array.isArray(lead.tags) ? [...lead.tags] : [],
       status: lead.status || 'Novo',
       aiSummary: [
         `Origem: ${lead.channel || 'WhatsApp'}`,

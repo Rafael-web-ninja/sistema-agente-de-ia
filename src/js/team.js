@@ -500,6 +500,14 @@ export function renderDepartmentsView() {
             <h4 class="dept-title">${escapeHtml(dept.name)}</h4>
             <span class="dept-member-counter"><i data-lucide="users" style="width: 12px; height: 12px;"></i> ${count} ${count === 1 ? 'atendente' : 'atendentes'}</span>
           </div>
+          <div class="dept-card-actions">
+            <button type="button" class="dept-action-btn btn-edit-department" data-dept-id="${dept.id}" title="Editar departamento">
+              <i data-lucide="pencil" style="width: 14px; height: 14px;"></i>
+            </button>
+            <button type="button" class="dept-action-btn danger btn-delete-department" data-dept-id="${dept.id}" title="Excluir departamento">
+              <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+            </button>
+          </div>
         </div>
         <p class="dept-desc">${escapeHtml(dept.desc)}</p>
 
@@ -632,6 +640,24 @@ function setupTableEventListeners() {
         filterSelect.value = deptName;
       }
       switchSubTab('equipe');
+      return;
+    }
+
+    // 8. Edit department
+    const editDeptBtn = e.target.closest('.btn-edit-department');
+    if (editDeptBtn) {
+      e.preventDefault();
+      const deptId = editDeptBtn.getAttribute('data-dept-id');
+      openEditDepartmentModal(deptId);
+      return;
+    }
+
+    // 9. Delete department
+    const deleteDeptBtn = e.target.closest('.btn-delete-department');
+    if (deleteDeptBtn) {
+      e.preventDefault();
+      const deptId = deleteDeptBtn.getAttribute('data-dept-id');
+      openDeleteDepartmentModal(deptId);
       return;
     }
   });
@@ -882,6 +908,73 @@ function setupModals() {
       showToast(`Departamento "${name}" criado com sucesso!`);
     });
   }
+
+  // Form Edit Department
+  const formEditDept = document.getElementById('form-edit-department');
+  if (formEditDept) {
+    formEditDept.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const idInput = document.getElementById('edit-dept-id');
+      const nameInput = document.getElementById('edit-dept-name');
+      const descInput = document.getElementById('edit-dept-desc');
+      const colorInput = document.getElementById('edit-dept-color');
+
+      const deptId = idInput ? idInput.value : '';
+      const dept = departments.find(d => d.id === deptId);
+      if (!dept) return;
+
+      const newName = nameInput ? nameInput.value.trim() : '';
+      if (!newName) {
+        showToast('Informe o nome do departamento.');
+        return;
+      }
+
+      const oldName = dept.name;
+      dept.name = newName;
+      dept.desc = descInput ? descInput.value.trim() : dept.desc;
+      dept.color = colorInput ? colorInput.value : dept.color;
+
+      // Update members assigned to this department if name changed
+      if (oldName && oldName !== newName) {
+        let updatedMembers = false;
+        teamMembers.forEach(m => {
+          if (m.department === oldName) {
+            m.department = newName;
+            updatedMembers = true;
+          }
+        });
+        if (updatedMembers) {
+          saveTeamMembers();
+          renderTeamTable();
+        }
+      }
+
+      saveDepartments();
+      renderDepartmentsView();
+
+      document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
+      showToast(`Departamento "${newName}" atualizado com sucesso!`);
+    });
+  }
+
+  // Confirm Delete Department
+  const btnConfirmDeleteDept = document.getElementById('btn-confirm-delete-department');
+  if (btnConfirmDeleteDept) {
+    btnConfirmDeleteDept.addEventListener('click', () => {
+      const idInput = document.getElementById('delete-dept-id');
+      const deptId = idInput ? idInput.value : '';
+      const deptIndex = departments.findIndex(d => d.id === deptId);
+      if (deptIndex === -1) return;
+
+      const removedDept = departments[deptIndex];
+      departments.splice(deptIndex, 1);
+      saveDepartments();
+      renderDepartmentsView();
+
+      document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
+      showToast(`Departamento "${removedDept.name}" excluído.`);
+    });
+  }
 }
 
 /**
@@ -999,6 +1092,52 @@ function openDeleteMemberModal(memberId) {
     window.openModal('modal-delete-team-member');
   } else {
     document.getElementById('modal-delete-team-member')?.classList.add('open');
+  }
+}
+
+/**
+ * Open Edit Department modal and prefill data
+ */
+function openEditDepartmentModal(deptId) {
+  const dept = departments.find(d => d.id === deptId);
+  if (!dept) return;
+
+  const idInput = document.getElementById('edit-dept-id');
+  const nameInput = document.getElementById('edit-dept-name');
+  const descInput = document.getElementById('edit-dept-desc');
+  const colorInput = document.getElementById('edit-dept-color');
+
+  if (idInput) idInput.value = dept.id;
+  if (nameInput) nameInput.value = dept.name || '';
+  if (descInput) descInput.value = dept.desc || '';
+  if (colorInput) colorInput.value = dept.color || '#00A868';
+
+  if (window.openModal) {
+    window.openModal('modal-edit-department');
+  } else {
+    document.getElementById('modal-edit-department')?.classList.add('open');
+  }
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+/**
+ * Open Delete Department modal
+ */
+function openDeleteDepartmentModal(deptId) {
+  const dept = departments.find(d => d.id === deptId);
+  if (!dept) return;
+
+  const idInput = document.getElementById('delete-dept-id');
+  const nameSpan = document.getElementById('delete-dept-target-name');
+
+  if (idInput) idInput.value = dept.id;
+  if (nameSpan) nameSpan.textContent = dept.name;
+
+  if (window.openModal) {
+    window.openModal('modal-delete-department');
+  } else {
+    document.getElementById('modal-delete-department')?.classList.add('open');
   }
 }
 

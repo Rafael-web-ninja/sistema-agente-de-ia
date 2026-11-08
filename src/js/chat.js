@@ -1,6 +1,7 @@
 import { zapChatData } from './data.js';
 import { showToast } from './settings.js';
 import { switchView, openModal, closeAllModals } from './navigation.js';
+import { openLeadTagsModal, getTagStyleMeta, getLeadTagsCatalog, syncEntityTagsAcrossViews } from './leads.js';
 
 let activeThreadId = zapChatData.conversas.threads[0]?.id || null;
 let activeReply = null; // { index, sender, senderName, text }
@@ -916,7 +917,7 @@ export function renderActiveChat() {
                         data-stage-color="${s.color}"
                       >
                         <span class="crm-stage-dot-sm" style="background:${s.color};"></span>
-                        <span class="crm-stage-pill-text">${idx + 1}. ${escapeHtml(s.name)}</span>
+                        <span class="crm-stage-pill-text">${escapeHtml(s.name)}</span>
                         <i data-lucide="check" class="crm-stage-option-check" style="width:13px;height:13px;"></i>
                       </button>
                     `).join('')}
@@ -963,7 +964,7 @@ export function renderActiveChat() {
                         data-stage-color="${s.color}"
                       >
                         <span class="crm-stage-dot-sm" style="background:${s.color};"></span>
-                        <span class="crm-stage-pill-text">${idx + 1}. ${escapeHtml(s.name)}</span>
+                        <span class="crm-stage-pill-text">${escapeHtml(s.name)}</span>
                         <i data-lucide="check" class="crm-stage-option-check" style="width:13px;height:13px;"></i>
                       </button>
                     `).join('')}
@@ -1418,8 +1419,46 @@ function renderRightColumnCards(thread) {
           <i data-lucide="mail" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
           <span>${thread.email || 'Sem e-mail'}</span>
         </div>
+        <div class="contact-info-item" style="align-items: flex-start; padding-top: 4px;">
+          <i data-lucide="tags" style="width: 14px; height: 14px; color: var(--text-muted); margin-top: 3px; flex-shrink: 0;"></i>
+          <div class="lead-panel-tags-box" style="justify-content: flex-start; max-width: 100%;">
+            ${tags.map(tName => {
+              const meta = getTagStyleMeta(tName);
+              return `
+                <span class="lead-panel-tag-chip" style="background:${meta.bg}; color:${meta.color};">
+                  <span>${escapeHtml(tName)}</span>
+                  <button type="button" class="lead-panel-tag-remove" data-chat-remove-tag="${escapeHtml(tName)}" title="Remover etiqueta">&times;</button>
+                </span>
+              `;
+            }).join('')}
+            <button type="button" class="lead-panel-add-tag-btn" id="btn-chat-card-manage-tags" title="Adicionar, editar ou excluir etiquetas">
+              <i data-lucide="plus" style="width: 11px; height: 11px;"></i>
+              <span>Etiquetar</span>
+            </button>
+          </div>
+        </div>
       </div>
     `;
+
+    cardContato.querySelector('#btn-chat-card-manage-tags')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      openManageTagsModal(thread);
+    });
+
+    cardContato.querySelectorAll('[data-chat-remove-tag]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const tagName = btn.getAttribute('data-chat-remove-tag');
+        if (Array.isArray(thread.tags)) {
+          thread.tags = thread.tags.filter(t => t.toLowerCase() !== tagName.toLowerCase());
+          syncEntityTagsAcrossViews(thread);
+          renderRightColumnCards(thread);
+          renderThreadList();
+          showToast(`Etiqueta "${tagName}" removida de ${thread.name}.`);
+          if (window.lucide) window.lucide.createIcons();
+        }
+      });
+    });
 
     setupContactActions(thread);
   }
@@ -1451,38 +1490,29 @@ function renderRightColumnCards(thread) {
         </div>
 
         <div class="chat-crm-deal-box">
-          <!-- Visual Pipeline Progress Stepper -->
-          <div class="crm-pipeline-stepper-wrap">
-            <div class="crm-stepper-header">
-              <span class="crm-stepper-current-badge" style="color:${currentStage.color};">
-                <span class="crm-stage-dot-sm" style="background:${currentStage.color};"></span>
-                ${escapeHtml(currentStage.name)}
-              </span>
-              ${nextStage ? `
-                <button type="button" class="btn-crm-advance-inline" id="btn-card-advance-stage" data-next-stage="${nextStage.id}" title="Avançar para ${escapeHtml(nextStage.name)}">
-                  <span>Avançar</span>
-                  <i data-lucide="arrow-right" style="width:11px;height:11px;"></i>
-                </button>
-              ` : `
-                <span class="crm-stepper-done-tag">
-                  <i data-lucide="check-circle-2" style="width:11px;height:11px;"></i> Concluído
+          <div class="chat-crm-field">
+            <label class="chat-crm-label">Etapa no Funil</label>
+            <div class="crm-stage-select-wrap" id="chat-crm-stage-select-wrap">
+              <button type="button" class="crm-stage-select-trigger" id="chat-crm-stage-trigger">
+                <span class="crm-stage-select-value">
+                  <span class="crm-stage-dot-sm" id="chat-crm-selected-dot" style="background:${currentStage.color};"></span>
+                  <span id="chat-crm-selected-name">${escapeHtml(currentStage.name)}</span>
                 </span>
-              `}
-            </div>
-            <div class="crm-pipeline-stepper" role="group" aria-label="Progresso no Funil CRM">
-              ${stages.map((s, idx) => {
-                const isPassed = idx <= currentIdx;
-                const isCurrent = idx === currentIdx;
-                return `
+                <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--text-muted);"></i>
+              </button>
+              <div class="crm-stage-select-dropdown" id="chat-crm-stage-dropdown">
+                ${stages.map(s => `
                   <button
                     type="button"
-                    class="crm-stepper-seg ${isPassed ? 'filled' : ''} ${isCurrent ? 'current' : ''}"
-                    data-step-stage="${s.id}"
-                    style="${isPassed ? `--step-color: ${currentStage.color};` : ''}"
-                    title="Mover para ${idx + 1}. ${escapeHtml(s.name)}"
-                  ></button>
-                `;
-              }).join('')}
+                    class="crm-stage-select-option ${s.id === existingDeal.stage ? 'selected' : ''}"
+                    data-active-stage-id="${s.id}"
+                  >
+                    <span class="crm-stage-dot-sm" style="background:${s.color};"></span>
+                    <span class="crm-stage-pill-text">${escapeHtml(s.name)}</span>
+                    <i data-lucide="check" class="crm-stage-option-check" style="width:13px;height:13px;"></i>
+                  </button>
+                `).join('')}
+              </div>
             </div>
           </div>
 
@@ -1511,18 +1541,22 @@ function renderRightColumnCards(thread) {
         </div>
       `;
 
-      // Clickable stepper segments to jump to any stage
-      cardCrm.querySelectorAll('[data-step-stage]').forEach(seg => {
-        seg.addEventListener('click', () => {
-          const targetStageId = seg.getAttribute('data-step-stage');
+      // Custom stage select dropdown for active deal
+      const stageSelectWrap = cardCrm.querySelector('#chat-crm-stage-select-wrap');
+      const stageTrigger = cardCrm.querySelector('#chat-crm-stage-trigger');
+      if (stageTrigger && stageSelectWrap) {
+        stageTrigger.addEventListener('click', (e) => {
+          e.stopPropagation();
+          stageSelectWrap.classList.toggle('open');
+        });
+      }
+      cardCrm.querySelectorAll('[data-active-stage-id]').forEach(opt => {
+        opt.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const targetStageId = opt.getAttribute('data-active-stage-id');
+          stageSelectWrap?.classList.remove('open');
           updateThreadDealStage(thread, existingDeal, targetStageId);
         });
-      });
-
-      // 1-click Advance to next stage
-      cardCrm.querySelector('#btn-card-advance-stage')?.addEventListener('click', (e) => {
-        const nextStageId = e.currentTarget.getAttribute('data-next-stage');
-        updateThreadDealStage(thread, existingDeal, nextStageId);
       });
 
       // Update deal value
@@ -2652,44 +2686,36 @@ function openEditContactModal(thread) {
   if (window.lucide) window.lucide.createIcons();
 }
 
-function openManageTagsModal(thread) {
-  const subtitle = document.getElementById('modal-manage-tags-subtitle');
-  if (subtitle) {
-    subtitle.textContent = `Gerenciando etiquetas de ${thread.name}`;
+function syncChatFilterTagsSelect() {
+  const tagSelect = document.getElementById('filter-tag-select');
+  if (!tagSelect) return;
+  const currentVal = tagSelect.value || 'all';
+  const catalog = getLeadTagsCatalog();
+  tagSelect.innerHTML = `<option value="all">Todas as etiquetas</option>` +
+    catalog.map(t => `<option value="${escapeHtml(t.name)}">${escapeHtml(t.name)}</option>`).join('');
+  if (catalog.some(t => t.name === currentVal)) {
+    tagSelect.value = currentVal;
+  } else {
+    tagSelect.value = 'all';
   }
-  renderManageTagsList(thread);
-  openModal('modal-manage-contact-tags');
-  if (window.lucide) window.lucide.createIcons();
 }
 
-function renderManageTagsList(thread) {
-  const container = document.getElementById('manage-tags-list');
-  if (!container) return;
+window.refreshChatTagsUI = () => {
+  syncChatFilterTagsSelect();
+  const thread = zapChatData.conversas.threads.find(t => t.id === activeThreadId);
+  if (thread) renderRightColumnCards(thread);
+  renderThreadList();
+};
 
-  const tags = thread.tags || [];
-  if (tags.length === 0) {
-    container.innerHTML = `<span style="font-size: 12px; color: var(--text-muted); font-style: italic;">Nenhuma etiqueta vinculada a este contato.</span>`;
-    return;
-  }
-
-  container.innerHTML = tags.map((t, idx) => `
-    <span class="manage-tag-item" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; color: var(--text-main);">
-      <span>${t}</span>
-      <button type="button" class="btn-remove-tag" data-tag-index="${idx}" aria-label="Remover etiqueta" style="background: none; border: none; padding: 0; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; font-size: 13px; line-height: 1;">✕</button>
-    </span>
-  `).join('');
-
-  container.querySelectorAll('.btn-remove-tag').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const idx = parseInt(btn.getAttribute('data-tag-index'), 10);
-      if (!isNaN(idx) && thread.tags) {
-        const removed = thread.tags.splice(idx, 1);
-        renderManageTagsList(thread);
-        renderRightColumnCards(thread);
-        showToast(`Etiqueta "${removed[0]}" removida.`);
-        if (window.lucide) window.lucide.createIcons();
-      }
-    });
+function openManageTagsModal(thread) {
+  if (!thread) return;
+  openLeadTagsModal(thread, {
+    onUpdate: () => {
+      syncChatFilterTagsSelect();
+      renderRightColumnCards(thread);
+      renderThreadList();
+      if (window.lucide) window.lucide.createIcons();
+    }
   });
 }
 
@@ -2799,58 +2825,6 @@ function setupContactModals() {
       showToast(`Dados de ${thread.name} atualizados com sucesso!`);
     });
   }
-
-  // 2. Manage Tags Modal
-  const addTagBtn = document.getElementById('btn-add-tag-to-contact');
-  const tagInput = document.getElementById('input-new-tag-name');
-  if (addTagBtn && tagInput) {
-    const handleAdd = () => {
-      const tagText = tagInput.value.trim();
-      if (!tagText) return;
-      const thread = zapChatData.conversas.threads.find(t => t.id === activeThreadId);
-      if (!thread) return;
-      if (!thread.tags) thread.tags = [];
-      if (!thread.tags.includes(tagText)) {
-        thread.tags.push(tagText);
-        tagInput.value = '';
-        renderManageTagsList(thread);
-        renderRightColumnCards(thread);
-        showToast(`Etiqueta "${tagText}" adicionada.`);
-      } else {
-        showToast(`A etiqueta "${tagText}" já existe neste contato.`);
-      }
-    };
-    addTagBtn.addEventListener('click', handleAdd);
-    tagInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        handleAdd();
-      }
-    });
-  }
-
-  // Suggestions row
-  document.querySelectorAll('.tag-suggestion-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      const tagText = chip.getAttribute('data-tag');
-      if (!tagText) return;
-      const thread = zapChatData.conversas.threads.find(t => t.id === activeThreadId);
-      if (!thread) return;
-      if (!thread.tags) thread.tags = [];
-      if (!thread.tags.includes(tagText)) {
-        thread.tags.push(tagText);
-        renderManageTagsList(thread);
-        renderRightColumnCards(thread);
-        showToast(`Etiqueta "${tagText}" adicionada.`);
-      }
-    });
-  });
-
-  // Done button in Manage Tags Modal
-  document.getElementById('btn-save-tags-modal')?.addEventListener('click', () => {
-    closeAllModals();
-    renderThreadList();
-  });
 
   // 3. Block Contact Confirm
   document.getElementById('btn-confirm-block-contact')?.addEventListener('click', () => {
