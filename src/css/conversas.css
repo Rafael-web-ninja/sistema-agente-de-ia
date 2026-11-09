@@ -834,6 +834,19 @@
   color: #34D399;
 }
 
+/* 1.5 Chatbot: Subtle violet / purple */
+.thread-attendance-tag.tag-chatbot {
+  background-color: rgba(124, 58, 237, 0.08);
+  border-color: rgba(124, 58, 237, 0.22);
+  color: #6D28D9;
+}
+
+[data-theme="dark"] .thread-attendance-tag.tag-chatbot {
+  background-color: rgba(139, 92, 246, 0.16);
+  border-color: rgba(139, 92, 246, 0.32);
+  color: #A78BFA;
+}
+
 /* 2. Humano atendendo: Subtle blue / indigo */
 .thread-attendance-tag.tag-human {
   background-color: rgba(37, 99, 235, 0.08);
@@ -2084,6 +2097,18 @@
   background: rgba(0, 168, 104, 0.18);
   border-color: rgba(0, 168, 104, 0.32);
   color: #34D399;
+}
+
+.attendance-status-badge.status-chatbot {
+  background: rgba(124, 58, 237, 0.09);
+  border-color: rgba(124, 58, 237, 0.22);
+  color: #6D28D9;
+}
+
+[data-theme="dark"] .attendance-status-badge.status-chatbot {
+  background: rgba(139, 92, 246, 0.18);
+  border-color: rgba(139, 92, 246, 0.32);
+  color: #A78BFA;
 }
 
 .attendance-status-badge.status-human {

@@ -90,8 +90,8 @@ export const availableAgents = [
   }
 ];
 
-let selectedLead = zapChatData.leads.list[0];
-let checkedLeadIds = new Set([zapChatData.leads.list[0]?.id].filter(Boolean));
+let selectedLead = null;
+let checkedLeadIds = new Set();
 let currentDisplayedLeads = zapChatData.leads.list;
 let currentAssignFilter = 'all';
 let currentAssignSearch = '';
@@ -789,7 +789,11 @@ export function renderLeadsTable(leads) {
 
 export function renderSelectedLeadPanel(lead) {
   const panel = document.getElementById('lead-detail-panel');
-  if (!panel || !lead) return;
+  if (!panel) return;
+  if (!lead) {
+    panel.style.display = 'none';
+    return;
+  }
 
   panel.style.display = 'flex';
 
@@ -902,7 +906,9 @@ export function renderSelectedLeadPanel(lead) {
   const closeBtn = panel.querySelector('#btn-close-lead-panel');
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
+      selectedLead = null;
       panel.style.display = 'none';
+      renderLeadsTable(currentDisplayedLeads);
     });
   }
 

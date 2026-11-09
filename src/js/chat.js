@@ -43,6 +43,22 @@ export function getAttendanceStatus(thread) {
     };
   }
 
+  // 1.5 Chatbot
+  if (
+    thread.attendanceState === 'chatbot' ||
+    thread.isChatbotAttending === true ||
+    thread.attendingStatus === 'Chatbot' ||
+    (thread.attendingStatus && thread.attendingStatus.toLowerCase().includes('chatbot'))
+  ) {
+    return {
+      key: 'chatbot',
+      label: 'Chatbot',
+      icon: 'workflow',
+      badgeClass: 'tag-chatbot',
+      cardClass: 'status-chatbot'
+    };
+  }
+
   // 2. Humano atendendo
   if (
     thread.attendanceState === 'human' ||
@@ -360,8 +376,10 @@ export function getFilteredThreads() {
   // 4. Attendant filter
   if (chatFilterState.attendant === 'ai') {
     list = list.filter(t => t.isAiAttending === true || (t.attendingStatus && t.attendingStatus.toLowerCase().includes('ia')));
+  } else if (chatFilterState.attendant === 'chatbot') {
+    list = list.filter(t => t.isChatbotAttending === true || (t.attendingStatus && t.attendingStatus.toLowerCase().includes('chatbot')));
   } else if (chatFilterState.attendant === 'human') {
-    list = list.filter(t => !t.isAiAttending && (!t.attendingStatus || !t.attendingStatus.toLowerCase().includes('ia')));
+    list = list.filter(t => !t.isAiAttending && !t.isChatbotAttending && (!t.attendingStatus || (!t.attendingStatus.toLowerCase().includes('ia') && !t.attendingStatus.toLowerCase().includes('chatbot'))));
   }
 
   // 5. Unread only toggle
@@ -421,7 +439,8 @@ function updateTabCounts() {
     if (chatFilterState.channel !== 'all' && (t.channel || '').toLowerCase() !== chatFilterState.channel.toLowerCase()) return false;
     if (chatFilterState.status !== 'all' && t.status !== chatFilterState.status) return false;
     if (chatFilterState.attendant === 'ai' && !t.isAiAttending && (!t.attendingStatus || !t.attendingStatus.toLowerCase().includes('ia'))) return false;
-    if (chatFilterState.attendant === 'human' && (t.isAiAttending || (t.attendingStatus && t.attendingStatus.toLowerCase().includes('ia')))) return false;
+    if (chatFilterState.attendant === 'chatbot' && !t.isChatbotAttending && (!t.attendingStatus || !t.attendingStatus.toLowerCase().includes('chatbot'))) return false;
+    if (chatFilterState.attendant === 'human' && (t.isAiAttending || t.isChatbotAttending || (t.attendingStatus && (t.attendingStatus.toLowerCase().includes('ia') || t.attendingStatus.toLowerCase().includes('chatbot'))))) return false;
     if (chatFilterState.unreadOnly && !(t.unread > 0)) return false;
     if (chatFilterState.tag !== 'all' && (!t.tags || !t.tags.some(tag => tag.toLowerCase().includes(chatFilterState.tag.toLowerCase())))) return false;
     if (chatFilterState.searchQuery) {
@@ -483,7 +502,8 @@ export function renderActiveFilterChips() {
     chips.push({ key: 'status', label: `Status: ${chatFilterState.status}` });
   }
   if (chatFilterState.attendant !== 'all') {
-    chips.push({ key: 'attendant', label: chatFilterState.attendant === 'ai' ? 'IA atendendo' : 'Humano' });
+    const attendantLabels = { ai: 'IA atendendo', chatbot: 'Chatbot', human: 'Humano' };
+    chips.push({ key: 'attendant', label: attendantLabels[chatFilterState.attendant] || 'Humano' });
   }
   if (chatFilterState.unreadOnly) {
     chips.push({ key: 'unreadOnly', label: 'Não lidas' });
@@ -1109,12 +1129,7 @@ export function renderActiveChat() {
     });
 
     header.querySelector('#btn-header-close')?.addEventListener('click', () => {
-      if (confirm(`Deseja realmente encerrar o atendimento de ${thread.name}?`)) {
-        thread.status = 'Resolvido';
-        alert('Atendimento encerrado com sucesso.');
-        renderThreadList();
-        renderActiveChat();
-      }
+      openCloseConversationModal(thread);
     });
   }
 
@@ -2263,6 +2278,187 @@ export const transferDestinations = [
 let currentTransferThread = null;
 let currentTransferFilter = 'all';
 let selectedTransferDestId = null;
+
+export function openCloseConversationModal(thread) {
+  if (!thread) return;
+
+  const existing = document.getElementById('modal-close-conversation');
+  if (existing) existing.remove();
+
+  const firstName = (thread.name || 'Cliente').split(' ')[0];
+  const defaultClosingMsg = `Olá, ${firstName}! Seu atendimento foi encerrado. Caso precise de algo mais, basta enviar uma nova mensagem por aqui. Até logo! 👋`;
+
+  const quickTemplates = [
+    {
+      label: '👋 Padrão amigável',
+      text: `Olá, ${firstName}! Seu atendimento foi encerrado. Caso precise de algo mais, basta enviar uma nova mensagem por aqui. Até logo! 👋`
+    },
+    {
+      label: '✅ Resolvido',
+      text: `Ficamos felizes em ajudar, ${firstName}! Estamos encerrando este atendimento, mas seguimos à disposição sempre que precisar.`
+    },
+    {
+      label: '⭐ Agradecimento',
+      text: `Obrigado pelo seu contato, ${firstName}! Seu atendimento foi concluído com sucesso. Tenha um excelente dia!`
+    }
+  ];
+
+  const overlay = document.createElement('div');
+  overlay.id = 'modal-close-conversation';
+  overlay.className = 'modal-backdrop open';
+  overlay.style.zIndex = '9999';
+
+  overlay.innerHTML = `
+    <div class="modal-dialog" style="max-width: 480px; padding: 24px; border-radius: 16px;">
+      <div class="modal-header" style="margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(239, 68, 68, 0.1); color: #EF4444; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="check-circle-2" style="width: 20px; height: 20px;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-main);">Encerrar Atendimento</h3>
+            <p class="modal-header-sub" style="margin: 2px 0 0 0; font-size: 12.5px; color: var(--text-muted);">Finalize a conversa e envie uma mensagem de despedida</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" id="btn-cancel-close-chat-x" aria-label="Fechar">✕</button>
+      </div>
+
+      <!-- Contact Mini Card -->
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--bg-app); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+          <img src="${thread.img}" alt="${escapeHtml(thread.name)}" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+          <div style="min-width: 0;">
+            <div style="font-size: 13.5px; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(thread.name)}</div>
+            <div style="font-size: 12px; color: var(--text-muted);">${escapeHtml(thread.phone || '+55 11 98765-4321')}</div>
+          </div>
+        </div>
+        <span style="font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);">
+          ${escapeHtml(thread.channel || 'WhatsApp')}
+        </span>
+      </div>
+
+      <!-- Toggle Send Closing Message -->
+      <div style="margin-bottom: 12px;">
+        <label style="display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="message-square-Code" style="width: 16px; height: 16px; color: var(--primary);"></i>
+            <div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">Enviar mensagem de encerramento ao cliente</div>
+              <div style="font-size: 11.5px; color: var(--text-muted);">Envia um aviso automático no chat antes de concluir</div>
+            </div>
+          </div>
+          <input type="checkbox" id="close-chat-send-msg-toggle" checked style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
+        </label>
+      </div>
+
+      <!-- Closing Message Box -->
+      <div id="close-chat-msg-box" style="margin-bottom: 18px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+          <label class="form-label" style="margin: 0; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Mensagem de encerramento</label>
+          <span style="font-size: 11px; color: var(--text-muted);">Sugestões rápidas:</span>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+          ${quickTemplates.map((tpl, idx) => `
+            <button type="button" class="btn-close-tpl-chip" data-tpl-idx="${idx}" style="font-size: 11.5px; font-weight: 500; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-app); color: var(--text-secondary); cursor: pointer; transition: all 0.15s ease;">
+              ${tpl.label}
+            </button>
+          `).join('')}
+        </div>
+
+        <textarea
+          id="close-chat-msg-input"
+          class="form-input"
+          rows="3"
+          placeholder="Digite a mensagem de encerramento para o cliente..."
+          style="width: 100%; resize: vertical; font-size: 13px; line-height: 1.45; padding: 10px 12px;"
+        >${escapeHtml(defaultClosingMsg)}</textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border);">
+        <button type="button" class="btn btn-secondary" id="btn-cancel-close-chat">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-confirm-close-chat" style="background: #EF4444; border-color: #EF4444; color: #fff; display: inline-flex; align-items: center; gap: 6px;">
+          <i data-lucide="check-circle" style="width: 15px; height: 15px;"></i>
+          <span id="btn-confirm-close-chat-label">Enviar e Encerrar</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  if (window.lucide) window.lucide.createIcons();
+
+  const closeModal = () => overlay.remove();
+
+  const toggleEl = overlay.querySelector('#close-chat-send-msg-toggle');
+  const msgBoxEl = overlay.querySelector('#close-chat-msg-box');
+  const msgInputEl = overlay.querySelector('#close-chat-msg-input');
+  const confirmLabelEl = overlay.querySelector('#btn-confirm-close-chat-label');
+
+  toggleEl?.addEventListener('change', () => {
+    const enabled = toggleEl.checked;
+    if (msgBoxEl) {
+      msgBoxEl.style.opacity = enabled ? '1' : '0.45';
+      msgBoxEl.style.pointerEvents = enabled ? 'auto' : 'none';
+    }
+    if (confirmLabelEl) {
+      confirmLabelEl.textContent = enabled ? 'Enviar e Encerrar' : 'Encerrar Atendimento';
+    }
+  });
+
+  overlay.querySelectorAll('.btn-close-tpl-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const idx = parseInt(chip.getAttribute('data-tpl-idx'), 10);
+      if (quickTemplates[idx] && msgInputEl) {
+        msgInputEl.value = quickTemplates[idx].text;
+        msgInputEl.focus();
+      }
+    });
+  });
+
+  overlay.querySelector('#btn-cancel-close-chat-x')?.addEventListener('click', closeModal);
+  overlay.querySelector('#btn-cancel-close-chat')?.addEventListener('click', closeModal);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeModal();
+  });
+
+  overlay.querySelector('#btn-confirm-close-chat')?.addEventListener('click', () => {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const shouldSendMsg = toggleEl ? toggleEl.checked : false;
+    const closingText = msgInputEl ? msgInputEl.value.trim() : '';
+
+    if (!Array.isArray(thread.messages)) {
+      thread.messages = [];
+    }
+
+    if (shouldSendMsg && closingText) {
+      thread.messages.push({
+        sender: 'agent',
+        text: closingText,
+        time: timeStr,
+        status: 'sent'
+      });
+      thread.snippet = closingText;
+      thread.time = timeStr;
+    }
+
+    thread.messages.push({
+      sender: 'system',
+      text: `Atendimento encerrado às ${timeStr}`
+    });
+
+    thread.status = 'Resolvido';
+    thread.unread = 0;
+
+    closeModal();
+    renderThreadList();
+    renderActiveChat();
+    showToast(shouldSendMsg && closingText
+      ? `Mensagem enviada e atendimento de ${thread.name} encerrado!`
+      : `Atendimento de ${thread.name} encerrado com sucesso!`);
+  });
+}
 
 export function openTransferModal(thread) {
   if (!thread) return;

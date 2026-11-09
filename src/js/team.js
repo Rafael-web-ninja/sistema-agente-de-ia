@@ -8,7 +8,7 @@ const DEFAULT_TEAM_MEMBERS = [
     name: 'Rafael Mota',
     email: 'rafaelmotamkt@gmail.com',
     role: 'Proprietário & Gestor',
-    department: 'Gestão & Geral',
+    department: 'Atendimento Geral',
     isOwner: true,
     status: 'online', // 'online' | 'away' | 'offline'
     avatarBg: '#00A868',
@@ -31,7 +31,7 @@ const DEFAULT_TEAM_MEMBERS = [
     name: 'Alaine Felix',
     email: 'alainefelix1@gmail.com',
     role: 'Supervisora de Atendimento',
-    department: 'Comercial',
+    department: 'Comercial & Vendas',
     isOwner: false,
     status: 'online',
     avatarBg: '#7C3AED',
@@ -54,7 +54,7 @@ const DEFAULT_TEAM_MEMBERS = [
     name: 'VINICIUS DA SILVA',
     email: 'vini_hmd@hotmail.com',
     role: 'Atendente Comercial',
-    department: 'Vendas',
+    department: 'Comercial & Vendas',
     isOwner: false,
     status: 'online',
     avatarBg: '#2563EB',
@@ -168,6 +168,24 @@ function loadData() {
     } else {
       departments = JSON.parse(JSON.stringify(DEFAULT_DEPARTMENTS));
       saveDepartments();
+    }
+
+    // Normalize legacy department names so members match existing departments
+    const legacyDeptMap = {
+      'Gestão & Geral': 'Atendimento Geral',
+      'Geral': 'Atendimento Geral',
+      'Comercial': 'Comercial & Vendas',
+      'Vendas': 'Comercial & Vendas'
+    };
+    let normalized = false;
+    teamMembers.forEach(m => {
+      if (m.department && legacyDeptMap[m.department] && departments.some(d => d.name === legacyDeptMap[m.department])) {
+        m.department = legacyDeptMap[m.department];
+        normalized = true;
+      }
+    });
+    if (normalized) {
+      saveTeamMembers();
     }
   } catch (err) {
     console.warn('Erro ao carregar dados da equipe do localStorage:', err);
@@ -371,7 +389,10 @@ export function renderTeamTable() {
               <div class="team-member-header">
                 <span class="team-member-name">${escapeHtml(member.name)}</span>
                 ${isOwner ? '<span class="team-badge-owner">dono</span>' : ''}
-                <span class="team-member-dept-tag">${escapeHtml(member.department || 'Geral')}</span>
+                <button type="button" class="team-member-dept-tag btn-assign-member-dept" data-member-id="${member.id}" title="Clique para vincular departamento" style="cursor: pointer; border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 4px;">
+                  <span>${escapeHtml(member.department || 'Sem departamento')}</span>
+                  <i data-lucide="chevron-down" style="width: 11px; height: 11px; opacity: 0.7;"></i>
+                </button>
               </div>
               <span class="team-member-email">${escapeHtml(member.email)}</span>
             </div>
@@ -453,6 +474,10 @@ export function renderTeamTable() {
                 <i data-lucide="edit-3" style="width: 14px; height: 14px; color: var(--primary);"></i>
                 <span>Editar dados & permissões</span>
               </button>
+              <button type="button" class="team-dropdown-item btn-assign-member-dept" data-member-id="${member.id}">
+                <i data-lucide="folder-kanban" style="width: 14px; height: 14px; color: #7C3AED;"></i>
+                <span>Vincular departamento</span>
+              </button>
               <button type="button" class="team-dropdown-item btn-resend-invite" data-member-id="${member.id}">
                 <i data-lucide="mail" style="width: 14px; height: 14px; color: var(--status-info);"></i>
                 <span>Reenviar convite por e-mail</span>
@@ -521,9 +546,15 @@ export function renderDepartmentsView() {
             ${deptMembers.length > 4 ? `<div class="dept-mini-avatar more">+${deptMembers.length - 4}</div>` : ''}
             ${deptMembers.length === 0 ? '<span class="dept-no-members">Nenhum membro vinculado</span>' : ''}
           </div>
-          <button type="button" class="btn btn-ghost btn-sm btn-filter-dept-members" data-dept-name="${dept.name}">
-            Ver membros <i data-lucide="chevron-right" style="width: 13px; height: 13px;"></i>
-          </button>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <button type="button" class="btn btn-secondary btn-sm btn-manage-dept-members" data-dept-id="${dept.id}" style="padding: 4px 9px; font-size: 11.5px;">
+              <i data-lucide="user-plus" style="width: 12px; height: 12px;"></i>
+              <span>Vincular</span>
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm btn-filter-dept-members" data-dept-name="${dept.name}" style="padding: 4px 8px; font-size: 11.5px;">
+              Ver membros <i data-lucide="chevron-right" style="width: 13px; height: 13px;"></i>
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -658,6 +689,26 @@ function setupTableEventListeners() {
       e.preventDefault();
       const deptId = deleteDeptBtn.getAttribute('data-dept-id');
       openDeleteDepartmentModal(deptId);
+      return;
+    }
+
+    // 10. Assign member department (from member row badge or 3-dots menu)
+    const assignMemberDeptBtn = e.target.closest('.btn-assign-member-dept');
+    if (assignMemberDeptBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const memberId = assignMemberDeptBtn.getAttribute('data-member-id');
+      closeAllActionDropdowns();
+      openAssignMemberDepartmentModal(memberId);
+      return;
+    }
+
+    // 11. Manage department members (from department card "Vincular" button)
+    const manageDeptMembersBtn = e.target.closest('.btn-manage-dept-members');
+    if (manageDeptMembersBtn) {
+      e.preventDefault();
+      const deptId = manageDeptMembersBtn.getAttribute('data-dept-id');
+      openManageDepartmentMembersModal(deptId);
       return;
     }
   });
@@ -1139,6 +1190,227 @@ function openDeleteDepartmentModal(deptId) {
   } else {
     document.getElementById('modal-delete-department')?.classList.add('open');
   }
+}
+
+/**
+ * Open modal to assign/link a member to a department
+ */
+function openAssignMemberDepartmentModal(memberId) {
+  const member = teamMembers.find(m => m.id === memberId);
+  if (!member) return;
+
+  const existing = document.getElementById('modal-assign-member-dept');
+  if (existing) existing.remove();
+
+  let selectedDeptName = member.department || (departments[0]?.name || 'Atendimento Geral');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'modal-assign-member-dept';
+  overlay.className = 'modal-backdrop open';
+  overlay.style.zIndex = '9999';
+
+  overlay.innerHTML = `
+    <div class="modal-dialog" style="max-width: 440px; padding: 24px; border-radius: 16px;">
+      <div class="modal-header" style="margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(124, 58, 237, 0.12); color: #7C3AED; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="folder-kanban" style="width: 19px; height: 19px;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 15.5px; font-weight: 700; color: var(--text-main);">Vincular Departamento</h3>
+            <p class="modal-header-sub" style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">Escolha a fila de atendimento de <strong>${escapeHtml(member.name)}</strong></p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" id="btn-close-assign-dept-x" aria-label="Fechar">✕</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; max-height: 290px; overflow-y: auto;">
+        ${departments.map(dept => {
+          const isSelected = selectedDeptName === dept.name;
+          return `
+            <button
+              type="button"
+              class="assign-dept-option-btn"
+              data-dept-name="${escapeHtml(dept.name)}"
+              style="display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 11px 14px; border-radius: 11px; border: 1.5px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}; background: ${isSelected ? 'rgba(0, 168, 104, 0.06)' : 'var(--bg-card)'}; cursor: pointer; text-align: left; transition: all 0.15s ease;"
+            >
+              <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                <span style="width: 10px; height: 10px; border-radius: 50%; background: ${dept.color || '#00A868'}; flex-shrink: 0;"></span>
+                <div style="min-width: 0;">
+                  <div style="font-size: 13.5px; font-weight: 600; color: var(--text-main);">${escapeHtml(dept.name)}</div>
+                  <div style="font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(dept.desc || '')}</div>
+                </div>
+              </div>
+              <span class="assign-dept-check-circle" style="width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}; background: ${isSelected ? 'var(--primary)' : 'transparent'}; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px;">
+                ${isSelected ? '✓' : ''}
+              </span>
+            </button>
+          `;
+        }).join('')}
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border);">
+        <button type="button" class="btn btn-secondary" id="btn-cancel-assign-dept">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-save-assign-dept">
+          <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+          <span>Salvar Vínculo</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  if (window.lucide) window.lucide.createIcons();
+
+  const closeModal = () => overlay.remove();
+
+  overlay.querySelectorAll('.assign-dept-option-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedDeptName = btn.getAttribute('data-dept-name');
+      overlay.querySelectorAll('.assign-dept-option-btn').forEach(b => {
+        const active = b.getAttribute('data-dept-name') === selectedDeptName;
+        b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+        b.style.background = active ? 'rgba(0, 168, 104, 0.06)' : 'var(--bg-card)';
+        const circle = b.querySelector('.assign-dept-check-circle');
+        if (circle) {
+          circle.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+          circle.style.background = active ? 'var(--primary)' : 'transparent';
+          circle.textContent = active ? '✓' : '';
+        }
+      });
+    });
+  });
+
+  overlay.querySelector('#btn-close-assign-dept-x')?.addEventListener('click', closeModal);
+  overlay.querySelector('#btn-cancel-assign-dept')?.addEventListener('click', closeModal);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeModal();
+  });
+
+  overlay.querySelector('#btn-save-assign-dept')?.addEventListener('click', () => {
+    member.department = selectedDeptName;
+    saveTeamMembers();
+    renderTeamTable();
+    renderDepartmentsView();
+    closeModal();
+    showToast(`${member.name} vinculado ao departamento "${selectedDeptName}"!`);
+  });
+}
+
+/**
+ * Open modal to link/unlink multiple team members to a department
+ */
+function openManageDepartmentMembersModal(deptId) {
+  const dept = departments.find(d => d.id === deptId);
+  if (!dept) return;
+
+  const existing = document.getElementById('modal-manage-dept-members');
+  if (existing) existing.remove();
+
+  const selectedMemberIds = new Set(
+    teamMembers.filter(m => m.department === dept.name || m.department === dept.id).map(m => m.id)
+  );
+
+  const overlay = document.createElement('div');
+  overlay.id = 'modal-manage-dept-members';
+  overlay.className = 'modal-backdrop open';
+  overlay.style.zIndex = '9999';
+
+  overlay.innerHTML = `
+    <div class="modal-dialog" style="max-width: 460px; padding: 24px; border-radius: 16px;">
+      <div class="modal-header" style="margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 38px; height: 38px; border-radius: 10px; background: ${dept.color || '#00A868'}18; color: ${dept.color || '#00A868'}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="users" style="width: 19px; height: 19px;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 15.5px; font-weight: 700; color: var(--text-main);">Vincular Membros</h3>
+            <p class="modal-header-sub" style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">Departamento: <strong>${escapeHtml(dept.name)}</strong></p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" id="btn-close-manage-dept-members-x" aria-label="Fechar">✕</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; max-height: 310px; overflow-y: auto;">
+        ${teamMembers.map(m => {
+          const isChecked = selectedMemberIds.has(m.id);
+          return `
+            <label
+              class="dept-member-check-row"
+              data-member-id="${m.id}"
+              style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 11px; border: 1.5px solid ${isChecked ? 'var(--primary)' : 'var(--border)'}; background: ${isChecked ? 'rgba(0, 168, 104, 0.06)' : 'var(--bg-card)'}; cursor: pointer; transition: all 0.15s ease;"
+            >
+              <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: ${m.avatarBg || '#00A868'}; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">
+                  ${escapeHtml(m.initials || m.name.substring(0, 2).toUpperCase())}
+                </div>
+                <div style="min-width: 0;">
+                  <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">${escapeHtml(m.name)}</div>
+                  <div style="font-size: 11.5px; color: var(--text-muted);">Atual: ${escapeHtml(m.department || 'Sem departamento')}</div>
+                </div>
+              </div>
+              <input type="checkbox" class="dept-member-checkbox" value="${m.id}" ${isChecked ? 'checked' : ''} style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
+            </label>
+          `;
+        }).join('')}
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border);">
+        <button type="button" class="btn btn-secondary" id="btn-cancel-manage-dept-members">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-save-manage-dept-members">
+          <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+          <span>Salvar Membros</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  if (window.lucide) window.lucide.createIcons();
+
+  const closeModal = () => overlay.remove();
+
+  overlay.querySelectorAll('.dept-member-checkbox').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const row = cb.closest('.dept-member-check-row');
+      if (cb.checked) {
+        selectedMemberIds.add(cb.value);
+        if (row) {
+          row.style.borderColor = 'var(--primary)';
+          row.style.background = 'rgba(0, 168, 104, 0.06)';
+        }
+      } else {
+        selectedMemberIds.delete(cb.value);
+        if (row) {
+          row.style.borderColor = 'var(--border)';
+          row.style.background = 'var(--bg-card)';
+        }
+      }
+    });
+  });
+
+  overlay.querySelector('#btn-close-manage-dept-members-x')?.addEventListener('click', closeModal);
+  overlay.querySelector('#btn-cancel-manage-dept-members')?.addEventListener('click', closeModal);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeModal();
+  });
+
+  overlay.querySelector('#btn-save-manage-dept-members')?.addEventListener('click', () => {
+    const fallbackDept = departments.find(d => d.id !== dept.id)?.name || 'Atendimento Geral';
+    teamMembers.forEach(m => {
+      if (selectedMemberIds.has(m.id)) {
+        m.department = dept.name;
+      } else if (m.department === dept.name || m.department === dept.id) {
+        m.department = fallbackDept;
+      }
+    });
+
+    saveTeamMembers();
+    renderTeamTable();
+    renderDepartmentsView();
+    closeModal();
+    showToast(`Membros do departamento "${dept.name}" atualizados!`);
+  });
 }
 
 /**
