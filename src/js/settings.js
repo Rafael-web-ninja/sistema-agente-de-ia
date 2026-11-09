@@ -159,6 +159,18 @@ function setupBillingActions() {
       showToast('Dados do cartão prontos para atualização.');
     });
   }
+
+  document.getElementById('btn-plan-go-equipe')?.addEventListener('click', () => {
+    switchSettingsTab('equipe');
+  });
+
+  document.getElementById('btn-plan-go-canais')?.addEventListener('click', () => {
+    if (window.switchView) window.switchView('canais');
+  });
+
+  document.getElementById('btn-plan-go-chatbots')?.addEventListener('click', () => {
+    if (window.switchView) window.switchView('chatbots');
+  });
 }
 
 /**
