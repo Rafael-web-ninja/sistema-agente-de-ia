@@ -971,13 +971,6 @@ export function renderActiveChat() {
                   </div>
                 </div>
               </div>
-              <div class="chat-crm-field" style="margin-bottom: 10px;">
-                <label class="chat-crm-label">Valor Estimado (Opcional)</label>
-                <div class="chat-crm-input-prefix-wrap">
-                  <span class="chat-crm-currency-prefix">R$</span>
-                  <input type="number" class="chat-crm-input" id="popover-crm-quick-val" placeholder="0" min="0" step="100">
-                </div>
-              </div>
               <button type="button" class="btn btn-primary btn-sm chat-crm-submit-btn" id="btn-popover-confirm-send-crm" style="width: 100%; justify-content: center;">
                 <i data-lucide="plus-circle" style="width:14px;height:14px;"></i>
                 <span id="btn-popover-send-label">Enviar para ${escapeHtml(stages[0].name)}</span>
@@ -1516,24 +1509,6 @@ function renderRightColumnCards(thread) {
             </div>
           </div>
 
-          <div class="chat-crm-row-split">
-            <div class="chat-crm-field" style="flex: 1.25;">
-              <label class="chat-crm-label">Valor Estimado</label>
-              <div class="chat-crm-input-prefix-wrap">
-                <span class="chat-crm-currency-prefix">R$</span>
-                <input type="number" class="chat-crm-input" id="chat-crm-active-value" value="${existingDeal.value || 0}" min="0" step="100" placeholder="0">
-              </div>
-            </div>
-            <div class="chat-crm-field" style="flex: 1;">
-              <label class="chat-crm-label">Prioridade</label>
-              <select class="chat-crm-select" id="chat-crm-active-priority">
-                <option value="Alta" ${currentPriority === 'Alta' ? 'selected' : ''}>🔥 Alta</option>
-                <option value="Média" ${currentPriority === 'Média' ? 'selected' : ''}>⚡ Média</option>
-                <option value="Baixa" ${currentPriority === 'Baixa' ? 'selected' : ''}>🌱 Baixa</option>
-              </select>
-            </div>
-          </div>
-
           <button type="button" class="btn-chat-open-crm" id="btn-chat-open-crm-view">
             <span>Abrir no Kanban CRM</span>
             <i data-lucide="arrow-up-right" style="width:13px;height:13px;"></i>
@@ -1636,23 +1611,6 @@ function renderRightColumnCards(thread) {
                   </button>
                 `).join('')}
               </div>
-            </div>
-          </div>
-
-          <div class="chat-crm-field">
-            <label class="chat-crm-label">Valor Estimado (Opcional)</label>
-            <div class="chat-crm-input-prefix-wrap">
-              <span class="chat-crm-currency-prefix">R$</span>
-              <input type="number" class="chat-crm-input" id="chat-crm-new-value" placeholder="0" min="0" step="100">
-            </div>
-          </div>
-
-          <div class="chat-crm-field">
-            <label class="chat-crm-label">Prioridade</label>
-            <div class="crm-priority-seg" id="chat-crm-new-priority">
-              <button type="button" class="crm-prio-btn active" data-prio="Alta">🔥 Alta</button>
-              <button type="button" class="crm-prio-btn" data-prio="Média">⚡ Média</button>
-              <button type="button" class="crm-prio-btn" data-prio="Baixa">🌱 Baixa</button>
             </div>
           </div>
 
